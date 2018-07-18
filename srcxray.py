@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# srcxray - source code X-ray
+#                   srcxray - source code X-ray
 #
 # Analyzes interconnections between functions and structures in source code.
 #
@@ -20,13 +20,15 @@ level_limit = 7
 limit = 10000
 n = 0
 
+
 def print_limited(a):
     print(a)
     global n
-    n +=1
+    n += 1
     if n > limit:
         print('Reached limit')
         sys.exit(1)
+
 
 def log(*args, **kwargs):
     print(inspect.stack()[1][3], str(*args).rstrip(), file=sys.stderr, **kwargs)
@@ -54,13 +56,13 @@ def extract_referer_test():
             "f=bad (*good)()",
             "f=int FNAME(good)(a)",
             "f=TRACE_EVENT(a)",
-            "f: a=in bad()" }:
+            "f: a=in bad()"}:
         print(a, '->', extract_referer(a))
 
 def func_referers_git_grep(name):
     res = []
     r = None
-    for line in popen(r'git grep --no-index --word-regexp --show-function "^\s.*\b%s"'%(name)):
+    for line in popen(r'git grep --no-index --word-regexp --show-function "^\s.*\b%s"' % (name)):
         # Filter out names in comment afer function, when comment start from ' *'
         # To see the problem try "git grep -p and"
         if re.match(r'.*: \* ', line):
@@ -80,7 +82,7 @@ def func_referers_cscope(name):
             print("Recommended: cscope -bkR", file=sys.stderr)
             cscope_warned = True
         return []
-    res = [ l.split()[1] for l in popen(r'cscope -d -L3 "%s"'%(name)) if not l in black_list]
+    res = [l.split()[1] for l in popen(r'cscope -d -L3 "%s"'%(name)) if not l in black_list]
     if not res:
         res = func_referers_git_grep(name)
     return res
@@ -88,7 +90,7 @@ def func_referers_cscope(name):
 def func_referers_all(name):
     return set(func_referers_git_grep(name) + func_referers_cscope(name))
 
-def referers_tree(name, referer = None, printed = None, level = 0):
+def referers_tree(name, referer=None, printed = None, level = 0):
     if not referer:
         if os.path.isfile('cscope.out'):
             referer = func_referers_cscope
@@ -122,17 +124,17 @@ def call_tree(node, printed = None, level = 0):
     if printed == None: printed = set()
     if node in printed:
         limit= - 1
-        print_limited(level*'\t' + node + '^')
+        print_limited(level*'\t' + node + ' ^')
         return
     else:
         print_limited(level*'\t' + node)
     printed.add(node)
-    if level > level_limit - 2 :
+    if level > level_limit - 2:
         print_limited((level + 1)*'\t' + '...')
         return ''
     local_printed = set()
     for line in popen('cscope -d -L2 "%s"'%(node)):
-        I = line.split()[1];
+        I = line.split()[1]
         if I in local_printed or I in black_list: continue;
         local_printed.add(I)
         try:
@@ -158,7 +160,7 @@ def main():
         if len(sys.argv) == 1:
             print('Run', me, 'usage')
         else:
-            if  '(' in sys.argv[1]:
+            if '(' in sys.argv[1]:
                 ret = eval(sys.argv[1])
             else:
                 ret = eval(sys.argv[1] + '(' + ', '.join("'%s'"%(a) for a in sys.argv[2:]) + ')')
