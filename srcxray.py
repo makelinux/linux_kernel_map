@@ -10,11 +10,16 @@
 # 2018 Constantine Shulyupin, const@MakeLinux.com
 #
 
-import inspect, random, os, sys, collections, subprocess, re
+import inspect
+import random
+import os
+import sys
+import collections
+import subprocess
+import re
 
-black_list = ['aligned', '__attribute__', 'unlikely', 'typeof',
-        'u32',
-        'PVOP_CALLEE0', 'PVOP_VCALLEE0', 'PVOP_VCALLEE1', 'trace_hardirqs_off']
+black_list = ['aligned', '__attribute__', 'unlikely', 'typeof', 'u32',
+              'PVOP_CALLEE0', 'PVOP_VCALLEE0', 'PVOP_VCALLEE1', 'trace_hardirqs_off']
 
 level_limit = 7
 limit = 10000
@@ -31,11 +36,14 @@ def print_limited(a):
 
 
 def log(*args, **kwargs):
-    print(inspect.stack()[1][3], str(*args).rstrip(), file=sys.stderr, **kwargs)
+    print(inspect.stack()[1][3],
+          str(*args).rstrip(), file=sys.stderr, **kwargs)
     pass
+
 
 def popen(p):
     return subprocess.Popen(p, shell=True, stdout=subprocess.PIPE, encoding="utf-8").stdout
+
 
 def extract_referer(line):
     line = re.sub(r'__ro_after_init', '', line)
@@ -46,6 +54,7 @@ def extract_referer(line):
         m = re.match(r'^[^\s]+=[^,]*(\b\w+)\s*[\(\[=][^;]*$', line)
     if m:
         return m.group(1)
+
 
 def extract_referer_test():
     for a in {
@@ -58,6 +67,7 @@ def extract_referer_test():
             "f=TRACE_EVENT(a)",
             "f: a=in bad()"}:
         print(a, '->', extract_referer(a))
+
 
 def func_referers_git_grep(name):
     res = []
@@ -73,7 +83,9 @@ def func_referers_git_grep(name):
         r = extract_referer(line)
     return res
 
+
 cscope_warned = False
+
 
 def func_referers_cscope(name):
     global cscope_warned
@@ -82,24 +94,29 @@ def func_referers_cscope(name):
             print("Recommended: cscope -bkR", file=sys.stderr)
             cscope_warned = True
         return []
-    res = [l.split()[1] for l in popen(r'cscope -d -L3 "%s"'%(name)) if not l in black_list]
+    res = [l.split()[1] for l in popen(r'cscope -d -L3 "%s"' %
+                                       (name)) if not l in black_list]
     if not res:
         res = func_referers_git_grep(name)
     return res
 
+
 def func_referers_all(name):
     return set(func_referers_git_grep(name) + func_referers_cscope(name))
 
-def referers_tree(name, referer=None, printed = None, level = 0):
+
+def referers_tree(name, referer=None, printed=None, level=0):
     if not referer:
         if os.path.isfile('cscope.out'):
             referer = func_referers_cscope
         else:
-            print("Using git grep only, recommended to run: cscope -bkR", file=sys.stderr)
+            print("Using git grep only, recommended to run: cscope -bkR",
+                  file=sys.stderr)
             referer = func_referers_git_grep
     if isinstance(referer, str):
         referer = eval(referer)
-    if not printed: printed = set()
+    if not printed:
+        printed = set()
     if name in printed:
         print_limited(level*'\t' + name + ' ^')
         return
@@ -117,13 +134,15 @@ def referers_tree(name, referer=None, printed = None, level = 0):
         listed.add(a)
     return ''
 
-def call_tree(node, printed = None, level = 0):
+
+def call_tree(node, printed=None, level=0):
     if not os.path.isfile('cscope.out'):
-            print("Please run: cscope -bkR", file=sys.stderr)
-            return False
-    if printed == None: printed = set()
+        print("Please run: cscope -bkR", file=sys.stderr)
+        return False
+    if printed == None:
+        printed = set()
     if node in printed:
-        limit= - 1
+        limit = - 1
         print_limited(level*'\t' + node + ' ^')
         return
     else:
@@ -133,17 +152,20 @@ def call_tree(node, printed = None, level = 0):
         print_limited((level + 1)*'\t' + '...')
         return ''
     local_printed = set()
-    for line in popen('cscope -d -L2 "%s"'%(node)):
+    for line in popen('cscope -d -L2 "%s"' % (node)):
         I = line.split()[1]
-        if I in local_printed or I in black_list: continue;
+        if I in local_printed or I in black_list:
+            continue
         local_printed.add(I)
         try:
-            call_tree(line.split()[1], printed, level + 1);
+            call_tree(line.split()[1], printed, level + 1)
         except:
             pass
     return ''
 
+
 me = os.path.basename(sys.argv[0])
+
 
 def usage():
     print(me, "referers_tree", "<identifier>")
@@ -154,6 +176,7 @@ def usage():
     print(me, "call_tree start_kernel")
     print(me, "Emergency termination: ^Z, kill %1")
 
+
 def main():
     try:
         ret = False
@@ -163,12 +186,14 @@ def main():
             if '(' in sys.argv[1]:
                 ret = eval(sys.argv[1])
             else:
-                ret = eval(sys.argv[1] + '(' + ', '.join("'%s'"%(a) for a in sys.argv[2:]) + ')')
+                ret = eval(sys.argv[1] + '(' + ', '.join("'%s'" % (a)
+                                                         for a in sys.argv[2:]) + ')')
         if type(ret) == type(False) and ret == False:
             sys.exit(os.EX_CONFIG)
         print(ret)
     except KeyboardInterrupt:
         warning("\nInterrupted")
+
 
 if __name__ == "__main__":
     main()
