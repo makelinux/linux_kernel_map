@@ -43,8 +43,7 @@ def log(*args, **kwargs):
 
 
 def popen(p):
-    return subprocess.Popen(p, shell=True, stdout=subprocess.PIPE,
-                            encoding="utf-8").stdout
+    return [str(a) for a in subprocess.check_output(p, shell=True).splitlines()]
 
 
 def extract_referer(line):
