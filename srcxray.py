@@ -19,7 +19,8 @@ import subprocess
 import re
 
 black_list = ['aligned', '__attribute__', 'unlikely', 'typeof', 'u32',
-              'PVOP_CALLEE0', 'PVOP_VCALLEE0', 'PVOP_VCALLEE1', 'trace_hardirqs_off']
+              'PVOP_CALLEE0', 'PVOP_VCALLEE0', 'PVOP_VCALLEE1', 'if',
+              'trace_hardirqs_off']
 
 level_limit = 7
 limit = 10000
@@ -79,8 +80,14 @@ def func_referers_git_grep(name):
         # Filter out names in comment afer function,
         # when comment start from ' *'
         # To see the problem try "git grep -p and"
-        if re.match(r'.*: \* ', line):
-            r = None
+        for p in {
+                r'.*: \* .*%s',
+                r'.*/\*.*%s',
+                r'.*//.*%s',
+                r'.*".*\b%s\b.*"'}:
+            if re.match(p % (name), line):
+                r = None
+                break
         if r and r != name and r not in black_list:
             res.append(r)
             r = None
