@@ -42,7 +42,8 @@ def log(*args, **kwargs):
 
 
 def popen(p):
-    return subprocess.Popen(p, shell=True, stdout=subprocess.PIPE, encoding="utf-8").stdout
+    return subprocess.Popen(p, shell=True, stdout=subprocess.PIPE,
+                            encoding="utf-8").stdout
 
 
 def extract_referer(line):
@@ -59,7 +60,8 @@ def extract_referer(line):
 def extract_referer_test():
     for a in {
             "fs=good2()",
-            "f=static int fastop(struct x86_emulate_ctxt *ctxt, void (*fop)(struct fastop *))",
+            "f=static int fastop(struct x86_emulate_ctxt *ctxt, "
+            + "void (*fop)(struct fastop *))",
             "f=int good(a, bad (*func)(arg))",
             "f=EXPORT_SYMBOL_GPL(bad);",
             "f=bad (*good)()",
@@ -72,12 +74,14 @@ def extract_referer_test():
 def func_referers_git_grep(name):
     res = []
     r = None
-    for line in popen(r'git grep --no-index --word-regexp --show-function "^\s.*\b%s"' % (name)):
-        # Filter out names in comment afer function, when comment start from ' *'
+    for line in popen(r'git grep --no-index --word-regexp --show-function '
+                      r'"^\s.*\b%s"' % (name)):
+        # Filter out names in comment afer function,
+        # when comment start from ' *'
         # To see the problem try "git grep -p and"
         if re.match(r'.*: \* ', line):
             r = None
-        if r and r != name and not r in black_list:
+        if r and r != name and r not in black_list:
             res.append(r)
             r = None
         r = extract_referer(line)
@@ -95,7 +99,7 @@ def func_referers_cscope(name):
             cscope_warned = True
         return []
     res = [l.split()[1] for l in popen(r'cscope -d -L3 "%s"' %
-                                       (name)) if not l in black_list]
+                                       (name)) if l not in black_list]
     if not res:
         res = func_referers_git_grep(name)
     return res
@@ -139,7 +143,7 @@ def call_tree(node, printed=None, level=0):
     if not os.path.isfile('cscope.out'):
         print("Please run: cscope -bkR", file=sys.stderr)
         return False
-    if printed == None:
+    if printed is None:
         printed = set()
     if node in printed:
         limit = - 1
@@ -153,13 +157,13 @@ def call_tree(node, printed=None, level=0):
         return ''
     local_printed = set()
     for line in popen('cscope -d -L2 "%s"' % (node)):
-        I = line.split()[1]
-        if I in local_printed or I in black_list:
+        a = line.split()[1]
+        if a in local_printed or a in black_list:
             continue
-        local_printed.add(I)
+        local_printed.add(a)
         try:
             call_tree(line.split()[1], printed, level + 1)
-        except:
+        except Exception:
             pass
     return ''
 
@@ -187,8 +191,8 @@ def main():
                 ret = eval(sys.argv[1])
             else:
                 ret = eval(sys.argv[1] + '(' + ', '.join("'%s'" % (a)
-                                                         for a in sys.argv[2:]) + ')')
-        if type(ret) == type(False) and ret == False:
+                           for a in sys.argv[2:]) + ')')
+        if isinstance(ret, bool) and ret is False:
             sys.exit(os.EX_CONFIG)
         print(ret)
     except KeyboardInterrupt:
