@@ -144,6 +144,38 @@ def referers_tree(name, referer=None, printed=None, level=0):
     return ''
 
 
+def referers_dep(name, referer=None, printed=None, level=0):
+    if not referer:
+        if os.path.isfile('cscope.out'):
+            referer = func_referers_cscope
+        else:
+            print("Using git grep only, recommended to run: cscope -bkR",
+                  file=sys.stderr)
+            referer = func_referers_git_grep
+    if isinstance(referer, str):
+        referer = eval(referer)
+    if not printed:
+        printed = set()
+    if name in printed:
+        return
+    if level > level_limit - 2:
+        return ''
+    referers = set(referer(name))
+    if referers:
+        printed.add(name)
+        print(name, end=': ')
+        for a in referers:
+            print(a, end=' ')
+        print()
+        for a in referers:
+            referers_dep(a, referer, printed, level + 1)
+    else:
+        pass
+        # TODO: print terminal
+        # print('...')
+    return ''
+
+
 def call_tree(node, printed=None, level=0):
     if not os.path.isfile('cscope.out'):
         print("Please run: cscope -bkR", file=sys.stderr)
@@ -207,7 +239,7 @@ me = os.path.basename(sys.argv[0])
 
 
 def usage():
-    for c in ["referers_tree", "call_tree", "call_dep"]:
+    for c in ["referers_tree", "call_tree", "referers_dep", "call_dep"]:
         print(me, c, "<identifier>")
     print("Try this:")
     print("cd linux/init")
