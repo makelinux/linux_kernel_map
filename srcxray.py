@@ -73,7 +73,7 @@ def extract_referer_test():
 
 
 def func_referers_git_grep(name):
-    res = []
+    res = set()
     r = None
     for line in popen(r'git grep --no-index --word-regexp --show-function '
                       r'"^\s.*\b%s"' % (name)):
@@ -89,7 +89,7 @@ def func_referers_git_grep(name):
                 r = None
                 break
         if r and r != name and r not in black_list:
-            res.append(r)
+            res.add(r)
             r = None
         r = extract_referer(line)
     return res
@@ -105,8 +105,8 @@ def func_referers_cscope(name):
             print("Recommended: cscope -bkR", file=sys.stderr)
             cscope_warned = True
         return []
-    res = [l.split()[1] for l in popen(r'cscope -d -L3 "%s"' %
-                                       (name)) if l not in black_list]
+    res = set([l.split()[1] for l in popen(r'cscope -d -L3 "%s"' %
+                                       (name)) if l not in black_list])
     if not res:
         res = func_referers_git_grep(name)
     return res
