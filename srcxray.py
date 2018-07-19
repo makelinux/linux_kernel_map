@@ -76,12 +76,13 @@ def func_referers_git_grep(name):
     res = set()
     r = None
     for line in popen(r'git grep --no-index --word-regexp --show-function '
-                      r'"^\s.*\b%s"' % (name)):
+                      r'"^\s.*\b%s" '
+                      '**.\[hc\] **.cpp **.cc **.hh' % (name)):
         # Filter out names in comment afer function,
         # when comment start from ' *'
         # To see the problem try "git grep -p and"
         for p in {
-                r'.*: \* .*%s',
+                r'.*:\s+\* .*%s',
                 r'.*/\*.*%s',
                 r'.*//.*%s',
                 r'.*".*\b%s\b.*"'}:
@@ -139,8 +140,6 @@ def referers_tree(name, referer=None, printed=None, level=0):
         return ''
     listed = set()
     for a in referer(name):
-        if a in listed:
-            continue
         referers_tree(a, referer, printed, level + 1)
         listed.add(a)
     return ''
