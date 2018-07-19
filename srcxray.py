@@ -175,12 +175,42 @@ def call_tree(node, printed=None, level=0):
     return ''
 
 
+def call_dep(node, printed=None, level=0):
+    if not os.path.isfile('cscope.out'):
+        print("Please run: cscope -bkR", file=sys.stderr)
+        return False
+    if printed is None:
+        printed = set()
+    if node in printed:
+        return
+    calls = set()
+    for a in [line.split()[1] for line in
+              popen('cscope -d -L2 "%s"' % (node))]:
+        if a in black_list:
+            continue
+        calls.add(a)
+    if calls:
+        if level < level_limit - 1:
+            printed.add(node)
+            print(node, end=': ')
+            for a in calls:
+                print(a, end=' ')
+            print()
+            for a in calls:
+                call_dep(a, printed, level + 1)
+        else:
+            pass
+            # TODO: print terminal
+            # print('...')
+    return ''
+
+
 me = os.path.basename(sys.argv[0])
 
 
 def usage():
-    print(me, "referers_tree", "<identifier>")
-    print(me, "call_tree", "<identifier>")
+    for c in ["referers_tree", "call_tree", "call_dep"]:
+        print(me, c, "<identifier>")
     print("Try this:")
     print("cd linux/init")
     print(me, "referers_tree nfs_root_data")
