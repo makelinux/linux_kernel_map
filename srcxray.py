@@ -168,10 +168,10 @@ def call_tree(node, printed=None, level=0):
         if a in local_printed or a in black_list:
             continue
         local_printed.add(a)
-        try:
-            call_tree(line.split()[1], printed, level + 1)
-        except Exception:
-            pass
+        # try:
+        call_tree(line.split()[1], printed, level + 1)
+        # except Exception:
+        #    pass
     return ''
 
 
