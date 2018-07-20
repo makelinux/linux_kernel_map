@@ -22,7 +22,7 @@ black_list = ['aligned', '__attribute__', 'unlikely', 'typeof', 'u32',
               'PVOP_CALLEE0', 'PVOP_VCALLEE0', 'PVOP_VCALLEE1', 'if',
               'trace_hardirqs_off']
 
-level_limit = 7
+level_limit = 8
 limit = 10000
 n = 0
 
