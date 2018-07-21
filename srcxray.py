@@ -78,7 +78,7 @@ def func_referers_git_grep(name):
     r = None
     for line in popen(r'git grep --no-index --word-regexp --show-function '
                       r'"^\s.*\b%s" '
-                      '**.\[hc\] **.cpp **.cc **.hh' % (name)):
+                      r'**.\[hc\] **.cpp **.cc **.hh' % (name)):
         # Filter out names in comment afer function,
         # when comment start from ' *'
         # To see the problem try "git grep -p and"
@@ -108,7 +108,7 @@ def func_referers_cscope(name):
             cscope_warned = True
         return []
     res = set([l.split()[1] for l in popen(r'cscope -d -L3 "%s"' %
-                                       (name)) if l not in black_list])
+              (name)) if l not in black_list])
     if not res:
         res = func_referers_git_grep(name)
     return res
@@ -185,7 +185,6 @@ def call_tree(node, printed=None, level=0):
     if printed is None:
         printed = set()
     if node in printed:
-        limit = - 1
         print_limited(level*'\t' + node + ' ^')
         return
     else:
