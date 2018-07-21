@@ -44,7 +44,8 @@ def log(*args, **kwargs):
 
 
 def popen(p):
-    return [str(a) for a in subprocess.check_output(p, shell=True).splitlines()]
+    return [a.decode('utf-8') for a in subprocess.check_output(p, shell=True)
+            .splitlines()]
 
 
 def extract_referer(line):
