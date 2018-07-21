@@ -17,6 +17,7 @@ import sys
 import collections
 import subprocess
 import re
+import networkx as nx
 
 black_list = ['aligned', '__attribute__', 'unlikely', 'typeof', 'u32',
               'PVOP_CALLEE0', 'PVOP_VCALLEE0', 'PVOP_VCALLEE1', 'if',
@@ -234,6 +235,84 @@ def call_dep(node, printed=None, level=0):
             # TODO: print terminal
             # print('...')
     return ''
+
+
+def my_graph(name=None):
+    g = nx.DiGraph(name=name)
+    g.graph.update({'node': {'shape': 'none', 'fontsize': 50}})
+    g.graph.update({'rankdir': 'LR', 'nodesep': 0, })
+    return g
+
+
+def syscalls():
+    sc = my_graph('syscalls')
+    scd = 'SYSCALL_DEFINE.list'
+    if not os.path.isfile(scd):
+        os.system("grep SYSCALL_DEFINE -r --include='*.c' > " + scd)
+    with open(scd, 'r') as f:
+        v = set()
+        for s in f:
+            m = re.match(r'(.*?):.*SYSCALL.*\(([\w]+)', s)
+            if m:
+                for p in {
+                        '^old',
+                        '^xnew',
+                        r'.*64',
+                        r'.*32$',
+                        r'.*16$',
+                        }:
+                    if re.match(p, m.group(2)):
+                        m = None
+                        break
+                if m:
+                    syscall = m.group(2)
+                    syscall = re.sub('^new', '', syscall)
+                    if 'compat' in m.group(1):
+                        continue
+                    if syscall in v or 'compat' in m.group(1):
+                        continue
+                    v.add(syscall)
+                    path = m.group(1).split('/')
+                    if (m.group(1).startswith('arch/')
+                            and not m.group(1).startswith('arch/x86')):
+                        continue
+                    p2 = '/'.join(path[1:])
+                    sc.add_edge(path[0] + '/', p2)
+                    sc.add_edge(p2, syscall)
+    return sc
+
+
+def digraph_print(dg):
+    def digraph_print_sub(node=None, printed=None, level=0):
+        outs = [_ for _ in dg.successors(node)]
+        if node in printed:
+            print_limited(level*'\t' + node + ' ^')
+            return
+        else:
+            s = ' ...' if level > level_limit - 2 and outs else ''
+            print_limited(level*'\t' + node + s)
+        printed.add(node)
+        if level > level_limit - 2:
+            return ''
+        passed = set()
+        for o in outs:
+            if o in passed or o in black_list:
+                continue
+            passed.add(o)
+            digraph_print_sub(o, printed, level + 1)
+
+    starts = {}
+    printed = set()
+    for i in [n for (n, d) in dg.in_degree if not d]:
+        starts[i] = dg.out_degree(i)
+    starts = sorted(starts.items(), key=lambda k: k[1], reverse=True)
+    outs = [a[0] for a in starts]
+    passed = set()
+    for o in outs:
+        if o in passed or o in black_list:
+            continue
+        passed.add(o)
+        digraph_print_sub(o, printed)
 
 
 me = os.path.basename(sys.argv[0])
