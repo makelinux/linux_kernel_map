@@ -31,9 +31,10 @@ def print_limited(a):
     print(a)
     global n
     n += 1
-    if n > limit:
-        print('Reached limit')
+    if n > limit + 1:
+        print('...')
         sys.exit(1)
+        # raise(Exception('Reached limit'))
 
 
 def log(*args, **kwargs):
