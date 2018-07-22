@@ -245,6 +245,17 @@ def my_graph(name=None):
     return g
 
 
+def reduce_graph(g):
+    print(type(g))
+    rm = set()
+    for e in g:
+        if not g.out_degree(e):
+            rm.add(e)
+    print(rm)
+    g.remove_nodes_from(rm)
+    return g
+
+
 def syscalls():
     sc = my_graph('syscalls')
     scd = 'SYSCALL_DEFINE.list'
@@ -293,11 +304,11 @@ def digraph_print(dg):
     def digraph_print_sub(node=None, printed=None, level=0):
         outs = [_ for _ in dg.successors(node)]
         if node in printed:
-            print_limited(level*'\t' + node + ' ^')
+            print_limited(level*'\t' + str(node) + ' ^')
             return
         else:
             s = ' ...' if level > level_limit - 2 and outs else ''
-            print_limited(level*'\t' + node + s)
+            print_limited(level*'\t' + str(node) + s)
         printed.add(node)
         if level > level_limit - 2:
             return ''
