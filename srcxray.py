@@ -322,6 +322,61 @@ def digraph_print(dg):
         digraph_print_sub(o, printed)
 
 
+def cflow_preprocess(a):
+    with open(a, 'r') as f:
+        for s in f:
+            # treat struct like function
+            s = re.sub(r"^static const struct (.*)\[\] = ", r"\1()", s)
+            s = re.sub(r"^static __initdata int \(\*actions\[\]\)\(void\) = ",
+                       "int actions()", s)  # treat struct like function
+            s = re.sub(r"^static ", "", s)
+            s = re.sub(r"COMPAT_SYSCALL_DEFINE[0-9]\((\w*),",
+                       r"compat_sys_\1(", s)
+            s = re.sub(r"SYSCALL_DEFINE[0-9]\((\w*),", r"sys_\1(", s)
+            s = re.sub(r"__setup\(.*,(.*)\)", r"void __setup() {\1();}", s)
+            s = re.sub(r"early_param\(.*,(.*)\)",
+                       r"void early_param() {\1();}", s)
+            s = re.sub(r"rootfs_initcall\((.*)\)",
+                       r"void rootfs_initcall() {\1();}", s)
+            s = re.sub(r"^static ", "", s)
+            s = re.sub(r"__read_mostly", "", s)
+            s = re.sub(r"^inline ", "", s)
+            s = re.sub(r"^const ", "", s)
+            s = re.sub(r"^struct (.*) =", r"\1()", s)
+            s = re.sub(r"^struct ", "", s)
+            # for line in sys.stdin:
+            sys.stdout.write(s)
+
+
+def import_cflow():
+    cf = nx.DiGraph()
+    stack = list()
+    nprev = -1
+    # "--depth=%d " %(level_limit+1) +
+    cflow = (r"cflow " +
+             "--preprocess='srcxray.py cflow_preprocess' " +
+             "--include=_sxt --brief --level-indent='0=\t' " +
+             " *.[ch] *.cpp *.hh ")
+    # " $(find -name '*.[ch]' -o -name '*.cpp' -o -name '*.hh') "
+    for line in popen(cflow):
+        # --print-level
+        m = re.match(r'^([\t]*)([^(^ ^<]+)', str(line))
+        if m:
+            n = len(m.group(1))
+            id = str(m.group(2))
+        else:
+            raise Exception(line)
+
+        if n <= nprev:
+            stack = stack[:n - nprev - 1]
+        # print(n, id, stack)
+        if len(stack):
+            cf.add_edge(stack[-1], id)
+        stack.append(id)
+        nprev = n
+    return cf
+
+
 me = os.path.basename(sys.argv[0])
 
 
@@ -348,7 +403,8 @@ def main():
                            for a in sys.argv[2:]) + ')')
         if isinstance(ret, bool) and ret is False:
             sys.exit(os.EX_CONFIG)
-        print(ret)
+        if (ret is not None):
+            print(ret)
     except KeyboardInterrupt:
         warning("\nInterrupted")
 
