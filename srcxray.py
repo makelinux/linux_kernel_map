@@ -18,6 +18,7 @@ import collections
 import subprocess
 import re
 import networkx as nx
+from networkx.drawing.nx_agraph import write_dot
 
 black_list = ['aligned', '__attribute__', 'unlikely', 'typeof', 'u32',
               'PVOP_CALLEE0', 'PVOP_VCALLEE0', 'PVOP_VCALLEE1', 'if',
@@ -280,6 +281,12 @@ def syscalls():
                     sc.add_edge(path[0] + '/', p2)
                     sc.add_edge(p2, syscall)
     return sc
+
+
+# DiGraph
+# write_dot to_agraph AGraph
+# agwrite
+# srcxray.py 'write_dot(syscalls(), "syscalls.dot")'
 
 
 def digraph_print(dg):
