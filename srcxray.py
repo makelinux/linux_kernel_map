@@ -256,8 +256,56 @@ def reduce_graph(g):
     return g
 
 
+def includes(a):
+    res = []
+    # log(a)
+    for a in popen('man -s 2 %s 2> /dev/null |'
+                   ' head -n 20 | grep include || true' % (a),
+                   shell=True):
+        m = re.match('.*<(.*)>', a)
+        if m:
+            res.append(m.group(1))
+    if not res:
+        for a in popen('grep -l -r " %s *(" '
+                       '/usr/include --include "*.h" '
+                       '2> /dev/null || true' % (a)):
+            # log(a)
+            a = re.sub(r'.*/(bits)', r'\1', a)
+            a = re.sub(r'.*/(sys)', r'\1', a)
+            a = re.sub(r'/usr/include/(.*)', r'\1', a)
+            # log(a)
+            res.append(a)
+    res = set(res)
+    if res and len(res) > 1:
+        r = set()
+        for f in res:
+            # log('grep " %s \+\(" --include "%s" -r /usr/include/'%(a,f))
+            # log(os.system(
+            # 'grep -w "%s" --include "%s" -r /usr/include/'%(a,f)))
+            if 0 != os.system(
+                    'grep " %s *(" --include "%s" -r /usr/include/ -q'
+                    % (a, os.path.basename(f))):
+                r.add(f)
+        res = res.difference(r)
+    log(res)
+    return ','.join(list(res)) if res else 'unexported'
+
+
 def syscalls():
     sc = my_graph('syscalls')
+    inc = 'includes.list'
+    if not os.path.isfile(inc):
+        os.system('ctags --langmap=c:+.h --c-kinds=+pex -I __THROW '
+                  + ' -R -u -f- /usr/include/ | cut -f1,2 > '
+                  + inc)
+    '''
+   if False:
+        includes = {}
+        with open(inc, 'r') as f:
+            for s in f:
+                includes[s.split()[0]] = s.split()[1]
+        log(includes)
+    '''
     scd = 'SYSCALL_DEFINE.list'
     if not os.path.isfile(scd):
         os.system("grep SYSCALL_DEFINE -r --include='*.c' > " + scd)
