@@ -28,7 +28,7 @@ black_list = ['aligned', '__attribute__', 'unlikely', 'typeof', 'u32',
               'trace_hardirqs_off']
 
 level_limit = 8
-limit = 10000
+limit = 100000
 n = 0
 
 
@@ -43,14 +43,14 @@ def print_limited(a):
 
 
 def log(*args, **kwargs):
+    s = str(*args).rstrip()
     print(inspect.stack()[1][3],
-          str(*args).rstrip(), file=sys.stderr, **kwargs)
-    pass
+          s, file=sys.stderr, **kwargs)
+    return s
 
 
 def popen(p):
-    return [a.decode('utf-8') for a in subprocess.check_output(p, shell=True)
-            .splitlines()]
+    return subprocess.check_output(p, shell=True).decode('utf-8').splitlines()
 
 
 def extract_referer(line):
@@ -243,18 +243,16 @@ def call_dep(node, printed=None, level=0):
 
 def my_graph(name=None):
     g = nx.DiGraph(name=name)
-    g.graph.update({'node': {'shape': 'none', 'fontsize': 50}})
-    g.graph.update({'rankdir': 'LR', 'nodesep': 0, })
+    # g.graph.update({'node': {'shape': 'none', 'fontsize': 50}})
+    # g.graph.update({'rankdir': 'LR', 'nodesep': 0, })
     return g
 
 
 def reduce_graph(g):
-    print(type(g))
     rm = set()
     for e in g:
         if not g.out_degree(e):
             rm.add(e)
-    print(rm)
     g.remove_nodes_from(rm)
     return g
 
@@ -499,7 +497,7 @@ def main():
         if (ret is not None):
             print(ret)
     except KeyboardInterrupt:
-        warning("\nInterrupted")
+        log("\nInterrupted")
 
 
 if __name__ == "__main__":
