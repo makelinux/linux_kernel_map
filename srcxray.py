@@ -452,16 +452,25 @@ def cflow_preprocess(a):
             sys.stdout.write(s)
 
 
-def import_cflow():
-    cf = nx.DiGraph()
+def import_cflow(a=None):
+    if not a:
+        # arg = "$(find -name '*.[ch]' -o -name '*.cpp' -o -name '*.hh')"
+        arg = "*.c *.h *.cpp *.hh "
+    elif isinstance(a, list):
+        pass
+    elif os.path.isdir(a):
+        pass
+    elif os.path.isfile(a):
+        arg = a
+        pass
+    cf = my_graph()
     stack = list()
     nprev = -1
     # "--depth=%d " %(level_limit+1) +
     cflow = (r"cflow " +
              "--preprocess='srcxray.py cflow_preprocess' " +
              "--include=_sxt --brief --level-indent='0=\t' " +
-             " *.[ch] *.cpp *.hh ")
-    # " $(find -name '*.[ch]' -o -name '*.cpp' -o -name '*.hh') "
+             arg)
     for line in popen(cflow):
         # --print-level
         m = re.match(r'^([\t]*)([^(^ ^<]+)', str(line))
