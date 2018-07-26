@@ -375,20 +375,24 @@ def digraph_print(dg):
         if level > level_limit - 2:
             return ''
         passed = set()
-        for o in outs:
+        for o in outs.keys():
             if o in passed or o in black_list:
                 continue
             passed.add(o)
             digraph_print_sub(o, printed, level + 1)
 
-    starts = {}
     printed = set()
-    for i in [n for (n, d) in dg.in_degree if not d]:
-        starts[i] = dg.out_degree(i)
-    starts = sorted(starts.items(), key=lambda k: k[1], reverse=True)
-    outs = [a[0] for a in starts]
+    if not starts:
+        starts = {}
+        for i in [n for (n, d) in dg.in_degree if not d]:
+            starts[i] = dg.out_degree(i)
+        starts = [a[0] for a in sorted(starts.items(), key=lambda k: k[1], reverse=True)]
+    if len(starts) > 1:
+        print_limited('starts')
+        for s in starts:
+            print_limited('\t' + s + ' ->')
     passed = set()
-    for o in outs:
+    for o in starts:
         if o in passed or o in black_list:
             continue
         passed.add(o)
