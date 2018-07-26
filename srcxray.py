@@ -427,10 +427,13 @@ def cflow_preprocess(a):
     with open(a, 'r') as f:
         for s in f:
             # treat struct like function
+            s = re.sub(r"^static struct (.*) = ", r"\1()", s)
+            s = re.sub(r"^static struct (.*)\[\] = ", r"\1()", s)
             s = re.sub(r"^static const struct (.*)\[\] = ", r"\1()", s)
             s = re.sub(r"^static __initdata int \(\*actions\[\]\)\(void\) = ",
                        "int actions()", s)  # treat struct like function
             s = re.sub(r"^static ", "", s)
+            s = re.sub(r"SENSOR_DEVICE_ATTR.*\((\w*),", r"void sensor_dev_attr_\1()(", s)
             s = re.sub(r"COMPAT_SYSCALL_DEFINE[0-9]\((\w*),",
                        r"compat_sys_\1(", s)
             s = re.sub(r"SYSCALL_DEFINE[0-9]\((\w*),", r"sys_\1(", s)
