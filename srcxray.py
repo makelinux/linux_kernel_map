@@ -18,7 +18,10 @@ import collections
 import subprocess
 import re
 import networkx as nx
-from networkx.drawing.nx_agraph import write_dot
+from networkx.drawing.nx_agraph import *
+from networkx.generators.ego import *
+from pprint import pprint
+import difflib
 
 black_list = ['aligned', '__attribute__', 'unlikely', 'typeof', 'u32',
               'PVOP_CALLEE0', 'PVOP_VCALLEE0', 'PVOP_VCALLEE1', 'if',
