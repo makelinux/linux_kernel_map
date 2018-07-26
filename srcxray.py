@@ -361,7 +361,17 @@ def syscalls():
 # write_dot to_agraph AGraph
 # agwrite
 # srcxray.py 'write_dot(syscalls(), "syscalls.dot")'
+# srcxray.py "write_dot(import_cflow(),'a.dot')"
+# write_graphml
+# F=sys_mount; srcxray.py "digraph_print(import_cflow(),['$F'])" > $F.tree
+# srcxray.py "leaves(read_dot('a.dot'))"
+# srcxray.py "most_used(read_dot('a.dot'))"
+# srcxray.py "digraph_print(reduce_graph(reduce_graph(read_dot('a.dot'))))"
+# srcxray.py "pprint(most_used(read_dot('a.dot')))"
 
+def leaves(dg):
+    # [x for x in G.nodes() if G.out_degree(x)==0 and G.in_degree(x)==1]
+    return {n: dg.in_degree(n) for (n, d) in dg.out_degree if not d}
 
 
 def most_used(dg, ins=10, outs=10):
