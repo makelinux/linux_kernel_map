@@ -310,8 +310,10 @@ def syscalls():
     if not os.path.isfile(scd):
         os.system("grep SYSCALL_DEFINE -r --include='*.c' > " + scd)
     with open(scd, 'r') as f:
-        v = set()
+        v = set('sigsuspend', 'llseek', 'sysfs', 'sync_file_range2', 'ustat', 'bdflush')
         for s in f:
+            if any(x in s.lower() for x in ['compat', 'stub']):
+                continue
             m = re.match(r'(.*?):.*SYSCALL.*\(([\w]+)', s)
             if m:
                 for p in {
@@ -327,18 +329,30 @@ def syscalls():
                 if m:
                     syscall = m.group(2)
                     syscall = re.sub('^new', '', syscall)
-                    if 'compat' in m.group(1):
-                        continue
-                    if syscall in v or 'compat' in m.group(1):
-                        continue
-                    v.add(syscall)
                     path = m.group(1).split('/')
-                    if (m.group(1).startswith('arch/')
+                    if (m.group(1).startswith('mm/nommu.c')
+                            or m.group(1).startswith('arch/x86/ia32')
+                            or m.group(1).startswith('arch/')
+                            or syscall.startswith('vm86')
                             and not m.group(1).startswith('arch/x86')):
                         continue
+                    if syscall in v:
+                        continue
+                    v.add(syscall)
                     p2 = '/'.join(path[1:])
-                    sc.add_edge(path[0] + '/', p2)
-                    sc.add_edge(p2, syscall)
+                    p2 = m.group(1)
+                    # if log(difflib.get_close_matches(syscall,v) or ''):
+                    #    log(syscall)
+                    # log(syscall + ' ' + (includes.get(syscall) or '------'))
+                    # man -s 2  timerfd_settime | head -n 20
+                    # sc.add_edge('syscalls', path[0] + '/')
+                    # sc.add_edge(path[0] + '/', p2)
+                    # sc.add_edge(p2, syscall)
+                    i = includes(syscall)
+                    log(p2 + ' ' + str(i) + ' ' + syscall)
+                    sc.add_edge(i, i+' - '+p2)
+                    sc.add_edge(i+' - '+p2, syscall)
+                    # sc.add_edge(includes(syscall), syscall)
     return sc
 
 
