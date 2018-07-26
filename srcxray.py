@@ -362,9 +362,22 @@ def syscalls():
 # srcxray.py 'write_dot(syscalls(), "syscalls.dot")'
 
 
-def digraph_print(dg):
+
+def most_used(dg, ins=10, outs=10):
+    # return {a: b for a, b in sorted(dg.in_degree, key=lambda k: k[1]) if b > 1 and}
+    return [(x, dg.in_degree(x), dg.out_degree(x)) for x in dg.nodes()
+            if dg.in_degree(x) > ins and dg.out_degree(x) > outs]
+
+
+def starts(dg):  # roots
+    return {n: dg.out_degree(n) for (n, d) in dg.in_degree if not d}
+
+
+def digraph_print(dg, starts=None, sort=False):
     def digraph_print_sub(node=None, printed=None, level=0):
-        outs = [_ for _ in dg.successors(node)]
+        outs = {_: dg.out_degree(_) for _ in dg.successors(node)}
+        if sort:
+            outs = {a: b for a, b in sorted(outs.items(), key=lambda k: k[1], reverse=True)}
         if node in printed:
             print_limited(level*'\t' + str(node) + ' ^')
             return
