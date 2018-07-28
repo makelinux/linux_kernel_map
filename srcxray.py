@@ -414,6 +414,31 @@ def starts(dg):  # roots
     return {n: dg.out_degree(n) for (n, d) in dg.in_degree if not d}
 
 
+def digraph_tree(dg, starts=None):
+    tree = nx.DiGraph()
+    def sub(node):
+        tree.add_node(node)
+        for o in dg.successors(node):
+            if o in black_list or tree.has_edge(node, o):
+                continue
+            tree.add_edge(node,o)
+            sub(o)
+
+    printed = set()
+    if not starts:
+        starts = {}
+        for i in [n for (n, d) in dg.in_degree if not d]:
+            starts[i] = dg.out_degree(i)
+        starts = [a[0] for a in sorted(starts.items(), key=lambda k: k[1], reverse=True)]
+    if len(starts) > 1:
+        o.add_node('starts')
+    for o in starts:
+        if o in black_list:
+            continue
+        sub(o)
+    return tree
+
+
 def digraph_print(dg, starts=None, sort=False):
     def digraph_print_sub(node=None, printed=None, level=0):
         outs = {_: dg.out_degree(_) for _ in dg.successors(node)}
