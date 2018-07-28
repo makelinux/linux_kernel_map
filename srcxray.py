@@ -22,10 +22,29 @@ from networkx.drawing.nx_agraph import *
 from networkx.generators.ego import *
 from pprint import pprint
 import difflib
+import glob
+from pathlib import *
 
-black_list = ['aligned', '__attribute__', 'unlikely', 'typeof', 'u32',
-              'PVOP_CALLEE0', 'PVOP_VCALLEE0', 'PVOP_VCALLEE1', 'if',
-              'trace_hardirqs_off']
+black_list = ('aligned __attribute__ unlikely typeof u32'
+              'PVOP_CALLEE0 PVOP_VCALLEE0 PVOP_VCALLEE1 if trace_hardirqs_off'
+              'i NULL likely unlikely true false test_bit NAPI_GRO_CB clear_bit '
+              'atomic_read  preempt_disable preempt_enable  container_of ENOSYS '
+              'READ_ONCE u64 u8 _RET_IP_ ret current '
+              'AT_FDCWD fdput EBADF file_inode '
+              'ssize_t path_put __user '
+              'list_empty memcpy size_t loff_t pos d_inode dput copy_to_user  EIO bool out IS_ERR '
+              'EPERM rcu_read_lock rcu_read_unlock spin_lock spin_unlock list_for_each_entry kfree '
+              'GFP_KERNEL ENOMEM EFAULT ENOENT EAGAIN PTR_ERR PAGE_SHIFT PAGE_SIZE '
+              'pgoff_t pte_t pmd_t HPAGE_PMD_NR PageLocked entry swp_entry_t next unlock_page spinlock_t end start '
+              ' VM_BUG_ON VM_BUG_ON_PAGE BDI_SHOW max '
+              'ssize_t path_put __user '
+              'list_del compound_head list_add cond_resched put_page nr_pages min  spin_lock_irqsave IS_ENABLED '
+              'EBUSY UL NODE_DATA pr_err memset list size ptl PAGE_MASK pr_info offset addr get_page sprintf '
+              'INIT_LIST_HEAD NUMA_NO_NODE spin_unlock_irqrestore  mutex_unlock mutex_lock '
+              'page_to_nid page_to_pfn pfn page_zone pfn_to_page'
+              'BUG BUG_ON flags WARN_ON_ONCE  ENODEV cpu_to_le16 cpumask_bits '
+              'ERR_PTR  ENOTSUPP  EOPNOTSUPP EOPNOTSUPP WARN_ON EINVAL ').split()
+
 
 level_limit = 8
 limit = 100000
@@ -366,8 +385,17 @@ def syscalls():
 # F=sys_mount; srcxray.py "digraph_print(import_cflow(),['$F'])" > $F.tree
 # srcxray.py "leaves(read_dot('a.dot'))"
 # srcxray.py "most_used(read_dot('a.dot'))"
+# srcxray.py "digraph_print(read_dot('a.dot'))"
 # srcxray.py "digraph_print(reduce_graph(reduce_graph(read_dot('a.dot'))))"
 # srcxray.py "pprint(most_used(read_dot('a.dot')))"
+
+def cleanup(a):
+    dg = read_dot(a)
+    print(dg.number_of_edges())
+    dg.remove_nodes_from(black_list)
+    print(dg.number_of_edges())
+    write_dot(dg, a)
+
 
 def leaves(dg):
     # [x for x in G.nodes() if G.out_degree(x)==0 and G.in_degree(x)==1]
@@ -483,8 +511,9 @@ def import_cflow(a=None):
         if n <= nprev:
             stack = stack[:n - nprev - 1]
         # print(n, id, stack)
-        if len(stack):
-            cf.add_edge(stack[-1], id)
+        if id not in black_list:
+            if len(stack):
+                cf.add_edge(stack[-1], id)
         stack.append(id)
         nprev = n
     return cf
