@@ -404,8 +404,10 @@ def leaves(dg):
 
 def most_used(dg, ins=10, outs=10):
     # return {a: b for a, b in sorted(dg.in_degree, key=lambda k: k[1]) if b > 1 and}
-    return [(x, dg.in_degree(x), dg.out_degree(x)) for x in dg.nodes()
-            if dg.in_degree(x) > ins and dg.out_degree(x) > outs]
+    # return [(x, dg.in_degree(x), dg.out_degree(x))
+    return [x
+            for x in dg.nodes()
+            if dg.in_degree(x) >= ins and dg.out_degree(x) >= outs]
 
 
 def starts(dg):  # roots
@@ -466,40 +468,63 @@ def cflow_preprocess(a):
                        r"compat_sys_\1(", s)
             s = re.sub(r"SYSCALL_DEFINE[0-9]\((\w*),", r"sys_\1(", s)
             s = re.sub(r"__setup\(.*,(.*)\)", r"void __setup() {\1();}", s)
-            s = re.sub(r"early_param\(.*,(.*)\)",
-                       r"void early_param() {\1();}", s)
-            s = re.sub(r"rootfs_initcall\((.*)\)",
-                       r"void rootfs_initcall() {\1();}", s)
+            s = re.sub(r"^(\w*)param\(.*,(.*)\)", r"void \1param() {\2();}", s)
+            s = re.sub(r"(\w*)initcall\((.*)\)",
+                       r"void \1initcall() {\2();}", s)
             s = re.sub(r"^static ", "", s)
-            s = re.sub(r"__read_mostly", "", s)
+            # s = re.sub(r"__read_mostly", "", s)
             s = re.sub(r"^inline ", "", s)
             s = re.sub(r"^const ", "", s)
             s = re.sub(r"^struct (.*) =", r"\1()", s)
             s = re.sub(r"^struct ", "", s)
+            # __attribute__
             # for line in sys.stdin:
             sys.stdout.write(s)
 
 
-def import_cflow(a=None):
+cflow_param = {
+                "modifier": "__init __inline__ noinline __initdata __randomize_layout __read_mostly asmlinkage "
+                " __visible __init __leaf__ __ref",
+                "wrapper": "__attribute__ __section__ "
+                "TRACE_EVENT MODULE_AUTHOR MODULE_DESCRIPTION MODULE_LICENSE MODULE_LICENSE MODULE_SOFTDEP "
+                "__acquires __releases __ATTR"
+                # "wrapper": "__setup early_param"
+        }
+
+# export CPATH=:include:arch/x86/include:../build/include/:../build/arch/x86/include/generated/:include/uapi
+# srcxray.py "'\n'.join(cflow('init/main.c'))"
+
+
+def cflow(a):
+    arg = a
     if not a:
         # arg = "$(find -name '*.[ch]' -o -name '*.cpp' -o -name '*.hh')"
         arg = "*.c *.h *.cpp *.hh "
+        arg = " $(cat cscope.files)"
     elif isinstance(a, list):
         pass
     elif os.path.isdir(a):
         pass
     elif os.path.isfile(a):
-        arg = a
         pass
+    # "--depth=%d " %(level_limit+1) +
+    # --debug=1
+    cflow = (r"cflow -v "
+             # + "-DCONFIG_KALLSYMSZ "
+             + "--preprocess='srcxray.py cflow_preprocess' "
+             + ''.join([''.join(["--symbol={0}:{1} ".format(w, p)
+                       for w in cflow_param[p].split()])
+                       for p in cflow_param.keys()])
+             + " --include=_sxt --brief --level-indent='0=\t' "
+             + a)
+    return popen(cflow)
+
+
+def import_cflow(a=None):
     cf = my_graph()
     stack = list()
     nprev = -1
-    # "--depth=%d " %(level_limit+1) +
-    cflow = (r"cflow " +
-             "--preprocess='srcxray.py cflow_preprocess' " +
-             "--include=_sxt --brief --level-indent='0=\t' " +
-             arg)
-    for line in popen(cflow):
+    for line in cflow(a):
         # --print-level
         m = re.match(r'^([\t]*)([^(^ ^<]+)', str(line))
         if m:
