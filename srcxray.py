@@ -544,6 +544,24 @@ def import_cflow(a=None):
     return cf
 
 
+def cflow_linux():
+    dirs = 'init fs ipc net fs/ext4 net lib block security crypto mm arch/x86/kernel '.split()
+    all = nx.DiGraph()
+    for a in dirs:
+        for c in glob.glob(os.path.join(a, "*.c")):
+                dot = str(Path(c).with_suffix(".dot"))
+                if not os.path.isfile(dot):
+                    g = import_cflow(c)
+                    write_dot(g, dot)
+                    print(dot, popen("ctags -x %s | wc -l" % (c))[0], len(set(e[0] for e in g.edges())))
+                else:
+                    g = read_dot(dot)
+                    print(dot)
+                all.add_nodes_from(g.nodes())
+                all.add_edges_from(g.edges())
+    write_dot(all, 'all.dot')
+
+
 me = os.path.basename(sys.argv[0])
 
 
