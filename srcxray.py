@@ -25,6 +25,7 @@ import difflib
 import glob
 from pathlib import *
 
+default_root = 'starts'
 black_list = ('aligned __attribute__ unlikely typeof u32'
               'PVOP_CALLEE0 PVOP_VCALLEE0 PVOP_VCALLEE1 if trace_hardirqs_off'
               'i NULL likely unlikely true false test_bit NAPI_GRO_CB clear_bit '
@@ -436,7 +437,7 @@ def digraph_tree(dg, starts=None):
         for o in starts:
             if o in black_list:
                 continue
-            tree.add_edge('start',o)
+            tree.add_edge(default_root,o)
             sub(o)
     return tree
 
@@ -469,7 +470,7 @@ def digraph_print(dg, starts=None, sort=False):
             starts[i] = dg.out_degree(i)
         starts = [a[0] for a in sorted(starts.items(), key=lambda k: k[1], reverse=True)]
     if len(starts) > 1:
-        print_limited('starts')
+        print_limited(default_root)
         for s in starts:
             print_limited('\t' + s + ' ->')
     passed = set()
