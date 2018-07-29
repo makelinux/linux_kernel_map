@@ -522,7 +522,7 @@ def cflow_preprocess(a):
 
 cflow_param = {
                 "modifier": "__init __inline__ noinline __initdata __randomize_layout __read_mostly asmlinkage "
-                " __visible __init __leaf__ __ref",
+                " __visible __init __leaf__ __ref __latent_entropy",
                 "wrapper": "__attribute__ __section__ "
                 "TRACE_EVENT MODULE_AUTHOR MODULE_DESCRIPTION MODULE_LICENSE MODULE_LICENSE MODULE_SOFTDEP "
                 "__acquires __releases __ATTR"
@@ -583,21 +583,36 @@ def import_cflow(a=None):
 
 
 def cflow_linux():
-    dirs = 'init fs ipc net fs/ext4 net lib block security crypto mm arch/x86/kernel '.split()
+    dirs = ('init kernel kernel/time '
+            'mm fs fs/ext4 block '
+            'ipc net net/ipv4 '
+            'lib security security/keys crypto '
+            'arch/x86/kernel drivers/char drivers/pci '
+            ).split()
+    # fs/notify/fanotify fs/notify/inotify
+
     all = nx.DiGraph()
     for a in dirs:
+        print(a)
+        dir = nx.DiGraph()
         for c in glob.glob(os.path.join(a, "*.c")):
-                dot = str(Path(c).with_suffix(".dot"))
-                if not os.path.isfile(dot):
-                    g = import_cflow(c)
-                    write_dot(g, dot)
-                    print(dot, popen("ctags -x %s | wc -l" % (c))[0], len(set(e[0] for e in g.edges())))
-                else:
-                    g = read_dot(dot)
-                    print(dot)
-                all.add_nodes_from(g.nodes())
-                all.add_edges_from(g.edges())
+            dot = str(Path(c).with_suffix(".dot"))
+            if not os.path.isfile(dot):
+                g = import_cflow(c)
+                write_dot(g, dot)
+                print(dot, popen("ctags -x %s | wc -l" % (c))[0], len(set(e[0] for e in g.edges())))
+            else:
+                g = read_dot(dot)
+                # print(dot)
+            dir.add_nodes_from(g.nodes())
+            dir.add_edges_from(g.edges())
+        write_dot(dir, os.path.join(a, 'dir.dot'))
+        digraph_print(digraph_tree(dir), [], os.path.join(a, 'dir.tree'))
+        all.add_nodes_from(dir.nodes())
+        all.add_edges_from(dir.edges())
     write_dot(all, 'all.dot')
+    digraph_print(all, ['x86_64_start_kernel', 'start_kernel', 'main', 'initcall', 'early_param', '__setup'],
+                  'all.tree')
 
 
 me = os.path.basename(sys.argv[0])
