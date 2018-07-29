@@ -614,6 +614,8 @@ def main():
             else:
                 ret = eval(sys.argv[1] + '(' + ', '.join("'%s'" % (a)
                            for a in sys.argv[2:]) + ')')
+        if isinstance(ret, nx.DiGraph):
+            digraph_print(ret)
         if isinstance(ret, bool) and ret is False:
             sys.exit(os.EX_CONFIG)
         if (ret is not None):
