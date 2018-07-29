@@ -419,7 +419,7 @@ def digraph_tree(dg, starts=None):
     def sub(node):
         tree.add_node(node)
         for o in dg.successors(node):
-            if o in black_list or tree.has_edge(node, o):
+            if o in black_list or tree.has_node(o):
                 continue
             tree.add_edge(node,o)
             sub(o)
@@ -430,12 +430,14 @@ def digraph_tree(dg, starts=None):
         for i in [n for (n, d) in dg.in_degree if not d]:
             starts[i] = dg.out_degree(i)
         starts = [a[0] for a in sorted(starts.items(), key=lambda k: k[1], reverse=True)]
-    if len(starts) > 1:
-        o.add_node('starts')
-    for o in starts:
-        if o in black_list:
-            continue
-        sub(o)
+    if len(starts) == 1:
+        sub(starts[0])
+    elif len(starts) > 1:
+        for o in starts:
+            if o in black_list:
+                continue
+            tree.add_edge('start',o)
+            sub(o)
     return tree
 
 
