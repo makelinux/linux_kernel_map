@@ -52,12 +52,13 @@ limit = 100000
 n = 0
 
 
-def print_limited(a):
-    print(a)
+def print_limited(a, out=None):
+    out = out if out else sys.stdout
+    out.write(str(a) + '\n')
     global n
     n += 1
     if n > limit + 1:
-        print('...')
+        out.write('...')
         sys.exit(1)
         # raise(Exception('Reached limit'))
 
@@ -442,17 +443,21 @@ def digraph_tree(dg, starts=None):
     return tree
 
 
-def digraph_print(dg, starts=None, sort=False):
-    def digraph_print_sub(node=None, printed=None, level=0):
+def digraph_print(dg, starts=None, dst_fn=None, sort=False):
+    dst = open(dst_fn, 'w') if dst_fn else None
+
+    def digraph_print_sub(path='', node=None, printed=None, level=0):
         outs = {_: dg.out_degree(_) for _ in dg.successors(node)}
         if sort:
             outs = {a: b for a, b in sorted(outs.items(), key=lambda k: k[1], reverse=True)}
         if node in printed:
-            print_limited(level*'\t' + str(node) + ' ^')
+            print_limited(level*'\t' + str(node) + ' ^', dst)
             return
         else:
-            s = ' ...' if level > level_limit - 2 and outs else ''
-            print_limited(level*'\t' + str(node) + s)
+            s = ''
+            if outs:
+                s = ' ...' if level > level_limit - 2 else '  @' + path
+            print_limited(level*'\t' + str(node) + s, dst)
         printed.add(node)
         if level > level_limit - 2:
             return ''
@@ -461,7 +466,7 @@ def digraph_print(dg, starts=None, sort=False):
             if o in passed or o in black_list:
                 continue
             passed.add(o)
-            digraph_print_sub(o, printed, level + 1)
+            digraph_print_sub(path + ' ' + str(node), o, printed, level + 1)
 
     printed = set()
     if not starts:
@@ -470,15 +475,19 @@ def digraph_print(dg, starts=None, sort=False):
             starts[i] = dg.out_degree(i)
         starts = [a[0] for a in sorted(starts.items(), key=lambda k: k[1], reverse=True)]
     if len(starts) > 1:
-        print_limited(default_root)
+        print_limited(default_root, dst)
         for s in starts:
-            print_limited('\t' + s + ' ->')
+            print_limited('\t' + s + ' ->', dst)
     passed = set()
     for o in starts:
         if o in passed or o in black_list:
             continue
         passed.add(o)
-        digraph_print_sub(o, printed)
+        if o in dg:
+            digraph_print_sub('', o, printed)
+    if dst_fn:
+        print(dst_fn)
+        dst.close()
 
 
 def cflow_preprocess(a):
