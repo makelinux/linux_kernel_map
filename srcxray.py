@@ -301,9 +301,9 @@ def includes(a):
     if res and len(res) > 1:
         r = set()
         for f in res:
-            # log('grep " %s \+\(" --include "%s" -r /usr/include/'%(a,f))
+            # log('grep " %s \+\(" --include "%s" -r /usr/include/'%(a, f))
             # log(os.system(
-            # 'grep -w "%s" --include "%s" -r /usr/include/'%(a,f)))
+            # 'grep -w "%s" --include "%s" -r /usr/include/'%(a, f)))
             if 0 != os.system(
                     'grep " %s *(" --include "%s" -r /usr/include/ -q'
                     % (a, os.path.basename(f))):
@@ -363,7 +363,7 @@ def syscalls():
                     v.add(syscall)
                     p2 = '/'.join(path[1:])
                     p2 = m.group(1)
-                    # if log(difflib.get_close_matches(syscall,v) or ''):
+                    # if log(difflib.get_close_matches(syscall, v) or ''):
                     #    log(syscall)
                     # log(syscall + ' ' + (includes.get(syscall) or '------'))
                     # man -s 2  timerfd_settime | head -n 20
@@ -382,9 +382,9 @@ def syscalls():
 # write_dot to_agraph AGraph
 # agwrite
 # srcxray.py 'write_dot(syscalls(), "syscalls.dot")'
-# srcxray.py "write_dot(import_cflow(),'a.dot')"
+# srcxray.py "write_dot(import_cflow(), 'a.dot')"
 # write_graphml
-# F=sys_mount; srcxray.py "digraph_print(import_cflow(),['$F'])" > $F.tree
+# F=sys_mount; srcxray.py "digraph_print(import_cflow(), ['$F'])" > $F.tree
 # srcxray.py "leaves(read_dot('a.dot'))"
 # srcxray.py "most_used(read_dot('a.dot'))"
 # srcxray.py "digraph_print(read_dot('a.dot'))"
