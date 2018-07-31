@@ -18,12 +18,15 @@ import collections
 import subprocess
 import re
 import networkx as nx
-from networkx.drawing.nx_agraph import *
+# from networkx.drawing.nx_agraph import read_dot # changes order of successors
+from networkx.drawing.nx_pydot import read_dot
 from networkx.generators.ego import *
+from networkx.utils import open_file, make_str
 from pprint import pprint
 import difflib
 import glob
 from pathlib import *
+import pygraphviz
 
 default_root = 'starts'
 black_list = ('aligned __attribute__ unlikely typeof u32'
@@ -448,23 +451,24 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
     dst = open(dst_fn, 'w') if dst_fn else None
 
     def digraph_print_sub(path='', node=None, printed=None, level=0):
-        outs = {_: dg.out_degree(_) for _ in dg.successors(node)}
-        if sort:
-            outs = {a: b for a, b in sorted(outs.items(), key=lambda k: k[1], reverse=True)}
+        if node in black_list:
+            return
         if node in printed:
             print_limited(level*'\t' + str(node) + ' ^', dst)
             return
-        else:
-            s = ''
-            if outs:
-                s = ' ...' if level > level_limit - 2 else '  @' + path
-            print_limited(level*'\t' + str(node) + s, dst)
+        outs = {_: dg.out_degree(_) for _ in dg.successors(node)}
+        if sort:
+            outs = {a: b for a, b in sorted(outs.items(), key=lambda k: k[1], reverse=True)}
+        s = ''
+        if outs:
+            s = ' ...' if level > level_limit - 2 else '  @' + path
+        print_limited(level*'\t' + str(node) + s, dst)
         printed.add(node)
         if level > level_limit - 2:
             return ''
         passed = set()
         for o in outs.keys():
-            if o in passed or o in black_list:
+            if o in passed:
                 continue
             passed.add(o)
             digraph_print_sub(path + ' ' + str(node), o, printed, level + 1)
@@ -481,11 +485,13 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
             print_limited('\t' + s + ' ->', dst)
     passed = set()
     for o in starts:
-        if o in passed or o in black_list:
+        if o in passed:
             continue
         passed.add(o)
         if o in dg:
-            digraph_print_sub('', o, printed)
+            for o in dg.nodes():
+                if o not in printed:
+                    digraph_print_sub('', o, printed)
     if dst_fn:
         print(dst_fn)
         dst.close()
@@ -507,7 +513,7 @@ def cflow_preprocess(a):
             s = re.sub(r"SYSCALL_DEFINE[0-9]\((\w*),", r"sys_\1(", s)
             s = re.sub(r"__setup\(.*,(.*)\)", r"void __setup() {\1();}", s)
             s = re.sub(r"^(\w*)param\(.*,(.*)\)", r"void \1param() {\2();}", s)
-            s = re.sub(r"(\w*)initcall\((.*)\)",
+            s = re.sub(r"^(\w*)initcall\((.*)\)",
                        r"void \1initcall() {\2();}", s)
             s = re.sub(r"^static ", "", s)
             # s = re.sub(r"__read_mostly", "", s)
@@ -515,6 +521,8 @@ def cflow_preprocess(a):
             s = re.sub(r"^const ", "", s)
             s = re.sub(r"^struct (.*) =", r"\1()", s)
             s = re.sub(r"^struct ", "", s)
+            s = re.sub(r"\b__initdata\b", "", s)
+            # s = re.sub(r"__init_or_module", "", s)
             # __attribute__
             # for line in sys.stdin:
             sys.stdout.write(s)
@@ -522,7 +530,7 @@ def cflow_preprocess(a):
 
 cflow_param = {
                 "modifier": "__init __inline__ noinline __initdata __randomize_layout __read_mostly asmlinkage "
-                " __visible __init __leaf__ __ref __latent_entropy",
+                " __visible __init __leaf__ __ref __latent_entropy __init_or_module ",
                 "wrapper": "__attribute__ __section__ "
                 "TRACE_EVENT MODULE_AUTHOR MODULE_DESCRIPTION MODULE_LICENSE MODULE_LICENSE MODULE_SOFTDEP "
                 "__acquires __releases __ATTR"
@@ -555,14 +563,18 @@ def cflow(a):
                        for p in cflow_param.keys()])
              + " --include=_sxt --brief --level-indent='0=\t' "
              + a)
+    # print(cflow)
     return popen(cflow)
 
 
-def import_cflow(a=None):
+def import_cflow(a=None, cflow_out=None):
     cf = my_graph()
     stack = list()
     nprev = -1
+    cflow_out = open(cflow_out, 'w') if cflow_out else None
     for line in cflow(a):
+        if cflow_out:
+            cflow_out.write(line + '\n')
         # --print-level
         m = re.match(r'^([\t]*)([^(^ ^<]+)', str(line))
         if m:
@@ -582,6 +594,45 @@ def import_cflow(a=None):
     return cf
 
 
+def write_dot(g, dot):
+    dot = str(dot)
+    dot = open(dot, 'w')
+    dot.write('strict digraph "None" {\n')
+    dot.write('rankdir=LR;\n')
+    dot.write('node [fontname=Ubuntu,shape=none,fontsize=1000];\n')
+    dot.write('edge [width=1000];\n')
+    g.remove_nodes_from(black_list)
+    for n in g.nodes():
+        if n == ',':
+            continue
+        if not g.out_degree(n):
+            continue
+            # dot.write((n if n != 'node' else '"node"') + ';\n')
+        dot.write((n if n != 'node' else '"node"') + ' -> { ')
+        dot.write(' '.join([str(a) if a != 'node' else '"node"' for a in g.successors(n) if str(a) != ',']))
+        dot.write(' };\n')
+    dot.write('}\n')
+    dot.close()
+    print(dot.name)
+
+
+@open_file(0, mode='r')
+def read_dot2(dot):
+    # read_dot pydot.graph_from_dot_data parse_dot_data from_pydot
+    dg = nx.DiGraph()
+    for a in dot:
+        if '->' in a:
+            m = re.match('^(.+) -> {(.+)}', a)
+            if m:
+                dg.add_edges_from([(m.group(1), b) for b in m.group(2).split()])
+            else:
+                m = re.match('(.+) -> (.*);', a)
+                if m:
+                    dg.add_edge(m.group(1), m.group(2))
+                    print(m.group(1), m.group(2))
+    return dg
+
+
 def cflow_linux():
     dirs = ('init kernel kernel/time '
             'mm fs fs/ext4 block '
@@ -596,19 +647,28 @@ def cflow_linux():
         print(a)
         dir = nx.DiGraph()
         for c in glob.glob(os.path.join(a, "*.c")):
+            g = None
             dot = str(Path(c).with_suffix(".dot"))
             if not os.path.isfile(dot):
-                g = import_cflow(c)
+                g = import_cflow(c, Path(c).with_suffix(".cflow"))
+                print(g['start_kernel'])
                 write_dot(g, dot)
                 print(dot, popen("ctags -x %s | wc -l" % (c))[0], len(set(e[0] for e in g.edges())))
             else:
-                g = read_dot(dot)
+                try:
+                    g = read_dot(dot)
+                except TypeError:
+                    g = nx.drawing.nx_agraph.read_dot(dot)
+                g2 = nx.DiGraph()
+                g2.add_edges_from(g.edges())
+                write_dot(g, dot + '2')
                 # print(dot)
-            dir.add_nodes_from(g.nodes())
+            digraph_print(g, [], Path(c).with_suffix(".tree"))
+            # dir.add_nodes_from(g.nodes())
             dir.add_edges_from(g.edges())
-        write_dot(dir, os.path.join(a, 'dir.dot'))
+        write_dot(dir, str(os.path.join(a, 'dir.dot')))
         digraph_print(digraph_tree(dir), [], os.path.join(a, 'dir.tree'))
-        all.add_nodes_from(dir.nodes())
+        # all.add_nodes_from(dir.nodes())
         all.add_edges_from(dir.edges())
     write_dot(all, 'all.dot')
     digraph_print(all, ['x86_64_start_kernel', 'start_kernel', 'main', 'initcall', 'early_param', '__setup'],
