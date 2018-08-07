@@ -281,12 +281,13 @@ def my_graph(name=None):
     return g
 
 
-def reduce_graph(g):
+def reduce_graph(g, m=None):
     rm = set()
-    for e in g:
-        if not g.out_degree(e):
-            rm.add(e)
+    m = g.number_of_nodes() if not m else m
+    print(g.number_of_edges())
+    rm = [n for (n, d) in g.out_degree if not d and g.in_degree(n) <= m]
     g.remove_nodes_from(rm)
+    print(g.number_of_edges())
     return g
 
 
