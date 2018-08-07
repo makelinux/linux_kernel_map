@@ -15,12 +15,14 @@ import random
 import os
 import sys
 import collections
+from munch import *
 import subprocess
 import re
 import networkx as nx
 # from networkx.drawing.nx_agraph import read_dot # changes order of successors
 from networkx.drawing.nx_pydot import read_dot
 from networkx.generators.ego import *
+from networkx.algorithms.dag import *
 from networkx.utils import open_file, make_str
 from pprint import pprint
 import difflib
@@ -709,6 +711,44 @@ def cflow_linux():
     write_dot(start_kernel, 'start_kernel.dot')
     write_dot(reduce_graph(start_kernel), 'start_kernel-reduced.dot')
     write_dot(reduce_graph(reduce_graph(start_kernel)), 'start_kernel-reduced2.dot')
+
+
+def stats(a):
+    dg = to_dg(a)
+    stat = Munch()
+    im = dict()
+    om = dict()
+    leaves = set()
+    roots = set()
+    stat.edge_nodes = 0
+    for n in dg:
+        id = dg.in_degree(n)
+        od = dg.out_degree(n)
+        if id == 1 and od == 1:
+            stat.edge_nodes += 1
+        if id:
+            im[n] = id
+        else:
+            roots.add(n)
+        if od:
+            om[n] = od
+        else:
+            leaves.add(n)
+    stat.max_in_degree = max(dict(dg.in_degree).values())
+    stat.max_out_degree = max(dict(dg.out_degree).values())
+    stat.leaves = len(leaves)
+    stat.roots = len(roots)
+    # pprint(im)
+    # pprint(om)
+    stat._popular = ' '.join(sort_dict(im)[:10])
+    stat._biggest = ' '.join(sort_dict(om)[:10])
+    gd = remove_loops(dg)
+    stat.dag_longest_path_len = len(dag_longest_path(dg))
+    print(' '.join(dag_longest_path(dg)))
+    for a in [nx.DiGraph.number_of_nodes, nx.DiGraph.number_of_edges, nx.DiGraph.number_of_selfloops,
+              nx.DiGraph.order]:
+        stat[a.__name__] = a(dg)
+    pprint(dict(stat))
 
 
 me = os.path.basename(sys.argv[0])
