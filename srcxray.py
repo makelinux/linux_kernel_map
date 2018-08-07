@@ -721,6 +721,31 @@ def remove_loops(dg):
     return dg
 
 
+def cflow_dir(a):
+    index = nx.DiGraph()
+    for c in glob.glob(os.path.join(a, "*.c")):
+        g = None
+        dot = str(Path(c).with_suffix(".dot"))
+        if not os.path.isfile(dot):
+            g = import_cflow(c, Path(c).with_suffix(".cflow"))
+            write_dot(g, dot)
+            print(dot, popen("ctags -x %s | wc -l" % (c))[0], len(set(e[0] for e in g.edges())))
+        else:
+            print(dot)
+            try:
+                # g = nx.drawing.nx_agraph.read_dot(dot)
+                g = read_dot(dot)
+            except (TypeError, pygraphviz.agraph.DotError):
+                print('nx_pydot <- nx_agraph')
+                g = nx.drawing.nx_pydot.read_dot(dot)
+        # digraph_print(g, [], Path(c).with_suffix(".tree"))
+        # index.add_nodes_from(g.nodes())
+        index.add_edges_from(g.edges())
+    write_dot(index, str(os.path.join(a, 'index.dot')))
+    digraph_print(digraph_tree(index), [], os.path.join(a, 'index.tree'))
+    return index
+
+
 def cflow_linux():
     dirs = ('init kernel kernel/time '
             'fs fs/ext4 block '
@@ -742,33 +767,15 @@ def cflow_linux():
         all = nx.DiGraph()
         for a in dirs:
             print(a)
-            index = nx.DiGraph()
-            for c in glob.glob(os.path.join(a, "*.c")):
-                g = None
-                dot = str(Path(c).with_suffix(".dot"))
-                if not os.path.isfile(dot):
-                    g = import_cflow(c, Path(c).with_suffix(".cflow"))
-                    write_dot(g, dot)
-                    print(dot, popen("ctags -x %s | wc -l" % (c))[0], len(set(e[0] for e in g.edges())))
-                else:
-                    print(dot)
-                    try:
-                        # g = nx.drawing.nx_agraph.read_dot(dot)
-                        g = read_dot(dot)
-                    except (TypeError, pygraphviz.agraph.DotError):
-                        print('nx_pydot <- nx_agraph')
-                        g = nx.drawing.nx_pydot.read_dot(dot)
-                # digraph_print(g, [], Path(c).with_suffix(".tree"))
-                # index.add_nodes_from(g.nodes())
-                index.add_edges_from(g.edges())
-            write_dot(index, str(os.path.join(a, 'index.dot')))
-            digraph_print(digraph_tree(index), [], os.path.join(a, 'index.tree'))
+            index = cflow_dir(a)
             # all.add_nodes_from(index.nodes())
             all.add_edges_from(index.edges())
         write_dot(all, 'all.dot')
-    # print('loops: ' + str( all.nodes_with_selfloops()))
+    remove_loops(all)
+    print('loops: ' + str(list(all.nodes_with_selfloops())))
     print('trees:')
-    digraph_print(all, ['x86_64_start_kernel', 'start_kernel', 'main', 'initcall', 'early_param', '__setup', 'sys_write', 'write'],
+    digraph_print(all, ['x86_64_start_kernel', 'start_kernel', 'main', 'initcall', 'early_param',
+                        '__setup', 'sys_write', 'write'],
                   'all.tree')
     start_kernel = digraph_tree(all, ['start_kernel'])
     write_dot(start_kernel, 'start_kernel.dot')
