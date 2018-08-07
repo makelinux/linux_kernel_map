@@ -643,15 +643,18 @@ def read_dot2(dot):
     # read_dot pydot.graph_from_dot_data parse_dot_data from_pydot
     dg = nx.DiGraph()
     for a in dot:
+        a = a.strip()
         if '->' in a:
-            m = re.match('^(.+) -> {(.+)}', a)
+            m = re.match('"?([^"]+)"? -> {(.+)}', a)
             if m:
-                dg.add_edges_from([(m.group(1), b) for b in m.group(2).split()])
+                dg.add_edges_from([(m.group(1), b.strip('"')) for b in m.group(2).split() if b != m.group(1)])
             else:
-                m = re.match('(.+) -> (.*);', a)
+                m = re.match('"?([^"]+)"? -> "?([^"]*)"?;', a)
                 if m:
-                    dg.add_edge(m.group(1), m.group(2))
-                    print(m.group(1), m.group(2))
+                    if m.group(1) != m.group(2):
+                        dg.add_edge(m.group(1), m.group(2))
+                else:
+                    log(a)
     return dg
 
 
