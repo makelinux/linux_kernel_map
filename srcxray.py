@@ -419,6 +419,10 @@ def leaves(dg):
     return {n: dg.in_degree(n) for (n, d) in dg.out_degree if not d}
 
 
+def sort_dict(d):
+    return [a for a, b in sorted(d.items(), key=lambda k: k[1], reverse=True)]
+
+
 def most_used(dg, ins=10, outs=10):
     # return {a: b for a, b in sorted(dg.in_degree, key=lambda k: k[1]) if b > 1 and}
     # return [(x, dg.in_degree(x), dg.out_degree(x))
