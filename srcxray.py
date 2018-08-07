@@ -560,11 +560,15 @@ cflow_param = {
 
 
 def cflow(a):
-    arg = a
+    if os.path.isfile('include/linux/cache.h'):
+        for m in popen("ctags -x --c-kinds=d include/linux/cache.h | cut -d' '  -f 1 | sort -u"):
+            if m in cflow_param['modifier']:
+                print(m)
+            else:
+                cflow_param['modifier'] += ' ' + a
     if not a:
         # arg = "$(find -name '*.[ch]' -o -name '*.cpp' -o -name '*.hh')"
-        arg = "*.c *.h *.cpp *.hh "
-        arg = " $(cat cscope.files)"
+        a = "$(cat cscope.files)" if os.path.isfile('cscope.files') else "*.c *.h *.cpp *.hh "
     elif isinstance(a, list):
         pass
     elif os.path.isdir(a):
