@@ -65,6 +65,8 @@ level_limit = 8
 limit = 100000
 n = 0
 
+scaled = False
+
 
 def print_limited(a, out=None):
     out = out if out else sys.stdout
@@ -478,8 +480,11 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
         if sort:
             outs = {a: b for a, b in sorted(outs.items(), key=lambda k: k[1], reverse=True)}
         s = ''
+        if 'rank' in dg.nodes[node]:
+            s = str(dg.nodes[node]['rank'])
+            ranks[dg.nodes[node]['rank']].append(node)
         if outs:
-            s = ' ...' if level > level_limit - 2 else '  @' + path
+            s += ' ...' if level > level_limit - 2 else '  @' + path
         print_limited(level*'\t' + str(node) + s, dst)
         printed.add(node)
         if level > level_limit - 2:
@@ -826,6 +831,37 @@ def dot_expand(a, b):
     b = to_dg(b)
     a.add_edges_from(list(b.out_edges(b.nbunch_iter(a.nodes()))))
     return a
+
+
+def add_rank(g):
+    g= to_dg(g)
+    passed1 = set()
+    passed2 = set()
+    rn1 = 1
+    rn2 = -1
+    r1 = [n for (n, d) in g.in_degree if not d]
+    r2 = [n for (n, d) in g.out_degree if not d]
+    while r1 or r2:
+        if r1:
+            nxt = set()
+            for n in r1:
+                g.nodes[n]['rank1'] = max(rn1, g.nodes[n].get('rank1', rn1))
+                for i in [_ for _ in g.successors(n)]:
+                    nxt.add(i)
+                    passed1.add(i)
+            rn1 += 1
+            r1 = nxt
+        if r2:
+            nxt = set()
+            for n in r2:
+                g.nodes[n]['rank2'] = min(rn2, g.nodes[n].get('rank2', rn2))
+                for i in [_ for _ in g.predecessors(n)]:
+                    nxt.add(i)
+                    passed2.add(i)
+            rn2 -= 1
+            r2 = nxt
+    g.__dict__['max_rank'] = rn1
+    return g
 
 
 me = os.path.basename(sys.argv[0])
