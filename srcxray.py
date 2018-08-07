@@ -697,6 +697,30 @@ def to_dg(a):
         return read_dot2(a)
 
 
+def remove_loops(dg):
+    rm = []
+    visited = set()
+    path = [object()]
+    path_set = set(path)
+    stack = [iter(dg)]
+    while stack:
+        for v in stack[-1]:
+            if v in path_set:
+                rm.append((path[-1], v))
+            elif v not in visited:
+                visited.add(v)
+                path.append(v)
+                path_set.add(v)
+                stack.append(iter(dg[v]))
+                break
+        else:
+            path_set.remove(path.pop())
+            stack.pop()
+    # print(rm)
+    dg.remove_edges_from(rm)
+    return dg
+
+
 def cflow_linux():
     dirs = ('init kernel kernel/time '
             'fs fs/ext4 block '
