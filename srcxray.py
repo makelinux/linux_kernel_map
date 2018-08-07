@@ -407,7 +407,7 @@ def syscalls():
 # srcxray.py "write_dot(remove_loops(read_dot2('reduced.dot')), 'no-loops.dot')"
 
 def cleanup(a):
-    dg = read_dot2(a)
+    g = to_dg(a)
     print(dg.number_of_edges())
     dg.remove_nodes_from(black_list)
     print(dg.number_of_edges())
@@ -647,6 +647,13 @@ def read_dot2(dot):
                     dg.add_edge(m.group(1), m.group(2))
                     print(m.group(1), m.group(2))
     return dg
+
+
+def to_dg(a):
+    if isinstance(a, nx.DiGraph):
+        return a
+    if os.path.isfile(a):
+        return read_dot2(a)
 
 
 def cflow_linux():
