@@ -821,6 +821,13 @@ def stats(a):
     pprint(dict(stat))
 
 
+def dot_expand(a, b):
+    a = to_dg(a)
+    b = to_dg(b)
+    a.add_edges_from(list(b.out_edges(b.nbunch_iter(a.nodes()))))
+    return a
+
+
 me = os.path.basename(sys.argv[0])
 
 
