@@ -44,10 +44,19 @@ black_list = ('aligned __attribute__ unlikely typeof u32 '
               'ssize_t path_put __user '
               'list_del compound_head list_add cond_resched put_page nr_pages min spin_lock_irqsave IS_ENABLED '
               'EBUSY UL NODE_DATA pr_err memset list size ptl PAGE_MASK pr_info offset addr get_page sprintf '
-              'INIT_LIST_HEAD NUMA_NO_NODE spin_unlock_irqrestore  mutex_unlock mutex_lock '
-              'page_to_nid page_to_pfn pfn page_zone pfn_to_page'
-              'BUG BUG_ON flags WARN_ON_ONCE  ENODEV cpu_to_le16 cpumask_bits '
-              'ERR_PTR  ENOTSUPP  EOPNOTSUPP EOPNOTSUPP WARN_ON EINVAL ').split()
+              'INIT_LIST_HEAD NUMA_NO_NODE spin_unlock_irqrestore mutex_unlock mutex_lock '
+              'page_to_nid page_to_pfn pfn page_zone pfn_to_page '
+              'BUG BUG_ON flags WARN_ON_ONCE ENODEV cpu_to_le16 cpumask_bits '
+              'ERR_PTR ENOTSUPP EOPNOTSUPP EOPNOTSUPP WARN_ON EINVAL i name '
+              'sigset_t fdget put_user get_user copy_from_user LOOKUP_FOLLOW LOOKUP_EMPTY EINTR '
+              'O_CLOEXEC err getname access_ok task_pid_vnr cred '
+              'percpu_ref_put get_timespec64 sigdelsetmask ns_capable kzalloc capable f_mode O_LARGEFILE pos_from_hilo '
+              'pr_debug error current_cred ESRCH f_path find_task_by_vpid '
+              'retry LOOKUP_REVAL retry_estale user_path_at lookup_flags old '
+              'current_user_ns spin_lock_irq spin_unlock_irq prepare_creds '
+              'tasklist_lock commit_creds read_lock read_unlock SIGKILL SIGSTOP abort_creds fd_install '
+              'real_mount FMODE_WRITE tv_nsec putname '
+              ).split()
 
 
 level_limit = 8
@@ -107,7 +116,7 @@ def func_referers_git_grep(name):
     r = None
     for line in popen(r'git grep --no-index --word-regexp --show-function '
                       r'"^\s.*\b%s" '
-                      r'**.\[hc\] **.cpp **.cc **.hh' % (name)):
+                      r'**.\[hc\] **.cpp **.cc **.hh || true' % (name)):
         # Filter out names in comment afer function,
         # when comment start from ' *'
         # To see the problem try "git grep -p and"
@@ -285,8 +294,7 @@ def includes(a):
     res = []
     # log(a)
     for a in popen('man -s 2 %s 2> /dev/null |'
-                   ' head -n 20 | grep include || true' % (a),
-                   shell=True):
+                   ' head -n 20 | grep include || true' % (a)):
         m = re.match('.*<(.*)>', a)
         if m:
             res.append(m.group(1))
@@ -370,14 +378,14 @@ def syscalls():
                     #    log(syscall)
                     # log(syscall + ' ' + (includes.get(syscall) or '------'))
                     # man -s 2  timerfd_settime | head -n 20
-                    # sc.add_edge('syscalls', path[0] + '/')
-                    # sc.add_edge(path[0] + '/', p2)
-                    # sc.add_edge(p2, syscall)
-                    i = includes(syscall)
-                    log(p2 + ' ' + str(i) + ' ' + syscall)
-                    sc.add_edge(i, i+' - '+p2)
-                    sc.add_edge(i+' - '+p2, syscall)
-                    # sc.add_edge(includes(syscall), syscall)
+                    if False:
+                        i = includes(syscall)
+                        log(p2 + ' ' + str(i) + ' ' + syscall)
+                        sc.add_edge(i, i+' - '+p2)
+                        sc.add_edge(i+' - '+p2, 'sys_' + syscall)
+                    else:
+                        sc.add_edge(path[0] + '/', p2)
+                        sc.add_edge(p2, 'sys_' + syscall)
     return sc
 
 
@@ -391,11 +399,14 @@ def syscalls():
 # srcxray.py "leaves(read_dot('a.dot'))"
 # srcxray.py "most_used(read_dot('a.dot'))"
 # srcxray.py "digraph_print(read_dot('a.dot'))"
-# srcxray.py "digraph_print(reduce_graph(reduce_graph(read_dot('a.dot'))))"
+# srcxray.py "write_dot(reduce_graph(read_dot('no-loops.dot')),'reduced.dot')"
 # srcxray.py "pprint(most_used(read_dot('a.dot')))"
+# srcxray.py "write_dot(digraph_tree(read_dot2('all.dot'), ['sys_clone']), 'sys_clone.dot')"
+# srcxray.py "write_dot(add_rank('reduced.dot'), 'ranked.dot')"
+# srcxray.py "write_dot(remove_loops(read_dot2('reduced.dot')), 'no-loops.dot')"
 
 def cleanup(a):
-    dg = read_dot(a)
+    dg = read_dot2(a)
     print(dg.number_of_edges())
     dg.remove_nodes_from(black_list)
     print(dg.number_of_edges())
