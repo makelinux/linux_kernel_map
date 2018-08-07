@@ -885,6 +885,7 @@ def main():
         else:
             if '(' in sys.argv[1]:
                 ret = eval(sys.argv[1])
+                # ret = exec(sys.argv[1])
             else:
                 ret = eval(sys.argv[1] + '(' + ', '.join("'%s'" % (a)
                            for a in sys.argv[2:]) + ')')
