@@ -616,23 +616,55 @@ def import_cflow(a=None, cflow_out=None):
     return cf
 
 
+def rank(g, n):
+    try:
+        if g.nodes[n]['rank1'] < abs(g.nodes[n]['rank2']):
+            return g.nodes[n]['rank1']
+        else:
+            return g.__dict__['max_rank'] + 1 + g.nodes[n]['rank2']
+    except KeyError:
+        return None
+
+
 def write_dot(g, dot):
     dot = str(dot)
     dot = open(dot, 'w')
     dot.write('strict digraph "None" {\n')
-    dot.write('rankdir=LR;\n')
-    dot.write('node [fontname=Ubuntu,shape=none,fontsize=1000];\n')
-    dot.write('edge [width=1000];\n')
+    dot.write('rankdir=LR\nnodesep=0\n')
+    # dot.write('ranksep=50\n')
+    dot.write('node [fontname=Ubuntu,shape=none];\n')
+    # dot.write('edge [width=10000];\n')
+    dot.write('edge [width=1];\n')
     g.remove_nodes_from(black_list)
+    ranks = collections.defaultdict(list)
     for n in g.nodes():
         if n == ',':
             continue
+        r = rank(g, n)
+        if r:
+            ranks[r].append(n)
         if not g.out_degree(n):
             continue
             # dot.write((n if n != 'node' else '"node"') + ';\n')
-        dot.write((n if n != 'node' else '"node"') + ' -> { ')
-        dot.write(' '.join([str(a) if a != 'node' else '"node"' for a in g.successors(n) if str(a) != ',']))
-        dot.write(' };\n')
+        # dot.write((n if n != 'node' else '"node"') + ' -> { ')
+        dot.write('"%s" -> { ' % (n))
+        # dot.write(' '.join([str(a) if a != 'node' else '"node"' for a in g.successors(n) if str(a) != ',']))
+        dot.write(' '.join(['"%s"' % (str(a)) for a in g.successors(n) if str(a) != ',']))
+        if r and scaled:
+            dot.write(' } [penwidth=%d label=%d];\n' % (100/r, r))
+        else:
+            dot.write(' } ;\n')
+    print(ranks.keys())
+    for r in ranks.keys():
+        dot.write("{ rank=same %s }\n" % (' '.join(['"%s"' % (str(a)) for a in ranks[r]])))
+    for n in g.nodes():
+        prop = Munch()
+        if scaled and len(ranks):
+            prop.fontsize = 500 + 10000 / (len(ranks[rank(g, n)]) + 1)
+        # prop.label = n + ' ' + str(rank(g,n))
+        dot.write('"%s" [%s]\n' % (n, ','.join(['%s="%s"' % (a, str(prop[a])) for a in prop])))
+        # else:
+        #    dot.write('"%s"\n'%(n))
     dot.write('}\n')
     dot.close()
     print(dot.name)
