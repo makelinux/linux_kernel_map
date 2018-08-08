@@ -864,14 +864,16 @@ me = os.path.basename(sys.argv[0])
 
 
 def usage():
+    print("Usage:\n")
     for c in ["referers_tree", "call_tree", "referers_dep", "call_dep"]:
         print(me, c, "<identifier>")
-    print("Try this:")
+    print("\nTry this:\n")
     print("cd linux/init")
     print(me, "unittest")
     print(me, "referers_tree nfs_root_data")
     print(me, "call_tree start_kernel")
-    print(me, "Emergency termination: ^Z, kill %1")
+    print("Emergency termination: ^Z, kill %1")
+    print()
 
 
 class _unittest_autotest(unittest.TestCase):
