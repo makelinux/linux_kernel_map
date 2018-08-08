@@ -116,9 +116,9 @@ def extract_referer_test():
 
 
 def func_referers_git_grep(name):
-    res = set()
+    res = list()
     r = None
-    for line in popen(r'git grep --no-index --word-regexp --show-function '
+    for line in popen(r'git grep --threads 1 --no-index --word-regexp --show-function '
                       r'"^\s.*\b%s" '
                       r'**.\[hc\] **.cpp **.cc **.hh || true' % (name)):
         # Filter out names in comment afer function,
@@ -133,7 +133,7 @@ def func_referers_git_grep(name):
                 r = None
                 break
         if r and r != name and r not in black_list:
-            res.add(r)
+            res.append(r)
             r = None
         r = extract_referer(line)
     return res
@@ -149,15 +149,15 @@ def func_referers_cscope(name):
             print("Recommended: cscope -bkR", file=sys.stderr)
             cscope_warned = True
         return []
-    res = set([l.split()[1] for l in popen(r'cscope -d -L3 "%s"' %
-              (name)) if l not in black_list])
+    res = list(dict.fromkeys([l.split()[1] for l in popen(r'cscope -d -L3 "%s"' %
+                             (name)) if l not in black_list]))
     if not res:
         res = func_referers_git_grep(name)
     return res
 
 
 def func_referers_all(name):
-    return set(func_referers_git_grep(name) + func_referers_cscope(name))
+    return list(dict.fromkeys(func_referers_git_grep(name) + func_referers_cscope(name)))
 
 
 def referers_tree(name, referer=None, printed=None, level=0):
@@ -204,13 +204,10 @@ def referers_dep(name, referer=None, printed=None, level=0):
         return
     if level > level_limit - 2:
         return ''
-    referers = set(referer(name))
+    referers = referer(name)
     if referers:
         printed.add(name)
-        print(name, end=': ')
-        for a in referers:
-            print(a, end=' ')
-        print()
+        print("%s:" % (name), ' '.join(referers))
         for a in referers:
             referers_dep(a, referer, printed, level + 1)
     else:
@@ -256,20 +253,17 @@ def call_dep(node, printed=None, level=0):
         printed = set()
     if node in printed:
         return
-    calls = set()
+    calls = list()
     for a in [line.split()[1] for line in
               popen('cscope -d -L2 "%s"' % (node))]:
         if a in black_list:
             continue
-        calls.add(a)
+        calls.append(a)
     if calls:
         if level < level_limit - 1:
             printed.add(node)
-            print(node, end=': ')
-            for a in calls:
-                print(a, end=' ')
-            print()
-            for a in calls:
+            print("%s:" % (node), ' '.join(list(dict.fromkeys(calls))))
+            for a in list(dict.fromkeys(calls)):
                 call_dep(a, printed, level + 1)
         else:
             pass
