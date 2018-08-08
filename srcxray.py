@@ -29,6 +29,8 @@ import difflib
 import glob
 from pathlib import *
 import pygraphviz
+import unittest
+import types
 
 default_root = 'starts'
 black_list = ('aligned __attribute__ unlikely typeof u32 '
@@ -866,9 +868,25 @@ def usage():
         print(me, c, "<identifier>")
     print("Try this:")
     print("cd linux/init")
+    print(me, "unittest")
     print(me, "referers_tree nfs_root_data")
     print(me, "call_tree start_kernel")
     print(me, "Emergency termination: ^Z, kill %1")
+
+
+class _unittest_autotest(unittest.TestCase):
+    def test_1(self):
+        self.assertTrue(os.path.isdir('include/linux/'))
+        os.chdir('init')
+        self.assertEqual('\t\t\t\t\tprepare_namespace ^', popen('srcxray.py referers_tree nfs_root_data')[-1])
+        self.assertEqual('initrd_load: prepare_namespace', popen('srcxray.py referers_dep nfs_root_data')[-1])
+        self.assertEqual('calibrate_delay_converge: __delay', popen('srcxray.py call_dep start_kernel')[-2])
+        self.assertEqual('\t\tcpu_startup_entry', popen('srcxray.py call_tree start_kernel')[-1])
+        os.chdir('..')
+        self.assertTrue(syscalls().number_of_edges() > 400)
+        # digraph_print:
+        self.assertEqual("\thandle_initrd ^", popen("srcxray.py import_cflow init/do_mounts_initrd.c")[-1])
+        self.assertEqual("\t\t4", popen('srcxray.py "nx.DiGraph([{1,2},{2,3},{2,4}])"')[-1])
 
 
 def main():
@@ -877,18 +895,22 @@ def main():
         if len(sys.argv) == 1:
             print('Run', me, 'usage')
         else:
-            if '(' in sys.argv[1]:
-                ret = eval(sys.argv[1])
+            a1 = sys.argv[1]
+            sys.argv = sys.argv[1:]
+            if isinstance(eval(a1), types.ModuleType):
+                ret = eval(a1+".main()")
+            elif '(' in a1:
+                ret = eval(a1)
                 # ret = exec(sys.argv[1])
             else:
-                ret = eval(sys.argv[1] + '(' + ', '.join("'%s'" % (a)
-                           for a in sys.argv[2:]) + ')')
+                ret = eval(a1 + '(' + ', '.join("'%s'" % (a1)
+                           for a1 in sys.argv[1:]) + ')')
         if isinstance(ret, nx.DiGraph):
             digraph_print(ret)
         if isinstance(ret, bool) and ret is False:
             sys.exit(os.EX_CONFIG)
-        if (ret is not None):
-            print(ret)
+        # if (ret is not None):
+            #    print(ret)
     except KeyboardInterrupt:
         log("\nInterrupted")
 
