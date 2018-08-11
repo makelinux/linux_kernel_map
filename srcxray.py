@@ -59,7 +59,7 @@ black_list = ('aligned __attribute__ unlikely typeof u32 '
               'retry LOOKUP_REVAL retry_estale user_path_at lookup_flags old '
               'current_user_ns spin_lock_irq spin_unlock_irq prepare_creds '
               'tasklist_lock commit_creds read_lock read_unlock SIGKILL SIGSTOP abort_creds fd_install '
-              'real_mount FMODE_WRITE tv_nsec putname '
+              'real_mount FMODE_WRITE tv_nsec putname ,'
               ).split()
 
 
@@ -639,8 +639,6 @@ def write_dot(g, dot):
     g.remove_nodes_from(black_list)
     ranks = collections.defaultdict(list)
     for n in g.nodes():
-        if n == ',':
-            continue
         r = rank(g, n)
         if r:
             ranks[r].append(n)
@@ -649,8 +647,7 @@ def write_dot(g, dot):
             # dot.write((n if n != 'node' else '"node"') + ';\n')
         # dot.write((n if n != 'node' else '"node"') + ' -> { ')
         dot.write('"%s" -> { ' % (n))
-        # dot.write(' '.join([str(a) if a != 'node' else '"node"' for a in g.successors(n) if str(a) != ',']))
-        dot.write(' '.join(['"%s"' % (str(a)) for a in g.successors(n) if str(a) != ',']))
+        dot.write(' '.join(['"%s"' % (str(a)) for a in g.successors(n)]))
         if r and scaled:
             dot.write(' } [penwidth=%d label=%d];\n' % (100/r, r))
         else:
