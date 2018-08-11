@@ -644,8 +644,6 @@ def write_dot(g, dot):
             ranks[r].append(n)
         if not g.out_degree(n):
             continue
-            # dot.write((n if n != 'node' else '"node"') + ';\n')
-        # dot.write((n if n != 'node' else '"node"') + ' -> { ')
         dot.write('"%s" -> { ' % (n))
         dot.write(' '.join(['"%s"' % (str(a)) for a in g.successors(n)]))
         if r and scaled:
