@@ -787,6 +787,7 @@ def stats(a):
     leaves = set()
     roots = set()
     stat.edge_nodes = 0
+    stat.couples = 0
     for n in dg:
         id = dg.in_degree(n)
         od = dg.out_degree(n)
@@ -800,6 +801,8 @@ def stats(a):
             om[n] = od
         else:
             leaves.add(n)
+        if od == 1 and dg.in_degree(list(dg.successors(n))[0]) == 1:
+            stat.couples += 1
     stat.max_in_degree = max(dict(dg.in_degree).values())
     stat.max_out_degree = max(dict(dg.out_degree).values())
     stat.leaves = len(leaves)
