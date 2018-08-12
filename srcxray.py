@@ -658,7 +658,8 @@ def write_dot(g, dot):
         if scaled and len(ranks):
             prop.fontsize = 500 + 10000 / (len(ranks[rank(g, n)]) + 1)
         # prop.label = n + ' ' + str(rank(g,n))
-        dot.write('"%s" [%s]\n' % (n, ','.join(['%s="%s"' % (a, str(prop[a])) for a in prop])))
+        if prop:
+            dot.write('"%s" [%s]\n' % (n, ','.join(['%s="%s"' % (a, str(prop[a])) for a in prop])))
         # else:
         #    dot.write('"%s"\n'%(n))
     dot.write('}\n')
