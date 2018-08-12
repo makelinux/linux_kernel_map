@@ -873,6 +873,9 @@ def usage():
 
 class _unittest_autotest(unittest.TestCase):
     def test_1(self):
+        write_dot(nx.DiGraph([(1, 2), (2, 3), (2, 4)]), 'test.dot')
+        g = read_dot2("test.dot")
+        self.assertEqual(list(g.successors("2")), ["3", "4"])
         self.assertTrue(os.path.isdir('include/linux/'))
         os.chdir('init')
         self.assertEqual('\t\t\t\t\tprepare_namespace ^', popen('srcxray.py referers_tree nfs_root_data')[-1])
