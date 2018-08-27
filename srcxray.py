@@ -149,7 +149,7 @@ def func_referers_cscope(name):
     global cscope_warned
     if not os.path.isfile('cscope.out'):
         if not cscope_warned:
-            print("Recommended: cscope -bkR", file=sys.stderr)
+            print("Recommended: cscope -Rcbk", file=sys.stderr)
             cscope_warned = True
         return []
     res = list(dict.fromkeys([l.split()[1] for l in popen(r'cscope -d -L3 "%s"' %
@@ -527,16 +527,16 @@ def cflow_preprocess(a):
             except UnicodeDecodeError:
                 s = s.decode('latin1')
             # treat struct like function
-            s = re.sub(r"^static struct (.*) = ", r"\1()", s)
-            s = re.sub(r"^static struct (.*)\[\] = ", r"\1()", s)
-            s = re.sub(r"^static const struct (.*)\[\] = ", r"\1()", s)
+            s = re.sub(r"^static struct (\w+) = ", r"\1()", s)
+            s = re.sub(r"^static struct (\w+)\[\] = ", r"\1()", s)
+            s = re.sub(r"^static const struct (\w+)\[\] = ", r"\1()", s)
             s = re.sub(r"^static __initdata int \(\*actions\[\]\)\(void\) = ",
                        "int actions()", s)  # treat struct like function
             s = re.sub(r"^static ", "", s)
             s = re.sub(r"SENSOR_DEVICE_ATTR.*\((\w*),", r"void sensor_dev_attr_\1()(", s)
             s = re.sub(r"COMPAT_SYSCALL_DEFINE[0-9]\((\w*),",
                        r"compat_sys_\1(", s)
-            s = re.sub(r"SYSCALL_DEFINE[0-9]\((\w*),", r"sys_\1(", s)
+            s = re.sub(r"SYSCALL_DEFINE[0-9]\((\w*)", r"sys_\1(", s)
             s = re.sub(r"__setup\(.*,(.*)\)", r"void __setup() {\1();}", s)
             s = re.sub(r"^(\w*)param\(.*,(.*)\)", r"void \1param() {\2();}", s)
             s = re.sub(r"^(\w*)initcall\((.*)\)",
@@ -546,8 +546,8 @@ def cflow_preprocess(a):
             s = re.sub(r"^inline ", "", s)
             s = re.sub(r"^const ", "", s)
             s = re.sub(r"^struct (.*) =", r"\1()", s)
-            s = re.sub(r"^struct ", "", s)
             s = re.sub(r"\b__initdata\b", "", s)
+            s = re.sub(r"DEFINE_PER_CPU\((.*),(.*)\)", r"\1 \2", s)
             # s = re.sub(r"__init_or_module", "", s)
             # __attribute__
             # for line in sys.stdin:
@@ -559,6 +559,7 @@ cflow_param = {
                 " __visible __init __leaf__ __ref __latent_entropy __init_or_module  ",
                 "wrapper": "__attribute__ __section__ "
                 "TRACE_EVENT MODULE_AUTHOR MODULE_DESCRIPTION MODULE_LICENSE MODULE_LICENSE MODULE_SOFTDEP "
+                "INIT_THREAD_INFO "
                 "__acquires __releases __ATTR"
                 # "wrapper": "__setup early_param"
         }
@@ -567,7 +568,7 @@ cflow_param = {
 # srcxray.py "'\n'.join(cflow('init/main.c'))"
 
 
-def cflow(a):
+def cflow(a=None):
     if os.path.isfile('include/linux/cache.h'):
         for m in popen("ctags -x --c-kinds=d include/linux/cache.h | cut -d' '  -f 1 | sort -u"):
             if m in cflow_param['modifier']:
@@ -575,11 +576,11 @@ def cflow(a):
             else:
                 cflow_param['modifier'] += ' ' + a
     if not a:
-        # arg = "$(find -name '*.[ch]' -o -name '*.cpp' -o -name '*.hh')"
         a = "$(cat cscope.files)" if os.path.isfile('cscope.files') else "*.c *.h *.cpp *.hh "
     elif isinstance(a, list):
         pass
     elif os.path.isdir(a):
+        a = "$(find {0} -name '*.[ch]' -o -name '*.cpp' -o -name '*.hh')".format(a)
         pass
     elif os.path.isfile(a):
         pass
@@ -785,6 +786,7 @@ def cflow_linux():
     write_dot(start_kernel, 'start_kernel.dot')
     write_dot(reduce_graph(start_kernel), 'start_kernel-reduced.dot')
     write_dot(reduce_graph(reduce_graph(start_kernel)), 'start_kernel-reduced2.dot')
+    write_dot(reduce_graph(digraph_tree(all, ['sys_clone']), 'sys_clone.dot'))
 
 
 def stats(a):
@@ -881,6 +883,7 @@ def usage():
     print(me, "unittest")
     print(me, "referers_tree nfs_root_data")
     print(me, "call_tree start_kernel")
+    print(me, "import_cflow $none_or_dir_or_file_or_mask")
     print("Emergency termination: ^Z, kill %1")
     print()
 
