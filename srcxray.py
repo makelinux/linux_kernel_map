@@ -627,6 +627,8 @@ def import_cflow(a=None, cflow_out=None):
 
 def rank(g, n):
     try:
+        if g.nodes[n]['rank1'] == g.nodes[n]['rank2']:
+            return g.nodes[n]['rank1']
         if g.nodes[n]['rank1'] < abs(g.nodes[n]['rank2']):
             return g.nodes[n]['rank1']
         else:
@@ -654,7 +656,7 @@ def write_dot(g, dot):
             continue
         dot.write('"%s" -> { ' % (n))
         dot.write(' '.join(['"%s"' % (str(a)) for a in g.successors(n)]))
-        if r and scaled:
+        if scaled and r and int(r):
             dot.write(' } [penwidth=%d label=%d];\n' % (100/r, r))
         else:
             dot.write(' } ;\n')
@@ -668,6 +670,8 @@ def write_dot(g, dot):
         # prop.label = n + ' ' + str(rank(g,n))
         if prop:
             dot.write('"%s" [%s]\n' % (n, ','.join(['%s="%s"' % (a, str(prop[a])) for a in prop])))
+        elif not g.number_of_edges():
+            dot.write('"%s"\n' % (n))
         # else:
         #    dot.write('"%s"\n'%(n))
     dot.write('}\n')
@@ -692,6 +696,12 @@ def read_dot2(dot):
                         dg.add_edge(m.group(1), m.group(2))
                 else:
                     log(a)
+        else:
+            m = re.match('"?([^"]+)"?', a)
+            if m:
+                if m.group(1):
+                    dg.add_node(m.group(1))
+
     return dg
 
 
@@ -841,7 +851,7 @@ def dot_expand(a, b):
 
 
 def add_rank(g):
-    g= to_dg(g)
+    g = to_dg(g)
     passed1 = set()
     passed2 = set()
     rn1 = 1
