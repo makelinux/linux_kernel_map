@@ -10,7 +10,7 @@
 # 2018 Constantine Shulyupin, const@MakeLinux.com
 #
 
-import inspect
+from inspect import currentframe, getframeinfo, getouterframes, stack
 import random
 import os
 import sys
@@ -83,7 +83,8 @@ def print_limited(a, out=None):
 
 def log(*args, **kwargs):
     s = str(*args).rstrip()
-    print(inspect.stack()[1][3],
+    frameinfo = getframeinfo(currentframe().f_back)
+    print("%s:%d %s" % (frameinfo.filename, frameinfo.lineno, stack()[1][3]),
           s, file=sys.stderr, **kwargs)
     return s
 
@@ -284,7 +285,7 @@ def my_graph(name=None):
 def reduce_graph(g, m=None):
     rm = set()
     m = g.number_of_nodes() if not m else m
-    print(g.number_of_edges())
+    log(g.number_of_edges())
     rm = [n for (n, d) in g.out_degree if not d and g.in_degree(n) <= m]
     g.remove_nodes_from(rm)
     print(g.number_of_edges())
@@ -407,6 +408,7 @@ def syscalls():
 # srcxray.py "write_dot(remove_loops(read_dot2('reduced.dot')), 'no-loops.dot')"
 
 def cleanup(a):
+    log('')
     g = to_dg(a)
     print(dg.number_of_edges())
     dg.remove_nodes_from(black_list)
@@ -824,8 +826,11 @@ def stats(a):
 def dot_expand(a, b):
     a = to_dg(a)
     b = to_dg(b)
-    a.add_edges_from(list(b.out_edges(b.nbunch_iter(a.nodes()))))
-    return a
+    c = my_graph()
+    log(a.nodes())
+    c.add_edges_from(b.out_edges(b.nbunch_iter(a.nodes())))
+    print(list(b.nbunch_iter(a.nodes())))
+    return c
 
 
 def add_rank(g):
