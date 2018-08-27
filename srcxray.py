@@ -520,8 +520,12 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
 
 
 def cflow_preprocess(a):
-    with open(a, 'r') as f:
+    with open(a, 'rb') as f:
         for s in f:
+            try:
+                s = s.decode('utf-8')
+            except UnicodeDecodeError:
+                s = s.decode('latin1')
             # treat struct like function
             s = re.sub(r"^static struct (.*) = ", r"\1()", s)
             s = re.sub(r"^static struct (.*)\[\] = ", r"\1()", s)
