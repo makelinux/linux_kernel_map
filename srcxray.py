@@ -28,7 +28,7 @@ from pprint import pprint
 import difflib
 import glob
 from pathlib import *
-import pygraphviz
+import pygraphviz  # python3-pygraphviz
 import unittest
 import types
 
@@ -402,6 +402,7 @@ def syscalls():
 # srcxray.py "most_used(read_dot('a.dot'))"
 # srcxray.py "digraph_print(read_dot('a.dot'))"
 # srcxray.py "write_dot(reduce_graph(read_dot('no-loops.dot')),'reduced.dot')"
+# a=sys_clone;srcxray.py "write_dot(rank_couples(reduce_graph(remove_loops(read_dot('$a.dot')))),'$a.dot')"
 # srcxray.py "pprint(most_used(read_dot('a.dot')))"
 # srcxray.py "write_dot(digraph_tree(read_dot2('all.dot'), ['sys_clone']), 'sys_clone.dot')"
 # srcxray.py "write_dot(add_rank('reduced.dot'), 'ranked.dot')"
