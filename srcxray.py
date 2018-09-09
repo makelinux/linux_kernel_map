@@ -511,9 +511,11 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
             continue
         passed.add(o)
         if o in dg:
-            for o in dg.nodes():
-                if o not in printed:
-                    digraph_print_sub('', o, printed)
+            digraph_print_sub('', o, printed)
+    #  not yet printed rest:
+    for o in dg.nodes():
+        if o not in printed:
+            digraph_print_sub('', o, printed)
     if dst_fn:
         print(dst_fn)
         dst.close()
