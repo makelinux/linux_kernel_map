@@ -773,6 +773,7 @@ def cflow_linux():
 
     # dirs += ('mm net/ipv4 crypto').split()
     dirs = ('init kernel arch/x86/kernel fs ').split()
+    dirs += ['mm']
 
     # fs/notify/fanotify fs/notify/inotify
 
@@ -798,7 +799,7 @@ def cflow_linux():
     write_dot(start_kernel, 'start_kernel.dot')
     write_dot(reduce_graph(start_kernel), 'start_kernel-reduced.dot')
     write_dot(reduce_graph(reduce_graph(start_kernel)), 'start_kernel-reduced2.dot')
-    write_dot(reduce_graph(digraph_tree(all, ['sys_clone']), 'sys_clone.dot'))
+    write_dot(reduce_graph(digraph_tree(all, ['sys_clone'])), 'sys_clone.dot')
 
 
 def stats(a):
