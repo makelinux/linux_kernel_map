@@ -808,7 +808,7 @@ def stats(a):
     im = dict()
     om = dict()
     leaves = set()
-    roots = set()
+    roots = dict()
     stat.edge_nodes = 0
     stat.couples = 0
     for n in dg:
@@ -819,7 +819,7 @@ def stats(a):
         if id:
             im[n] = id
         else:
-            roots.add(n)
+            roots[n] = od
         if od:
             om[n] = od
         else:
@@ -830,13 +830,14 @@ def stats(a):
     stat.max_out_degree = max(dict(dg.out_degree).values())
     stat.leaves = len(leaves)
     stat.roots = len(roots)
+    stat.big_roots = ' '.join(sort_dict(roots)[:20])
     # pprint(im)
     # pprint(om)
     stat._popular = ' '.join(sort_dict(im)[:10])
     stat._biggest = ' '.join(sort_dict(om)[:10])
     gd = remove_loops(dg)
     stat.dag_longest_path_len = len(dag_longest_path(dg))
-    print(' '.join(dag_longest_path(dg)))
+    stat.__longest_path = ' '.join(dag_longest_path(dg)[:10] + [''])
     for a in [nx.DiGraph.number_of_nodes, nx.DiGraph.number_of_edges, nx.DiGraph.number_of_selfloops,
               nx.DiGraph.order]:
         stat[a.__name__] = a(dg)
@@ -897,6 +898,7 @@ def usage():
     print(me, "referers_tree nfs_root_data")
     print(me, "call_tree start_kernel")
     print(me, "import_cflow $none_or_dir_or_file_or_mask")
+    print(me, "stats $dot")
     print("Emergency termination: ^Z, kill %1")
     print()
 
