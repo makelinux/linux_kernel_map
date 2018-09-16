@@ -468,8 +468,9 @@ def digraph_tree(dg, starts=None, black_list=black_list):
 
 def digraph_print(dg, starts=None, dst_fn=None, sort=False):
     dst = open(dst_fn, 'w') if dst_fn else None
+    printed = set()
 
-    def digraph_print_sub(path='', node=None, printed=None, level=0):
+    def digraph_print_sub(path='', node=None, level=0):
         if node in black_list:
             return
         if node in printed:
@@ -493,9 +494,8 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
             if o in passed:
                 continue
             passed.add(o)
-            digraph_print_sub(path + ' ' + str(node), o, printed, level + 1)
+            digraph_print_sub(path + ' ' + str(node), o, level + 1)
 
-    printed = set()
     if not starts:
         starts = {}
         for i in [n for (n, d) in dg.in_degree if not d]:
@@ -511,11 +511,11 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
             continue
         passed.add(o)
         if o in dg:
-            digraph_print_sub('', o, printed)
+            digraph_print_sub('', o)
     #  not yet printed rest:
     for o in dg.nodes():
         if o not in printed:
-            digraph_print_sub('', o, printed)
+            digraph_print_sub('', o)
     if dst_fn:
         print(dst_fn)
         dst.close()
@@ -914,7 +914,7 @@ class _unittest_autotest(unittest.TestCase):
         os.chdir('..')
         self.assertTrue(syscalls().number_of_edges() > 400)
         # digraph_print:
-        self.assertEqual("\thandle_initrd ^", popen("srcxray.py import_cflow init/do_mounts_initrd.c")[-1])
+        self.assertEqual("\t\tmount_initrd ^", popen("srcxray.py import_cflow init/do_mounts_initrd.c")[-1])
         self.assertEqual("\t\t4", popen('srcxray.py "nx.DiGraph([{1,2},{2,3},{2,4}])"')[-1])
 
 
