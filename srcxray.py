@@ -885,6 +885,22 @@ def add_rank(g):
     return g
 
 
+def import_symbols():
+    sym = my_graph('symbols')
+    for l in popen('(shopt -s globstar;  nm -D -C -A **/*.so.*)'):
+        q = l.split(maxsplit=2)
+        m = re.match(r'.*lib(.+).so.*:.*', q[0])
+        if not m:
+            log(q[0])
+            continue
+        if q[1] == 'U':
+            sym.add_edge(m.group(1), q[2])
+        elif q[1] == 'T':
+            sym.add_edge(q[2], m.group(1))
+        print(m.group(1), q[1], q[2])
+    return sym
+
+
 me = os.path.basename(sys.argv[0])
 
 
