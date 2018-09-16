@@ -929,14 +929,14 @@ def main():
         else:
             a1 = sys.argv[1]
             sys.argv = sys.argv[1:]
-            if isinstance(eval(a1), types.ModuleType):
-                ret = eval(a1+".main()")
-            elif '(' in a1:
+            if '(' in a1:
                 ret = eval(a1)
                 # ret = exec(sys.argv[1])
+            elif len(sys.argv) == 1 and isinstance(eval(a1), types.ModuleType):
+                ret = eval(a1 + ".main()")
             else:
-                ret = eval(a1 + '(' + ', '.join("'%s'" % (a1)
-                           for a1 in sys.argv[1:]) + ')')
+                ret = eval(a1 + '(' + ', '.join("'%s'" % (a)
+                           for a in sys.argv[1:]) + ')')
         if isinstance(ret, nx.DiGraph):
             digraph_print(ret)
         if isinstance(ret, bool) and ret is False:
