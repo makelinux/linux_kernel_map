@@ -629,6 +629,30 @@ def import_cflow(a=None, cflow_out=None):
     return cf
 
 
+def import_outline(a=None):
+    cf = my_graph()
+    stack = list()
+    nprev = -1
+    with open(a, 'r') as f:
+        for line in f:
+            m = re.match(r'^([\t ]*)(.*)', str(line))
+            if m:
+                n = len(m.group(1))
+                id = str(m.group(2))
+            else:
+                raise Exception(line)
+
+            if n <= nprev:
+                stack = stack[:n - nprev - 1]
+            # print(n, id, stack)
+            if id not in black_list:
+                if len(stack):
+                    cf.add_edge(stack[-1], id)
+            stack.append(id)
+            nprev = n
+    return cf
+
+
 def rank(g, n):
     try:
         if g.nodes[n]['rank1'] == g.nodes[n]['rank2']:
@@ -958,6 +982,8 @@ def usage():
     print(me, "stats $dot")
     print(me, "leaves $dot")
     print(me, "cflow_linux")
+    print(me, "\"write_dot(import_outline('outline.txt'),'outline.dot')\"")
+    print(me, "\"write_dot(dir_tree('.'),'tree.dot')\"")
     print("Emergency termination: ^Z, kill %1")
     print()
 
