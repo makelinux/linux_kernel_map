@@ -20,7 +20,7 @@ import subprocess
 import re
 import networkx as nx
 # from networkx.drawing.nx_agraph import read_dot # changes order of successors
-from networkx.drawing.nx_pydot import read_dot
+# from networkx.drawing.nx_pydot import read_dot # no bad
 from networkx.generators.ego import *
 from networkx.algorithms.dag import *
 from networkx.utils import open_file, make_str
@@ -66,6 +66,7 @@ black_list = ('aligned __attribute__ unlikely typeof u32 '
 level_limit = 8
 limit = 100000
 n = 0
+cflow_structs = False
 
 scaled = False
 
@@ -168,7 +169,7 @@ def referers_tree(name, referer=None, printed=None, level=0):
         if os.path.isfile('cscope.out'):
             referer = func_referers_cscope
         else:
-            print("Using git grep only, recommended to run: cscope -bkR",
+            print("Using git grep only, recommended to run: cscope -Rcbk",
                   file=sys.stderr)
             referer = func_referers_git_grep
     if isinstance(referer, str):
@@ -196,7 +197,7 @@ def referers_dep(name, referer=None, printed=None, level=0):
         if os.path.isfile('cscope.out'):
             referer = func_referers_cscope
         else:
-            print("Using git grep only, recommended to run: cscope -bkR",
+            print("Using git grep only, recommended to run: cscope -Rcbk",
                   file=sys.stderr)
             referer = func_referers_git_grep
     if isinstance(referer, str):
@@ -222,7 +223,7 @@ def referers_dep(name, referer=None, printed=None, level=0):
 
 def call_tree(node, printed=None, level=0):
     if not os.path.isfile('cscope.out'):
-        print("Please run: cscope -bkR", file=sys.stderr)
+        print("Please run: cscope -Rcbk", file=sys.stderr)
         return False
     if printed is None:
         printed = set()
@@ -250,7 +251,7 @@ def call_tree(node, printed=None, level=0):
 
 def call_dep(node, printed=None, level=0):
     if not os.path.isfile('cscope.out'):
-        print("Please run: cscope -bkR", file=sys.stderr)
+        print("Please run: cscope -Rcbk", file=sys.stderr)
         return False
     if printed is None:
         printed = set()
@@ -404,9 +405,9 @@ def syscalls():
 # srcxray.py "write_dot(reduce_graph(read_dot('no-loops.dot')),'reduced.dot')"
 # a=sys_clone;srcxray.py "write_dot(rank_couples(reduce_graph(remove_loops(read_dot('$a.dot')))),'$a.dot')"
 # srcxray.py "pprint(most_used(read_dot('a.dot')))"
-# srcxray.py "write_dot(digraph_tree(read_dot2('all.dot'), ['sys_clone']), 'sys_clone.dot')"
+# srcxray.py "write_dot(digraph_tree(read_dot('all.dot'), ['sys_clone']), 'sys_clone.dot')"
 # srcxray.py "write_dot(add_rank('reduced.dot'), 'ranked.dot')"
-# srcxray.py "write_dot(remove_loops(read_dot2('reduced.dot')), 'no-loops.dot')"
+# srcxray.py "write_dot(remove_loops(read_dot('reduced.dot')), 'no-loops.dot')"
 
 def cleanup(a):
     log('')
@@ -417,7 +418,9 @@ def cleanup(a):
     write_dot(dg, a)
 
 
-def leaves(dg):
+def leaves(a):
+    dg = to_dg(a)
+    log(dg)
     # [x for x in G.nodes() if G.out_degree(x)==0 and G.in_degree(x)==1]
     return {n: dg.in_degree(n) for (n, d) in dg.out_degree if not d}
 
@@ -528,12 +531,14 @@ def cflow_preprocess(a):
                 s = s.decode('utf-8')
             except UnicodeDecodeError:
                 s = s.decode('latin1')
-            # treat struct like function
-            s = re.sub(r"^static struct (\w+) = ", r"\1()", s)
-            s = re.sub(r"^static struct (\w+)\[\] = ", r"\1()", s)
-            s = re.sub(r"^static const struct (\w+)\[\] = ", r"\1()", s)
+            if cflow_structs:
+                # treat structs like functions
+                s = re.sub(r"^static struct (\w+) = ", r"\1()", s)
+                s = re.sub(r"^static struct (\w+)\[\] = ", r"\1()", s)
+                s = re.sub(r"^static const struct (\w+)\[\] = ", r"\1()", s)
+                s = re.sub(r"^struct (.*) =", r"\1()", s)
             s = re.sub(r"^static __initdata int \(\*actions\[\]\)\(void\) = ",
-                       "int actions()", s)  # treat struct like function
+                       "int actions()", s)  # init/initramfs.c
             s = re.sub(r"^static ", "", s)
             s = re.sub(r"SENSOR_DEVICE_ATTR.*\((\w*),", r"void sensor_dev_attr_\1()(", s)
             s = re.sub(r"COMPAT_SYSCALL_DEFINE[0-9]\((\w*),",
@@ -544,13 +549,10 @@ def cflow_preprocess(a):
             s = re.sub(r"^(\w*)initcall\((.*)\)",
                        r"void \1initcall() {\2();}", s)
             s = re.sub(r"^static ", "", s)
-            # s = re.sub(r"__read_mostly", "", s)
             s = re.sub(r"^inline ", "", s)
             s = re.sub(r"^const ", "", s)
-            s = re.sub(r"^struct (.*) =", r"\1()", s)
             s = re.sub(r"\b__initdata\b", "", s)
             s = re.sub(r"DEFINE_PER_CPU\((.*),(.*)\)", r"\1 \2", s)
-            # s = re.sub(r"__init_or_module", "", s)
             # __attribute__
             # for line in sys.stdin:
             sys.stdout.write(s)
@@ -682,7 +684,7 @@ def write_dot(g, dot):
 
 
 @open_file(0, mode='r')
-def read_dot2(dot):
+def read_dot(dot):
     # read_dot pydot.graph_from_dot_data parse_dot_data from_pydot
     dg = nx.DiGraph()
     for a in dot:
@@ -698,20 +700,24 @@ def read_dot2(dot):
                         dg.add_edge(m.group(1), m.group(2))
                 else:
                     log(a)
+        elif re.match('.*[=\[\]{}]', a):
+            continue
         else:
             m = re.match('"?([^"]+)"?', a)
             if m:
                 if m.group(1):
                     dg.add_node(m.group(1))
-
     return dg
 
 
 def to_dg(a):
     if isinstance(a, nx.DiGraph):
+        log(a)
         return a
     if os.path.isfile(a):
-        return read_dot2(a)
+        log(a)
+        return read_dot(a)
+    raise(Exception(a))
 
 
 def remove_loops(dg):
@@ -738,12 +744,45 @@ def remove_loops(dg):
     return dg
 
 
+def remove_couples(dg):
+    couples = []
+    for n in dg:
+        if dg.out_degree(n) == 1:
+            s = list(dg.successors(n))[0]
+            if dg.in_degree(s) == 1:
+                couples.append((n, s))
+    pprint(couples)
+    dg.remove_edges_from(couples)
+    return dg
+
+
+def rank_couples(dg):
+    couples = []
+    ranked = set()
+    for n in dg:
+        if n in ranked:
+            continue
+        m = n
+        while True:
+            if dg.out_degree(m) == 1:
+                s = list(dg.successors(m))[0]
+                if dg.in_degree(s) == 1:
+                    couples.append((m, s))
+                ranked.update(set((m, s)))
+                dg.nodes[m]['rank1'] = dg.nodes[m]['rank2'] = dg.nodes[s]['rank1'] = dg.nodes[s]['rank2'] = n
+                m = s
+                continue
+            break
+    return dg
+
+
 def cflow_dir(a):
     index = nx.DiGraph()
     for c in glob.glob(os.path.join(a, "*.c")):
         g = None
         dot = str(Path(c).with_suffix(".dot"))
         if not os.path.isfile(dot):
+            # c -> cflow and dot
             g = import_cflow(c, Path(c).with_suffix(".cflow"))
             write_dot(g, dot)
             print(dot, popen("ctags -x %s | wc -l" % (c))[0], len(set(e[0] for e in g.edges())))
@@ -776,12 +815,14 @@ def cflow_linux():
     dirs += ['mm']
 
     # fs/notify/fanotify fs/notify/inotify
-
+    all = None
     try:
         print('loading all.dot')
-        all = read_dot2('all.dot')
+        all = read_dot('all.dot')
         # all = nx.DiGraph(read_dot('all.dot'))
     except FileNotFoundError:
+        pass
+    if not all:
         all = nx.DiGraph()
         for a in dirs:
             print(a)
@@ -915,6 +956,8 @@ def usage():
     print(me, "call_tree start_kernel")
     print(me, "import_cflow $none_or_dir_or_file_or_mask")
     print(me, "stats $dot")
+    print(me, "leaves $dot")
+    print(me, "cflow_linux")
     print("Emergency termination: ^Z, kill %1")
     print()
 
@@ -922,7 +965,7 @@ def usage():
 class _unittest_autotest(unittest.TestCase):
     def test_1(self):
         write_dot(nx.DiGraph([(1, 2), (2, 3), (2, 4)]), 'test.dot')
-        g = read_dot2("test.dot")
+        g = read_dot("test.dot")
         self.assertEqual(list(g.successors("2")), ["3", "4"])
         self.assertTrue(os.path.isdir('include/linux/'))
         os.chdir('init')
@@ -955,8 +998,10 @@ def main():
                            for a in sys.argv[1:]) + ')')
         if isinstance(ret, nx.DiGraph):
             digraph_print(ret)
-        if isinstance(ret, bool) and ret is False:
+        elif isinstance(ret, bool) and ret is False:
             sys.exit(os.EX_CONFIG)
+        else:
+            pprint(ret)
         # if (ret is not None):
             #    print(ret)
     except KeyboardInterrupt:
