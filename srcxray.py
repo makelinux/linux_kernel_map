@@ -969,6 +969,22 @@ def import_symbols():
 me = os.path.basename(sys.argv[0])
 
 
+def dir_tree(d='.'):
+    stack = list()
+    nprev = -1
+    g = my_graph()
+    # all = nx.DiGraph()
+    # TODO
+    for path, dirs, files, fds in os.fwalk(d):
+        print(path, fds)
+        (dir, base) = os.path.split(path)
+        path2 = path.split(os.sep)
+        if len(path2) > 1:
+            # g.add_edge(path2[-2] + str(), path2[-1])
+            g.add_edge(dir, path)
+    return g
+
+
 def usage():
     print("Usage:\n")
     for c in ["referers_tree", "call_tree", "referers_dep", "call_dep"]:
