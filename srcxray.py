@@ -154,7 +154,7 @@ def func_referers_cscope(name):
             cscope_warned = True
         return []
     res = list(dict.fromkeys([l.split()[1] for l in popen(r'cscope -d -L3 "%s"' %
-                             (name)) if l not in black_list]))
+                                                          (name)) if l not in black_list]))
     if not res:
         res = func_referers_git_grep(name)
     return res
@@ -346,7 +346,8 @@ def syscalls():
     if not os.path.isfile(scd):
         os.system("grep SYSCALL_DEFINE -r --include='*.c' > " + scd)
     with open(scd, 'r') as f:
-        v = set(['sigsuspend', 'llseek', 'sysfs', 'sync_file_range2', 'ustat', 'bdflush'])
+        v = set(['sigsuspend', 'llseek', 'sysfs',
+                 'sync_file_range2', 'ustat', 'bdflush'])
         for s in f:
             if any(x in s.lower() for x in ['compat', 'stub']):
                 continue
@@ -358,7 +359,7 @@ def syscalls():
                         r'.*64',
                         r'.*32$',
                         r'.*16$',
-                        }:
+                }:
                     if re.match(p, m.group(2)):
                         m = None
                         break
@@ -458,7 +459,8 @@ def digraph_tree(dg, starts=None, black_list=black_list):
         starts = {}
         for i in [n for (n, d) in dg.in_degree if not d]:
             starts[i] = dg.out_degree(i)
-        starts = [a[0] for a in sorted(starts.items(), key=lambda k: k[1], reverse=True)]
+        starts = [a[0] for a in sorted(
+            starts.items(), key=lambda k: k[1], reverse=True)]
     if len(starts) == 1:
         sub(starts[0])
     elif len(starts) > 1:
@@ -481,7 +483,8 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
             return
         outs = {_: dg.out_degree(_) for _ in dg.successors(node)}
         if sort:
-            outs = {a: b for a, b in sorted(outs.items(), key=lambda k: k[1], reverse=True)}
+            outs = {a: b for a, b in sorted(
+                outs.items(), key=lambda k: k[1], reverse=True)}
         s = ''
         if 'rank' in dg.nodes[node]:
             s = str(dg.nodes[node]['rank'])
@@ -503,7 +506,8 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
         starts = {}
         for i in [n for (n, d) in dg.in_degree if not d]:
             starts[i] = dg.out_degree(i)
-        starts = [a[0] for a in sorted(starts.items(), key=lambda k: k[1], reverse=True)]
+        starts = [a[0] for a in sorted(
+            starts.items(), key=lambda k: k[1], reverse=True)]
     if len(starts) > 1:
         print_limited(default_root, dst)
         for s in starts:
@@ -540,7 +544,8 @@ def cflow_preprocess(a):
             s = re.sub(r"^static __initdata int \(\*actions\[\]\)\(void\) = ",
                        "int actions()", s)  # init/initramfs.c
             s = re.sub(r"^static ", "", s)
-            s = re.sub(r"SENSOR_DEVICE_ATTR.*\((\w*),", r"void sensor_dev_attr_\1()(", s)
+            s = re.sub(r"SENSOR_DEVICE_ATTR.*\((\w*),",
+                       r"void sensor_dev_attr_\1()(", s)
             s = re.sub(r"COMPAT_SYSCALL_DEFINE[0-9]\((\w*),",
                        r"compat_sys_\1(", s)
             s = re.sub(r"SYSCALL_DEFINE[0-9]\((\w*)", r"sys_\1(", s)
@@ -559,14 +564,14 @@ def cflow_preprocess(a):
 
 
 cflow_param = {
-                "modifier": "__init __inline__ noinline __initdata __randomize_layout asmlinkage "
-                " __visible __init __leaf__ __ref __latent_entropy __init_or_module  ",
+    "modifier": "__init __inline__ noinline __initdata __randomize_layout asmlinkage "
+                " __visible __init __leaf__ __ref __latent_entropy __init_or_module  libmosq_EXPORT",
                 "wrapper": "__attribute__ __section__ "
                 "TRACE_EVENT MODULE_AUTHOR MODULE_DESCRIPTION MODULE_LICENSE MODULE_LICENSE MODULE_SOFTDEP "
                 "INIT_THREAD_INFO "
                 "__acquires __releases __ATTR"
                 # "wrapper": "__setup early_param"
-        }
+}
 
 # export CPATH=:include:arch/x86/include:../build/include/:../build/arch/x86/include/generated/:include/uapi
 # srcxray.py "'\n'.join(cflow('init/main.c'))"
@@ -580,7 +585,8 @@ def cflow(a=None):
             else:
                 cflow_param['modifier'] += ' ' + a
     if not a:
-        a = "$(cat cscope.files)" if os.path.isfile('cscope.files') else "*.c *.h *.cpp *.hh "
+        a = "$(cat cscope.files)" if os.path.isfile(
+            'cscope.files') else "*.c *.h *.cpp *.hh "
     elif isinstance(a, list):
         pass
     elif os.path.isdir(a):
@@ -594,8 +600,8 @@ def cflow(a=None):
              # + "-DCONFIG_KALLSYMSZ "
              + "--preprocess='srcxray.py cflow_preprocess' "
              + ''.join([''.join(["--symbol={0}:{1} ".format(w, p)
-                       for w in cflow_param[p].split()])
-                       for p in cflow_param.keys()])
+                                 for w in cflow_param[p].split()])
+                        for p in cflow_param.keys()])
              + " --include=_sxt --brief --level-indent='0=\t' "
              + a)
     # print(cflow)
@@ -682,22 +688,25 @@ def write_dot(g, dot):
             ranks[r].append(n)
         if not g.out_degree(n):
             continue
-        dot.write('"%s" -> { ' % (n))
-        dot.write(' '.join(['"%s"' % (str(a)) for a in g.successors(n)]))
+        dot.write('"%s" -> { ' % re.escape(n))
+        dot.write(' '.join(['"%s"' % (re.escape(str(a)))
+                            for a in g.successors(n)]))
         if scaled and r and int(r):
             dot.write(' } [penwidth=%d label=%d];\n' % (100/r, r))
         else:
             dot.write(' } ;\n')
     print(ranks.keys())
     for r in ranks.keys():
-        dot.write("{ rank=same %s }\n" % (' '.join(['"%s"' % (str(a)) for a in ranks[r]])))
+        dot.write("{ rank=same %s }\n" %
+                  (' '.join(['"%s"' % (str(a)) for a in ranks[r]])))
     for n in g.nodes():
         prop = Munch()
         if scaled and len(ranks):
             prop.fontsize = 500 + 10000 / (len(ranks[rank(g, n)]) + 1)
         # prop.label = n + ' ' + str(rank(g,n))
         if prop:
-            dot.write('"%s" [%s]\n' % (n, ','.join(['%s="%s"' % (a, str(prop[a])) for a in prop])))
+            dot.write('"%s" [%s]\n' % (re.escape(n), ','.join(
+                ['%s="%s"' % (a, str(prop[a])) for a in prop])))
         elif not g.number_of_edges():
             dot.write('"%s"\n' % (n))
         # else:
@@ -716,7 +725,8 @@ def read_dot(dot):
         if '->' in a:
             m = re.match('"?([^"]+)"? -> {(.+)}', a)
             if m:
-                dg.add_edges_from([(m.group(1), b.strip('"')) for b in m.group(2).split() if b != m.group(1)])
+                dg.add_edges_from([(m.group(1), b.strip('"'))
+                                   for b in m.group(2).split() if b != m.group(1)])
             else:
                 m = re.match('"?([^"]+)"? -> "?([^"]*)"?;', a)
                 if m:
@@ -809,7 +819,8 @@ def cflow_dir(a):
             # c -> cflow and dot
             g = import_cflow(c, Path(c).with_suffix(".cflow"))
             write_dot(g, dot)
-            print(dot, popen("ctags -x %s | wc -l" % (c))[0], len(set(e[0] for e in g.edges())))
+            print(dot, popen("ctags -x %s | wc -l" % (c))
+                  [0], len(set(e[0] for e in g.edges())))
         else:
             print(dot)
             try:
@@ -863,7 +874,8 @@ def cflow_linux():
     start_kernel = digraph_tree(all, ['start_kernel'])
     write_dot(start_kernel, 'start_kernel.dot')
     write_dot(reduce_graph(start_kernel), 'start_kernel-reduced.dot')
-    write_dot(reduce_graph(reduce_graph(start_kernel)), 'start_kernel-reduced2.dot')
+    write_dot(reduce_graph(reduce_graph(start_kernel)),
+              'start_kernel-reduced2.dot')
     write_dot(reduce_graph(digraph_tree(all, ['sys_clone'])), 'sys_clone.dot')
 
 
@@ -1011,15 +1023,21 @@ class _unittest_autotest(unittest.TestCase):
         self.assertEqual(list(g.successors("2")), ["3", "4"])
         self.assertTrue(os.path.isdir('include/linux/'))
         os.chdir('init')
-        self.assertEqual('\t\t\t\t\tprepare_namespace ^', popen('srcxray.py referers_tree nfs_root_data')[-1])
-        self.assertEqual('initrd_load: prepare_namespace', popen('srcxray.py referers_dep nfs_root_data')[-1])
-        self.assertEqual('calibrate_delay_converge: __delay', popen('srcxray.py call_dep start_kernel')[-2])
-        self.assertEqual('\t\tcpu_startup_entry', popen('srcxray.py call_tree start_kernel')[-1])
+        self.assertEqual('\t\t\t\t\tprepare_namespace ^', popen(
+            'srcxray.py referers_tree nfs_root_data')[-1])
+        self.assertEqual('initrd_load: prepare_namespace', popen(
+            'srcxray.py referers_dep nfs_root_data')[-1])
+        self.assertEqual('calibrate_delay_converge: __delay',
+                         popen('srcxray.py call_dep start_kernel')[-2])
+        self.assertEqual('\t\tcpu_startup_entry', popen(
+            'srcxray.py call_tree start_kernel')[-1])
         os.chdir('..')
         self.assertTrue(syscalls().number_of_edges() > 400)
         # digraph_print:
-        self.assertEqual("\t\tmount_initrd ^", popen("srcxray.py import_cflow init/do_mounts_initrd.c")[-1])
-        self.assertEqual("\t\t4", popen('srcxray.py "nx.DiGraph([{1,2},{2,3},{2,4}])"')[-1])
+        self.assertEqual("\t\tmount_initrd ^", popen(
+            "srcxray.py import_cflow init/do_mounts_initrd.c")[-1])
+        self.assertEqual("\t\t4", popen(
+            'srcxray.py "nx.DiGraph([{1,2},{2,3},{2,4}])"')[-1])
 
 
 def main():
@@ -1037,7 +1055,7 @@ def main():
                 ret = eval(a1 + ".main()")
             else:
                 ret = eval(a1 + '(' + ', '.join("'%s'" % (a)
-                           for a in sys.argv[1:]) + ')')
+                                                for a in sys.argv[1:]) + ')')
         if isinstance(ret, nx.DiGraph):
             digraph_print(ret)
         elif isinstance(ret, bool) and ret is False:
