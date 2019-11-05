@@ -33,7 +33,7 @@ import unittest
 import types
 
 default_root = 'starts'
-black_list = ('aligned __attribute__ unlikely typeof u32 '
+black_list = ('aligned unlikely typeof u32 '
               'PVOP_CALLEE0 PVOP_VCALLEE0 PVOP_VCALLEE1 if trace_hardirqs_off '
               'i NULL likely unlikely true false test_bit NAPI_GRO_CB clear_bit '
               'atomic_read preempt_disable preempt_enable container_of ENOSYS '
@@ -43,7 +43,7 @@ black_list = ('aligned __attribute__ unlikely typeof u32 '
               'list_empty memcpy size_t loff_t pos d_inode dput copy_to_user EIO bool out IS_ERR '
               'EPERM rcu_read_lock rcu_read_unlock spin_lock spin_unlock list_for_each_entry kfree '
               'GFP_KERNEL ENOMEM EFAULT ENOENT EAGAIN PTR_ERR PAGE_SHIFT PAGE_SIZE '
-              'pgoff_t pte_t pmd_t HPAGE_PMD_NR PageLocked entry swp_entry_t next unlock_page spinlock_t end start '
+              'pgoff_t pte_t pmd_t HPAGE_PMD_NR PageLocked entry swp_entry_t next unlock_page spinlock_t end XXstart '
               ' VM_BUG_ON VM_BUG_ON_PAGE BDI_SHOW max '
               'ssize_t path_put __user '
               'list_del compound_head list_add cond_resched put_page nr_pages min spin_lock_irqsave IS_ENABLED '
@@ -59,7 +59,7 @@ black_list = ('aligned __attribute__ unlikely typeof u32 '
               'retry LOOKUP_REVAL retry_estale user_path_at lookup_flags old '
               'current_user_ns spin_lock_irq spin_unlock_irq prepare_creds '
               'tasklist_lock commit_creds read_lock read_unlock SIGKILL SIGSTOP abort_creds fd_install '
-              'real_mount FMODE_WRITE tv_nsec putname ,'
+              'real_mount FMODE_WRITE tv_nsec putname '
               ).split()
 
 
