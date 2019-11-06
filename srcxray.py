@@ -992,12 +992,27 @@ def dir_tree(d='.'):
     # all = nx.DiGraph()
     # TODO
     for path, dirs, files, fds in os.fwalk(d):
-        print(path, fds)
         (dir, base) = os.path.split(path)
+        dir = re.sub(r'^\.\/', '', dir)
+        path = re.sub(r'^\.\/', '', path)
         path2 = path.split(os.sep)
+        # print(path, fds, len(path2))
+        if re.match(r'\.repo/', path) or len(path2) > level_limit:
+            # print("skip", path)
+            continue
         if len(path2) > 1:
             # g.add_edge(path2[-2] + str(), path2[-1])
+            if g.number_of_edges() > limit:
+                g.add_edge(dir, '...')
+                break
             g.add_edge(dir, path)
+            #g.add_node(path, label=path2[-1], xlabel='<<font point-size="1">'+path+'</font>>')
+            g.add_node(path, label=path2[-1])
+            #g.add_node(path, label=path2[-1], xlabel=path)
+    print(g.number_of_edges())
+    return g
+
+
     return g
 
 
