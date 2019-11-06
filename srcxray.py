@@ -702,9 +702,11 @@ def write_dot(g, dot):
         dot.write("{ rank=same %s }\n" %
                   (' '.join(['"%s"' % (str(a)) for a in ranks[r]])))
     for n in g.nodes():
-        prop = Munch()
+        prop = Munch(g.node[n])
         if scaled and len(ranks):
             prop.fontsize = 500 + 10000 / (len(ranks[rank(g, n)]) + 1)
+        prop.fontsize = 30 + min(5 * len(g.edges(n)), 50)
+
         # prop.label = n + ' ' + str(rank(g,n))
         if prop:
             dot.write('"%s" [%s]\n' % (re.escape(n), ','.join(
