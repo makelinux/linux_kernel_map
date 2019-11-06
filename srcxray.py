@@ -1026,6 +1026,27 @@ def doxygen_xml(a):
     return g
 
 
+def doxygen_length(a):
+    g = my_graph()
+    for x in list(glob.glob(os.path.join(a, "*.xml")) + [a]):
+        if os.path.isfile(x):
+            d = xml.dom.minidom.parse(x)
+            for m in d.getElementsByTagName("memberdef"):
+                n = m.getElementsByTagName("name")[0].firstChild.data
+                location = m.getElementsByTagName("location")[0]
+                # for r in m.getElementsByTagName("references"):
+                #    g.add_edge(n, r.firstChild.data)
+                # referencedby
+                e = location.getAttribute('bodyend')
+                if not e or e == "-1":
+                    continue
+                l = int(e) - int(location.getAttribute('bodystart'))
+                if l < 20:
+                    continue
+                print(location.getAttribute('bodystart'), n, location.getAttribute('file'), location.getAttribute('bodyfile'), x, file=sys.stderr)
+                print("{0}:{1}:".format(location.getAttribute('bodyfile'),
+                                        location.getAttribute('bodystart')), n, l, "SLOC")
+                #<location file="common/log.cpp" line="21" column="1" bodyfile="common/log.cpp" bodystart="21" bodyend="49"/>
     return g
 
 
