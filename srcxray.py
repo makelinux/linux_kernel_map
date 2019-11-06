@@ -187,10 +187,8 @@ def referers_tree(name, referer=None, printed=None, level=0):
     if level > level_limit - 2:
         print_limited((level + 1)*'\t' + '...')
         return ''
-    listed = set()
     for a in referer(name):
         referers_tree(a, referer, printed, level + 1)
-        listed.add(a)
     return ''
 
 
