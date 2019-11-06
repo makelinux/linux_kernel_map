@@ -31,6 +31,8 @@ from pathlib import *
 import pygraphviz  # python3-pygraphviz
 import unittest
 import types
+from xml.dom.minidom import parse
+import xml.dom.minidom
 
 default_root = 'starts'
 black_list = ('aligned unlikely typeof u32 '
@@ -63,8 +65,8 @@ black_list = ('aligned unlikely typeof u32 '
               ).split()
 
 
-level_limit = 8
-limit = 100000
+level_limit = 20
+limit = 1000
 n = 0
 cflow_structs = False
 
