@@ -1013,6 +1013,19 @@ def dir_tree(d='.'):
     return g
 
 
+def doxygen_xml(a):
+    g = my_graph()
+    for x in list(glob.glob(os.path.join(a, "*.xml")) + [a]):
+        if os.path.isfile(x):
+            d = xml.dom.minidom.parse(x)
+            for m in d.getElementsByTagName("memberdef"):
+                n = m.getElementsByTagName("name")[0].firstChild.data
+                for r in m.getElementsByTagName("references"):
+                    g.add_edge(n, r.firstChild.data)
+                # referencedby
+    return g
+
+
     return g
 
 
