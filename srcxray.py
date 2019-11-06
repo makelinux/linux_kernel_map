@@ -596,7 +596,7 @@ def cflow(a=None):
         pass
     # "--depth=%d " %(level_limit+1) +
     # --debug=1
-    cflow = (r"cflow -v "
+    cflow = (r"cflow -m _ignore_main_get_all_ -v "
              # + "-DCONFIG_KALLSYMSZ "
              + "--preprocess='srcxray.py cflow_preprocess' "
              + ''.join([''.join(["--symbol={0}:{1} ".format(w, p)
@@ -604,7 +604,7 @@ def cflow(a=None):
                         for p in cflow_param.keys()])
              + " --include=_sxt --brief --level-indent='0=\t' "
              + a)
-    # print(cflow)
+    log(cflow)
     return popen(cflow)
 
 
