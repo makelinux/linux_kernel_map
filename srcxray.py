@@ -558,7 +558,7 @@ def cflow_preprocess(a):
             s = re.sub(r"^const ", "", s)
             s = re.sub(r"\b__initdata\b", "", s)
             s = re.sub(r"DEFINE_PER_CPU\((.*),(.*)\)", r"\1 \2", s)
-            # __attribute__
+            s = re.sub(r"^(\w+) {$", r"void \1() {", s)
             # for line in sys.stdin:
             sys.stdout.write(s)
 
