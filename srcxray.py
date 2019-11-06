@@ -1115,9 +1115,8 @@ def main():
         elif isinstance(ret, bool) and ret is False:
             sys.exit(os.EX_CONFIG)
         else:
-            pprint(ret)
-        # if (ret is not None):
-            #    print(ret)
+            if (ret is not None):
+                print(ret)
     except KeyboardInterrupt:
         log("\nInterrupted")
 
