@@ -1065,6 +1065,7 @@ def usage():
     print(me, "cflow_linux")
     print(me, "\"write_dot(import_outline('outline.txt'),'outline.dot')\"")
     print(me, "\"write_dot(dir_tree('.'),'tree.dot')\"")
+    print(me, "\"write_dot(doxygen_xml('xml/'),'doxygen.dot')\"")
     print("Emergency termination: ^Z, kill %1")
     print()
 
