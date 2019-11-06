@@ -647,7 +647,9 @@ def import_outline(a=None):
                 id = str(m.group(2))
             else:
                 raise Exception(line)
-
+            if not id:
+                continue
+            id = re.sub(' \^$', '', id)
             if n <= nprev:
                 stack = stack[:n - nprev - 1]
             # print(n, id, stack)
