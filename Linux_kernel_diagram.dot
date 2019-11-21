@@ -20,12 +20,27 @@ digraph matrix {
 			fixedsize=true
 		];
 		usr_	
+		functions_
 		D0
 		E0
 		F0
 		G0
 		H0
 	}
+	{ //
+		node [fixedsize=true,
+			style=invis,
+			width=0.0
+			height=0.0
+		];
+		row=subfunc;
+		system_;
+		networking_;
+		storage_;
+		memory_;
+		processing_;
+		HI_;
+	} //
 	{
 		edge [style="filled,setlinewidth(3)",
 			weight=10
@@ -43,6 +58,7 @@ digraph matrix {
 				style="filled,setlinewidth(3)",
 				tooltip=TODO,
 				width=1];
+			system_;
 			SCI	[color="#e27dd6ff",
 				fillcolor="#d9e7ee",
 				fixedsize=true,
@@ -51,7 +67,7 @@ digraph matrix {
 				row=usr,
 				shape=ellipse,
 				style="filled,setlinewidth(3)"];
-			system -> SCI	[arrowhead="",
+			system -> system_	[arrowhead="",
 				color="#e27dd6ff",
 				row=func,
 				style="filled,setlinewidth(3)",
@@ -130,7 +146,7 @@ digraph matrix {
 				row=usr,
 				shape=ellipse,
 				style="filled,setlinewidth(3)"];
-			networking -> sock	[arrowhead="",
+			networking ->  networking_	[arrowhead="",
 				color="#61c2c5",
 				row=func,
 				style="filled,setlinewidth(3)",
@@ -209,7 +225,7 @@ digraph matrix {
 				row=usr,
 				shape=ellipse,
 				style="filled,setlinewidth(3)"];
-			storage -> FS	[arrowhead="",
+			storage -> storage_	[arrowhead="",
 				color="#8383cc",
 				row=func,
 				style="filled,setlinewidth(3)",
@@ -324,7 +340,7 @@ digraph matrix {
 				row=usr,
 				shape=ellipse,
 				style="filled,setlinewidth(3)"];
-			processing -> proc	[arrowhead="",
+			processing -> processing_	[arrowhead="",
 				color="#c46747",
 				row=func,
 				style="filled,setlinewidth(3)",
@@ -401,7 +417,7 @@ digraph matrix {
 				row=usr,
 				shape=ellipse,
 				style="filled,setlinewidth(3)"];
-			HI -> char	[arrowhead="",
+			HI -> HI_	[arrowhead="",
 				color="#cfbf57ff",
 				row=func,
 				style="filled,setlinewidth(3)",
@@ -608,7 +624,7 @@ digraph matrix {
 				row=usr,
 				shape=ellipse,
 				style="filled,setlinewidth(3)"];
-			memory -> MA	[arrowhead="",
+			memory -> memory_	[arrowhead="",
 				color="#51bf5b",
 				row=func,
 				style="filled,setlinewidth(3)",
@@ -658,6 +674,15 @@ digraph matrix {
 		char;
 		usr;
 		MA;
+	}
+	{
+		edge [weight=10 style=invis];
+		system_ -> SCI
+		networking_ -> sock;
+		storage_ -> FS;
+		memory_ -> MA;
+		processing_ -> proc;
+		HI_ -> char;
 	}
 	{
 		graph [rank=same];
