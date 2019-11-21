@@ -454,19 +454,16 @@ digraph matrix {
 	}
 	{
 		graph [rank=same];
-		node [fontcolor=white];
 		DM;
 		NFS;
 		mmap;
 		sync;
 		E0		 [fixedsize=true,
-			fontcolor=white,
 			height=0,
 			shape="",
 			style=invis,
 			width=0];
 		bridges		 [fillcolor="#91b5c9",
-			fontcolor=white,
 			shape=octagon,
 			style="filled,setlinewidth(0)"];
 	}
@@ -565,8 +562,7 @@ digraph matrix {
 	bottom	 [label="© 2007-2019 Constantine Shulyupin http://www.MakeLinux.net/kernel/diagram",
 		shape=plaintext,
 		style=""];
-	H4 -> bottom	 [style="filled,setlinewidth(3)",
-		weight=""];
+	H4 -> bottom	 [weight=""];
 	layers	 [fillcolor=lightgray,
 		height=0.1,
 		style="filled,setlinewidth(0)",
