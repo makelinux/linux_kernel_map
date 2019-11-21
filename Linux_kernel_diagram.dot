@@ -48,14 +48,14 @@ digraph matrix {
 		{
 			node [color="#e27dd6ff",
 				height=0.5
+				shape=box,
+				style="filled,setlinewidth(3)",
 			];
 			system	[color="#e27dd6ff",
 				fillcolor=white,
 				fixedsize=true,
 				height=0.5,
 				row=func,
-				shape=box,
-				style="filled,setlinewidth(3)",
 				tooltip=TODO,
 				width=1];
 			system_;
@@ -66,20 +66,17 @@ digraph matrix {
 				label="System calls",
 				row=usr,
 				shape=ellipse,
-				style="filled,setlinewidth(3)"];
+				];
 			system -> system_	[arrowhead="",
 				color="#e27dd6ff",
 				row=func,
-				style="filled,setlinewidth(3)",
 				weight=10];
 			sysfs	[color="#e27dd6ff",
 				fillcolor="#b2d3e4",
 				height=0.5,
 				label="proc, sysfs,\nfile systems",
-				shape=box,
-				style="filled,setlinewidth(3)"];
+				];
 			SCI -> sysfs	[color="#e27dd6ff",
-				style="filled,setlinewidth(3)",
 				weight=10];
 			DM	[color="#e27dd6ff",
 				fillcolor="#91b5c9",
@@ -88,29 +85,23 @@ digraph matrix {
 				height=0.4,
 				label="Device\nModel",
 				shape=octagon,
-				style="filled,setlinewidth(3)",
 				width=1];
 			sysfs -> DM	[color="#e27dd6ff",
-				style="filled,setlinewidth(3)",
 				weight=10];
 			log_sys	[color="#e27dd6ff",
 				fillcolor="#6a9ab1",
 				fontsize=10,
 				height=0.5,
 				label="system run,\nmodules,\ngeneric\nHW access ",
-				shape=box,
-				style="filled,setlinewidth(3)"];
+				];
 			DM -> log_sys	[color="#e27dd6ff",
-				style="filled,setlinewidth(3)",
 				weight=10];
 			bus_drv	[color="#e27dd6ff",
 				fillcolor="#71809b",
 				height=0.5,
 				label="bus drivers",
-				shape=box,
-				style="filled,setlinewidth(3)"];
+				];
 			log_sys -> bus_drv	[color="#e27dd6ff",
-				style="filled,setlinewidth(3)",
 				weight=10];
 			H2	[color="#e27dd6ff",
 				fillcolor="#777777",
@@ -119,10 +110,8 @@ digraph matrix {
 				height=0.5,
 				label="busess:\nPCI, USB ...",
 				row=chip,
-				shape=box,
-				style="filled,setlinewidth(3)"];
+				];
 			bus_drv -> H2	[color="#e27dd6ff",
-				style="filled,setlinewidth(3)",
 				weight=10];
 		}
 		{
@@ -322,6 +311,7 @@ digraph matrix {
 		{
 			node [color="#c46747",
 				height=0.5
+				style="filled,setlinewidth(3)",
 			];
 			edge [color="#c46747"];
 			processing	[color="#c46747",
@@ -330,7 +320,6 @@ digraph matrix {
 				height=0.5,
 				row=func,
 				shape=box,
-				style="filled,setlinewidth(3)",
 				width=1];
 			proc	[color="#c46747",
 				fillcolor="#d9e7ee",
@@ -398,6 +387,7 @@ digraph matrix {
 		{
 			node [color="#cfbf57ff",
 				height=0.5
+				style="filled,setlinewidth(3)",
 			];
 			edge [color="#cfbf57ff"];
 			HI	[color="#cfbf57ff",
@@ -407,7 +397,6 @@ digraph matrix {
 				label="human\ninterface",
 				row=func,
 				shape=box,
-				style="filled,setlinewidth(3)",
 				width=1];
 			char	[color="#cfbf57ff",
 				fillcolor="#d9e7ee",
