@@ -290,7 +290,7 @@ digraph matrix {
 		node [color="#cfbf57ff",
 			style="filled,setlinewidth(3)"
 		];
-		edge [color="#cfbf57ff"];
+		edge [color="#cfbf57ff", weight=10];
 		HI_		 [color="#cfbf57ff",
 			fixedsize=true,
 			height=0,
@@ -301,6 +301,7 @@ digraph matrix {
 			fillcolor=white,
 			fixedsize=true,
 			height=0.4,
+			fontsize=11,
 			label="human\ninterface",
 			row=func,
 			width=1];
@@ -342,7 +343,7 @@ digraph matrix {
 	{
 		graph [rank=same];
 		edge [style=invis,
-			weight=10
+			weight=1
 		];
 		system;
 		networking;
@@ -560,7 +561,7 @@ digraph matrix {
 			style="filled,setlinewidth(3)"];
 	}
 	bottom	 [label="© 2007-2019 Constantine Shulyupin http://www.MakeLinux.net/kernel/diagram",
-		shape=plaintext];
+		shape=plaintext style=""];
 	H4 -> bottom	 [style="filled,setlinewidth(3)",
 		weight=""];
 	layers	 [fillcolor=lightgray,
@@ -616,6 +617,6 @@ digraph matrix {
 		style="filled,setlinewidth(1)"];
 	LKD	 [fontsize=20,
 		label="Linux kernel diagram",
-		shape=plain];
+		shape=plain style=""];
 	LKD -> storage;
 }
