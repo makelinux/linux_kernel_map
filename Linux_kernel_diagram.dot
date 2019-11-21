@@ -27,7 +27,7 @@ digraph matrix {
 		system		 [color="#e27dd6ff",
 			fillcolor=white,
 			fixedsize=true,
-			height=0.4,
+			height=0.3,
 			row=func,
 			tooltip=TODO,
 			width=1];
@@ -88,7 +88,7 @@ digraph matrix {
 		networking		 [color="#61c2c5",
 			fillcolor=white,
 			fixedsize=true,
-			height=0.4,
+			height=0.3,
 			row=func,
 			width=1];
 		networking -> networking_		 [arrowhead="",
@@ -149,7 +149,7 @@ digraph matrix {
 		storage		 [color="#8383cc",
 			fillcolor=white,
 			fixedsize=true,
-			height=0.4,
+			height=0.3,
 			row=func,
 			width=1];
 		storage -> storage_		 [arrowhead="",
@@ -242,7 +242,7 @@ digraph matrix {
 		processing		 [color="#c46747",
 			fillcolor=white,
 			fixedsize=true,
-			height=0.4,
+			height=0.3,
 			row=func,
 			width=1];
 		processing -> processing_		 [arrowhead="",
@@ -290,7 +290,9 @@ digraph matrix {
 		node [color="#cfbf57ff",
 			style="filled,setlinewidth(3)"
 		];
-		edge [color="#cfbf57ff", weight=10];
+		edge [color="#cfbf57ff",
+			weight=10
+		];
 		HI_		 [color="#cfbf57ff",
 			fixedsize=true,
 			height=0,
@@ -300,8 +302,8 @@ digraph matrix {
 		HI		 [color="#cfbf57ff",
 			fillcolor=white,
 			fixedsize=true,
-			height=0.4,
 			fontsize=11,
+			height=0.3,
 			label="human\ninterface",
 			row=func,
 			width=1];
@@ -347,30 +349,30 @@ digraph matrix {
 		];
 		system;
 		networking;
-		system -> networking;
+		system -> networking		 [weight=1];
 		storage;
-		networking -> storage;
+		networking -> storage		 [weight=1];
 		memory		 [color="#51bf5b",
 			fillcolor=white,
 			fixedsize=true,
-			height=0.4,
+			height=0.3,
 			row=func,
 			width=1];
-		storage -> memory;
+		storage -> memory		 [weight=1];
 		processing;
 		HI;
-		processing -> HI;
+		processing -> HI		 [weight=1];
+		memory -> processing		 [weight=1];
 		functions_		 [fixedsize=true,
 			height=0,
 			shape="",
 			style=invis,
 			width=0];
-		functions_ -> system;
-		memory -> processing;
+		functions_ -> system		 [weight=1];
 		functions		 [color=gray,
 			fillcolor=gray,
 			fixedsize=true,
-			height=0.4,
+			height=0.3,
 			row=func,
 			style=dashed,
 			width=0.8];
@@ -561,7 +563,8 @@ digraph matrix {
 			style="filled,setlinewidth(3)"];
 	}
 	bottom	 [label="© 2007-2019 Constantine Shulyupin http://www.MakeLinux.net/kernel/diagram",
-		shape=plaintext style=""];
+		shape=plaintext,
+		style=""];
 	H4 -> bottom	 [style="filled,setlinewidth(3)",
 		weight=""];
 	layers	 [fillcolor=lightgray,
@@ -617,6 +620,7 @@ digraph matrix {
 		style="filled,setlinewidth(1)"];
 	LKD	 [fontsize=20,
 		label="Linux kernel diagram",
-		shape=plain style=""];
+		shape=plain,
+		style=""];
 	LKD -> storage;
 }
