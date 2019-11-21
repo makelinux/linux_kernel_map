@@ -483,7 +483,7 @@ digraph matrix {
 				shape=box,
 				style="filled,setlinewidth(0)",
 				width=0.5];
-			functions -> layers	[style="filled,setlinewidth(3)",
+			functions -> layers	[style=invis,
 				weight=10];
 			usr	[fillcolor="#d9e7eeff",
 				fixedsize=true,
