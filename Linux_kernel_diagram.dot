@@ -18,7 +18,8 @@ digraph matrix {
 	];
 	{
 		node [color="#e27dd6ff"];
-		system_		 [fixedsize=true,
+		system_		 [color="#e27dd6ff",
+			fixedsize=true,
 			height=0,
 			shape="",
 			style=invis,
@@ -26,7 +27,7 @@ digraph matrix {
 		system		 [color="#e27dd6ff",
 			fillcolor=white,
 			fixedsize=true,
-			height=0.3,
+			height=0.4,
 			row=func,
 			tooltip=TODO,
 			width=1];
@@ -78,7 +79,8 @@ digraph matrix {
 	{
 		node [color="#61c2c5"];
 		edge [color="#61c2c5"];
-		networking_		 [fixedsize=true,
+		networking_		 [color="#61c2c5",
+			fixedsize=true,
 			height=0,
 			shape="",
 			style=invis,
@@ -86,6 +88,7 @@ digraph matrix {
 		networking		 [color="#61c2c5",
 			fillcolor=white,
 			fixedsize=true,
+			height=0.4,
 			row=func,
 			width=1];
 		networking -> networking_		 [arrowhead="",
@@ -136,15 +139,17 @@ digraph matrix {
 	{
 		node [color="#8383cc"];
 		edge [color="#8383cc"];
-		storage_		 [fixedsize=true,
+		NFS;
+		storage_		 [color="#8383cc",
+			fixedsize=true,
 			height=0,
 			shape="",
 			style=invis,
 			width=0];
-		NFS;
 		storage		 [color="#8383cc",
 			fillcolor=white,
 			fixedsize=true,
+			height=0.4,
 			row=func,
 			width=1];
 		storage -> storage_		 [arrowhead="",
@@ -228,7 +233,8 @@ digraph matrix {
 			style="filled,setlinewidth(3)"
 		];
 		edge [color="#c46747"];
-		processing_		 [fixedsize=true,
+		processing_		 [color="#c46747",
+			fixedsize=true,
 			height=0,
 			shape="",
 			style=invis,
@@ -236,6 +242,7 @@ digraph matrix {
 		processing		 [color="#c46747",
 			fillcolor=white,
 			fixedsize=true,
+			height=0.4,
 			row=func,
 			width=1];
 		processing -> processing_		 [arrowhead="",
@@ -284,7 +291,8 @@ digraph matrix {
 			style="filled,setlinewidth(3)"
 		];
 		edge [color="#cfbf57ff"];
-		HI_		 [fixedsize=true,
+		HI_		 [color="#cfbf57ff",
+			fixedsize=true,
 			height=0,
 			shape="",
 			style=invis,
@@ -292,6 +300,7 @@ digraph matrix {
 		HI		 [color="#cfbf57ff",
 			fillcolor=white,
 			fixedsize=true,
+			height=0.4,
 			label="human\ninterface",
 			row=func,
 			width=1];
@@ -335,13 +344,7 @@ digraph matrix {
 		edge [style=invis,
 			weight=10
 		];
-		functions_		 [fixedsize=true,
-			height=0,
-			shape="",
-			style=invis,
-			width=0];
 		system;
-		functions_ -> system;
 		networking;
 		system -> networking;
 		storage;
@@ -349,15 +352,24 @@ digraph matrix {
 		memory		 [color="#51bf5b",
 			fillcolor=white,
 			fixedsize=true,
+			height=0.4,
 			row=func,
 			width=1];
 		storage -> memory;
 		processing;
 		HI;
 		processing -> HI;
+		functions_		 [fixedsize=true,
+			height=0,
+			shape="",
+			style=invis,
+			width=0];
+		functions_ -> system;
+		memory -> processing;
 		functions		 [color=gray,
 			fillcolor=gray,
 			fixedsize=true,
+			height=0.4,
 			row=func,
 			style=dashed,
 			width=0.8];
@@ -365,20 +377,19 @@ digraph matrix {
 			color=gray,
 			style="",
 			weight=""];
-		memory -> processing;
 	}
 	{
 		graph [rank=same];
-		usr_		 [fixedsize=true,
-			height=0,
-			shape="",
-			style=invis,
-			width=0];
 		SCI;
 		sock;
 		FS;
 		proc;
 		char;
+		usr_		 [fixedsize=true,
+			height=0,
+			shape="",
+			style=invis,
+			width=0];
 		usr		 [fillcolor="#d9e7eeff",
 			fixedsize=true,
 			label="user space\ninterfaces",
@@ -405,32 +416,32 @@ digraph matrix {
 		storage_;
 		FS;
 		storage_ -> FS;
-		memory_		 [fixedsize=true,
-			height=0,
-			shape="",
-			style=invis,
-			width=0];
-		MA;
-		memory_ -> MA;
 		processing_;
 		proc;
 		processing_ -> proc;
 		HI_;
 		char;
 		HI_ -> char;
-	}
-	{
-		graph [rank=same];
-		D0		 [fixedsize=true,
+		MA;
+		memory_		 [fixedsize=true,
 			height=0,
 			shape="",
 			style=invis,
 			width=0];
+		memory_ -> MA;
+	}
+	{
+		graph [rank=same];
 		sysfs;
 		prot_fam;
 		VFS;
 		Tasks;
 		input;
+		D0		 [fixedsize=true,
+			height=0,
+			shape="",
+			style=invis,
+			width=0];
 		virt		 [fillcolor="#b2d3e4",
 			label="virtual\nsubsystems",
 			style="filled,setlinewidth(0)"];
@@ -441,31 +452,33 @@ digraph matrix {
 	{
 		graph [rank=same];
 		node [fontcolor=white];
-		E0		 [fixedsize=true,
-			height=0,
-			shape="",
-			style=invis,
-			width=0];
 		DM;
 		NFS;
 		mmap;
 		sync;
+		E0		 [fixedsize=true,
+			fontcolor=white,
+			height=0,
+			shape="",
+			style=invis,
+			width=0];
 		bridges		 [fillcolor="#91b5c9",
+			fontcolor=white,
 			shape=octagon,
 			style="filled,setlinewidth(0)"];
 	}
 	{
 		graph [rank=same];
-		F0		 [fixedsize=true,
-			height=0,
-			shape="",
-			style=invis,
-			width=0];
 		log_sys;
 		log_prot;
 		logFS;
 		sched;
 		F7;
+		F0		 [fixedsize=true,
+			height=0,
+			shape="",
+			style=invis,
+			width=0];
 		logical		 [fillcolor="#6a9ab1",
 			style="filled,setlinewidth(0)"];
 		log_mem		 [color="#51bf5b",
@@ -474,33 +487,33 @@ digraph matrix {
 	}
 	{
 		graph [rank=same];
-		G0		 [fixedsize=true,
-			height=0,
-			shape="",
-			style=invis,
-			width=0];
 		bus_drv;
 		netif;
 		block;
 		PA;
 		IRQ;
 		G7;
+		G0		 [fixedsize=true,
+			height=0,
+			shape="",
+			style=invis,
+			width=0];
 		HWI		 [fillcolor="#71809b",
 			label="hardware\ninterfaces",
 			style="filled,setlinewidth(0)"];
 	}
 	{
 		graph [rank=same];
-		H0		 [fixedsize=true,
-			height=0,
-			shape="",
-			style=invis,
-			width=0];
 		H2;
 		net_hw;
 		H4;
 		CPU;
 		H7;
+		H0		 [fixedsize=true,
+			height=0,
+			shape="",
+			style=invis,
+			width=0];
 		HW		 [fillcolor="#777777",
 			fontcolor=white,
 			label="electronics,\nhardware",
@@ -518,7 +531,6 @@ digraph matrix {
 			height=0.5
 		];
 		edge [color="#51bf5b"];
-		memory_;
 		PC;
 		mmap;
 		SW;
@@ -532,9 +544,8 @@ digraph matrix {
 		H5;
 		PA -> H5		 [color="#51bf5b",
 			style="filled,setlinewidth(3)"];
-		log_mem -> PA		 [color="#51bf5b",
-			style="filled,setlinewidth(3)"];
 		memory;
+		memory_;
 		memory -> memory_		 [arrowhead="",
 			color="#51bf5b",
 			row=func,
@@ -544,6 +555,8 @@ digraph matrix {
 		MA -> VM		 [color="#51bf5b",
 			style="filled,setlinewidth(3)"];
 		VM -> mmap		 [color="#51bf5b",
+			style="filled,setlinewidth(3)"];
+		log_mem -> PA		 [color="#51bf5b",
 			style="filled,setlinewidth(3)"];
 	}
 	bottom	 [label="© 2007-2019 Constantine Shulyupin http://www.MakeLinux.net/kernel/diagram",
@@ -555,9 +568,6 @@ digraph matrix {
 		style="filled,setlinewidth(0)",
 		width=0.5];
 	functions -> layers;
-	layers -> usr	 [arrowhead="",
-		color=gray,
-		style="filled,setlinewidth(1)"];
 	usr -> usr_	 [arrowhead="",
 		color="#d9e7eeff",
 		minlen=2,
@@ -601,6 +611,9 @@ digraph matrix {
 		row=chip,
 		style="filled,setlinewidth(3)",
 		weight=""];
+	layers -> usr	 [arrowhead="",
+		color=gray,
+		style="filled,setlinewidth(1)"];
 	LKD	 [fontsize=20,
 		label="Linux kernel diagram",
 		shape=plain];
