@@ -135,7 +135,7 @@ digraph matrix {
 				row=usr,
 				shape=ellipse,
 				style="filled,setlinewidth(3)"];
-			networking ->  networking_	[arrowhead="",
+			networking -> networking_	[arrowhead="",
 				color="#61c2c5",
 				row=func,
 				style="filled,setlinewidth(3)",
