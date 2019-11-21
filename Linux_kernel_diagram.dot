@@ -16,29 +16,15 @@ digraph matrix {
 	{
 		node [fixedsize=true,
 			style=invis,
-			width=0.5
+			width=0.3
+			fixedsize=true
 		];
-		usr_	[fixedsize=true,
-			style=invis,
-			width=0.5];
-		functions_	[fixedsize=true,
-			style=invis,
-			width=0.5];
-		D0	[fixedsize=true,
-			style=invis,
-			width=0.5];
-		E0	[fixedsize=true,
-			style=invis,
-			width=0.5];
-		F0	[fixedsize=true,
-			style=invis,
-			width=0.5];
-		G0	[fixedsize=true,
-			style=invis,
-			width=0.5];
-		H0	[fixedsize=true,
-			style=invis,
-			width=0.5];
+		usr_	
+		D0
+		E0
+		F0
+		G0
+		H0
 	}
 	{
 		edge [style="filled,setlinewidth(3)",
