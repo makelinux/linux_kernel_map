@@ -1,639 +1,565 @@
 digraph matrix {
 	graph [newrank=true,
-		nodesep=0.1,
-		overlap=true,
-		ranksep=0.1,
-		splines=false
-	];
-	node [height=0.3,
-		width=1.1
+	      nodesep=0.1,
+	      overlap=true,
+	      ranksep=0.1,
+	      splines=false
 	];
 	edge [arrowhead=none,
-		arrowsize=0.5,
-		style=invis,
-		weight=1
+	     arrowsize=0.5,
+	     style=invis,
+	     weight=1
+	];
+	node [fixedsize=true,
+	     style=invis,
+	     width=0,
+	     height=0,
 	];
 	{
-		node [fixedsize=true,
-			style=invis,
-			width=0.3
-			fixedsize=true
-		];
 		usr_	
-		functions_
-		D0
-		E0
-		F0
-		G0
-		H0
+			functions_
+			D0
+			E0
+			F0
+			G0
+			H0
 	}
-	{ //
-		node [fixedsize=true,
-			style=invis,
-			width=0.0
-			height=0.0
-		];
-		row=subfunc;
+	{
 		system_;
 		networking_;
 		storage_;
 		memory_;
 		processing_;
 		HI_;
-	} //
+	}
+	node [height=0.3,
+	     width=1.1,
+	     shape=box,
+	     height=0.5,
+	     style="filled,setlinewidth(3)",
+	     fixedsize=false
+	];
+	edge [style="filled,setlinewidth(3)",
+	     weight=10
+	];
 	{
-		edge [style="filled,setlinewidth(3)",
-			weight=10
+		node [color="#e27dd6ff",
 		];
-		{
-			node [color="#e27dd6ff",
-				height=0.5
-				shape=box,
-				style="filled,setlinewidth(3)",
-			];
-			system	[color="#e27dd6ff",
+		system	[color="#e27dd6ff",
+			fillcolor=white,
+			fixedsize=true,
+			height=0.3,
+			row=func,
+			tooltip=TODO,
+			width=1];
+		system_;
+		SCI	[color="#e27dd6ff",
+			fillcolor="#d9e7ee",
+			fixedsize=true,
+			label="System calls",
+			row=usr,
+			shape=ellipse,
+		];
+		system -> system_	[arrowhead="",
+		       color="#e27dd6ff",
+		       row=func];
+		sysfs	[color="#e27dd6ff",
+			fillcolor="#b2d3e4",
+			label="proc, sysfs,\nfile systems",
+		];
+		SCI -> sysfs	[color="#e27dd6ff",
+		    weight=10];
+		DM	[color="#e27dd6ff",
+			fillcolor="#91b5c9",
+			fixedsize=true,
+			fontsize=10,
+			height=0.4,
+			label="Device\nModel",
+			shape=octagon,
+			width=1];
+		sysfs -> DM	[color="#e27dd6ff",
+		      weight=10];
+		log_sys	[color="#e27dd6ff",
+			fillcolor="#6a9ab1",
+			fontsize=10,
+			label="system run,\nmodules,\ngeneric\nHW access ",
+		];
+		DM -> log_sys	[color="#e27dd6ff",
+		   weight=10];
+		bus_drv	[color="#e27dd6ff",
+			fillcolor="#71809b",
+			label="bus drivers",
+		];
+		log_sys -> bus_drv	[color="#e27dd6ff",
+			weight=10];
+		H2	[color="#e27dd6ff",
+			fillcolor="#777777",
+			fontcolor=white,
+			fontsize=10,
+			label="busess:\nPCI, USB ...",
+			row=chip,
+		];
+		bus_drv -> H2	[color="#e27dd6ff",
+			weight=10];
+	}
+	{
+		node [color="#61c2c5",
+		];
+		edge [color="#61c2c5"];
+		networking	[color="#61c2c5",
 				fillcolor=white,
 				fixedsize=true,
-				height=0.5,
-				row=func,
-				tooltip=TODO,
-				width=1];
-			system_;
-			SCI	[color="#e27dd6ff",
-				fillcolor="#d9e7ee",
-				fixedsize=true,
-				height=0.5,
-				label="System calls",
-				row=usr,
-				shape=ellipse,
-				];
-			system -> system_	[arrowhead="",
-				color="#e27dd6ff",
-				row=func,
-				weight=10];
-			sysfs	[color="#e27dd6ff",
-				fillcolor="#b2d3e4",
-				height=0.5,
-				label="proc, sysfs,\nfile systems",
-				];
-			SCI -> sysfs	[color="#e27dd6ff",
-				weight=10];
-			DM	[color="#e27dd6ff",
-				fillcolor="#91b5c9",
-				fixedsize=true,
-				fontsize=10,
-				height=0.4,
-				label="Device\nModel",
-				shape=octagon,
-				width=1];
-			sysfs -> DM	[color="#e27dd6ff",
-				weight=10];
-			log_sys	[color="#e27dd6ff",
-				fillcolor="#6a9ab1",
-				fontsize=10,
-				height=0.5,
-				label="system run,\nmodules,\ngeneric\nHW access ",
-				];
-			DM -> log_sys	[color="#e27dd6ff",
-				weight=10];
-			bus_drv	[color="#e27dd6ff",
-				fillcolor="#71809b",
-				height=0.5,
-				label="bus drivers",
-				];
-			log_sys -> bus_drv	[color="#e27dd6ff",
-				weight=10];
-			H2	[color="#e27dd6ff",
-				fillcolor="#777777",
-				fontcolor=white,
-				fontsize=10,
-				height=0.5,
-				label="busess:\nPCI, USB ...",
-				row=chip,
-				];
-			bus_drv -> H2	[color="#e27dd6ff",
-				weight=10];
-		}
-		{
-			node [color="#61c2c5",
-				height=0.5
-			];
-			edge [color="#61c2c5"];
-			networking	[color="#61c2c5",
-				fillcolor=white,
-				fixedsize=true,
-				height=0.5,
-				row=func,
-				shape=box,
-				style="filled,setlinewidth(3)",
-				width=1];
-			sock	[color="#61c2c5",
-				fillcolor="#d9e7ee",
-				fixedsize=true,
-				height=0.5,
-				label=Sockets,
-				row=usr,
-				shape=ellipse,
-				style="filled,setlinewidth(3)"];
-			networking -> networking_	[arrowhead="",
-				color="#61c2c5",
 				row=func,
 				style="filled,setlinewidth(3)",
-				weight=10];
-			prot_fam	[color="#61c2c5",
+				width=1];
+		sock	[color="#61c2c5",
+			fillcolor="#d9e7ee",
+			fixedsize=true,
+			label=Sockets,
+			row=usr,
+			shape=ellipse,
+			style="filled,setlinewidth(3)"];
+		networking -> networking_	[arrowhead="",
+			   color="#61c2c5",
+			   row=func,
+			   style="filled,setlinewidth(3)",
+			   weight=10];
+		prot_fam	[color="#61c2c5",
 				fillcolor="#b2d3e4",
-				height=0.5,
 				label="protocol\nfamilies",
-				shape=box,
 				style="filled,setlinewidth(3)"];
-			sock -> prot_fam	[color="#61c2c5",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			log_prot	[color="#61c2c5",
+		sock -> prot_fam	[color="#61c2c5",
+		     style="filled,setlinewidth(3)",
+		     weight=10];
+		log_prot	[color="#61c2c5",
 				fillcolor="#6a9ab1",
-				height=0.5,
 				label="protocols:\nTCP, UDP, IP",
-				shape=box,
 				style="filled,setlinewidth(3)"];
-			prot_fam -> log_prot	[color="#61c2c5",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			netif	[color="#61c2c5",
-				fillcolor="#71809b",
-				fontsize=10,
-				height=0.5,
-				label="network\ninterfaces\nand drivers",
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			log_prot -> netif	[color="#61c2c5",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			net_hw	[color="#61c2c5",
-				fillcolor="#777777",
-				fontcolor=white,
-				fontsize=10,
-				height=0.5,
-				label="network:\nEthernet, WiFi ...",
-				row=chip,
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			netif -> net_hw	[color="#61c2c5",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			NFS	[color="#8383cc",
-				fillcolor="#91b5c9",
-				fixedsize=true,
-				height=0.4,
-				label=NFS,
-				shape=octagon,
-				style="filled,setlinewidth(3)",
-				width=0.6];
-			NFS -> log_prot	[color="#61c2c5",
-				style="filled,setlinewidth(3)",
-				weight=0];
-		}
-		{
-			node [color="#8383cc",
-				height=0.5
-			];
-			edge [color="#8383cc"];
-			NFS;
-			storage	[color="#8383cc",
+		prot_fam -> log_prot	[color="#61c2c5",
+			 style="filled,setlinewidth(3)",
+			 weight=10];
+		netif	[color="#61c2c5",
+			fillcolor="#71809b",
+			fontsize=10,
+			label="network\ninterfaces\nand drivers",
+			style="filled,setlinewidth(3)"];
+		log_prot -> netif	[color="#61c2c5",
+			 style="filled,setlinewidth(3)",
+			 weight=10];
+		net_hw	[color="#61c2c5",
+			fillcolor="#777777",
+			fontcolor=white,
+			fontsize=10,
+			label="network:\nEthernet, WiFi ...",
+			row=chip,
+			style="filled,setlinewidth(3)"];
+		netif -> net_hw	[color="#61c2c5",
+		      style="filled,setlinewidth(3)",
+		      weight=10];
+		NFS	[color="#8383cc",
+			fillcolor="#91b5c9",
+			fixedsize=true,
+			height=0.4,
+			label=NFS,
+			shape=octagon,
+			style="filled,setlinewidth(3)",
+			width=0.6];
+		NFS -> log_prot	[color="#61c2c5",
+		    style="filled,setlinewidth(3)",
+		    weight=0];
+	}
+	{
+		node [color="#8383cc",
+		];
+		edge [color="#8383cc"];
+		NFS;
+		storage	[color="#8383cc",
+			fillcolor=white,
+			fixedsize=true,
+			row=func,
+			style="filled,setlinewidth(3)",
+			width=1];
+		FS	[color="#8383cc",
+			fillcolor="#d9e7ee",
+			fixedsize=true,
+			label="files and\ndirectories",
+			row=usr,
+			shape=ellipse,
+			style="filled,setlinewidth(3)"];
+		storage -> storage_	[arrowhead="",
+			color="#8383cc",
+			row=func,
+			style="filled,setlinewidth(3)",
+			weight=10];
+		VFS	[color="#8383cc",
+			fillcolor="#b2d3e4",
+			label="Virtual\nFile System",
+			style="filled,setlinewidth(3)"];
+		FS -> VFS	[color="#8383cc",
+		   style="filled,setlinewidth(3)",
+		   weight=10];
+		VFS -> NFS	[color="#8383cc",
+		    style="filled,setlinewidth(3)",
+		    weight=0];
+		logFS	[color="#8383cc",
+			fillcolor="#6a9ab1",
+			fontsize=10,
+			label="logical\nfilesystems:\next3, xfs ...",
+			style="filled,setlinewidth(3)"];
+		VFS -> logFS	[color="#8383cc",
+		    style="filled,setlinewidth(3)",
+		    weight=10];
+		PC	[color="#51bf5b",
+			fillcolor="#91b5c9",
+			fixedsize=true,
+			fontsize=10,
+			height=0.4,
+			label="page\ncache",
+			shape=octagon,
+			style="filled,setlinewidth(3)",
+			width=0.6];
+		VFS -> PC	[color="#8383cc",
+		    style="filled,setlinewidth(3)",
+		    weight=0];
+		mmap	[color="#51bf5b",
+			fillcolor="#91b5c9",
+			fixedsize=true,
+			fontsize=10,
+			height=0.4,
+			label="memory\nmapping",
+			shape=octagon,
+			style="filled,setlinewidth(3)",
+			width=1];
+		VFS -> mmap	[color="#8383cc",
+		    style="filled,setlinewidth(3)",
+		    weight=0];
+		block	[color="#8383cc",
+			fillcolor="#71809b",
+			fontsize=10,
+			label="Block\ndevices\nand drivers",
+			style="filled,setlinewidth(3)"];
+		logFS -> block	[color="#8383cc",
+		      style="filled,setlinewidth(3)",
+		      weight=10];
+		PA	[color="#51bf5b",
+			fillcolor="#71809b",
+			label="Page\nAllocator",
+			style="filled,setlinewidth(3)"];
+		PC -> PA	[color="#51bf5b",
+		   style="filled,setlinewidth(3)",
+		   weight=0];
+		H4	[color="#8383cc",
+			fillcolor="#777777",
+			fontcolor=white,
+			fontsize=10,
+			label="storage devices:\nSCSI, NVMe ...",
+			row=chip,
+			style="filled,setlinewidth(3)"];
+		block -> H4	[color="#8383cc",
+		      style="filled,setlinewidth(3)",
+		      weight=10];
+		SW	[color="#8383cc",
+			fillcolor="#91b5c9",
+			fixedsize=true,
+			label=Swap,
+			shape=octagon,
+			style="filled,setlinewidth(3)",
+			width=0.6];
+		SW -> block	[color="#8383cc",
+		   style="filled,setlinewidth(3)",
+		   weight=0];
+	}
+	{
+		node [color="#c46747",
+			     style="filled,setlinewidth(3)",
+		];
+		edge [color="#c46747"];
+		processing	[color="#c46747",
 				fillcolor=white,
 				fixedsize=true,
-				height=0.5,
 				row=func,
-				shape=box,
-				style="filled,setlinewidth(3)",
 				width=1];
-			FS	[color="#8383cc",
-				fillcolor="#d9e7ee",
-				fixedsize=true,
-				height=0.5,
-				label="files and\ndirectories",
-				row=usr,
-				shape=ellipse,
-				style="filled,setlinewidth(3)"];
-			storage -> storage_	[arrowhead="",
-				color="#8383cc",
-				row=func,
-				style="filled,setlinewidth(3)",
-				weight=10];
-			VFS	[color="#8383cc",
-				fillcolor="#b2d3e4",
-				height=0.5,
-				label="Virtual\nFile System",
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			FS -> VFS	[color="#8383cc",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			VFS -> NFS	[color="#8383cc",
-				style="filled,setlinewidth(3)",
-				weight=0];
-			logFS	[color="#8383cc",
-				fillcolor="#6a9ab1",
-				fontsize=10,
-				height=0.5,
-				label="logical\nfilesystems:\next3, xfs ...",
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			VFS -> logFS	[color="#8383cc",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			PC	[color="#51bf5b",
-				fillcolor="#91b5c9",
-				fixedsize=true,
-				fontsize=10,
-				height=0.4,
-				label="page\ncache",
-				shape=octagon,
-				style="filled,setlinewidth(3)",
-				width=0.6];
-			VFS -> PC	[color="#8383cc",
-				style="filled,setlinewidth(3)",
-				weight=0];
-			mmap	[color="#51bf5b",
-				fillcolor="#91b5c9",
-				fixedsize=true,
-				fontsize=10,
-				height=0.4,
-				label="memory\nmapping",
-				shape=octagon,
-				style="filled,setlinewidth(3)",
-				width=1];
-			VFS -> mmap	[color="#8383cc",
-				style="filled,setlinewidth(3)",
-				weight=0];
-			block	[color="#8383cc",
-				fillcolor="#71809b",
-				fontsize=10,
-				height=0.5,
-				label="Block\ndevices\nand drivers",
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			logFS -> block	[color="#8383cc",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			PA	[color="#51bf5b",
-				fillcolor="#71809b",
-				height=0.5,
-				label="Page\nAllocator",
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			PC -> PA	[color="#51bf5b",
-				style="filled,setlinewidth(3)",
-				weight=0];
-			H4	[color="#8383cc",
-				fillcolor="#777777",
-				fontcolor=white,
-				fontsize=10,
-				height=0.5,
-				label="storage devices:\nSCSI, NVMe ...",
-				row=chip,
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			block -> H4	[color="#8383cc",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			SW	[color="#8383cc",
-				fillcolor="#91b5c9",
-				fixedsize=true,
-				height=0.5,
-				label=Swap,
-				shape=octagon,
-				style="filled,setlinewidth(3)",
-				width=0.6];
-			SW -> block	[color="#8383cc",
-				style="filled,setlinewidth(3)",
-				weight=0];
-		}
-		{
-			node [color="#c46747",
-				height=0.5
-				style="filled,setlinewidth(3)",
-			];
-			edge [color="#c46747"];
-			processing	[color="#c46747",
-				fillcolor=white,
-				fixedsize=true,
-				height=0.5,
-				row=func,
-				shape=box,
-				width=1];
-			proc	[color="#c46747",
-				fillcolor="#d9e7ee",
-				fixedsize=true,
-				height=0.5,
-				label=Processes,
-				row=usr,
-				shape=ellipse,
-				style="filled,setlinewidth(3)"];
-			processing -> processing_	[arrowhead="",
-				color="#c46747",
-				row=func,
-				style="filled,setlinewidth(3)",
-				weight=10];
-			Tasks	[color="#c46747",
-				fillcolor="#b2d3e4",
-				height=0.5,
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			proc -> Tasks	[color="#c46747",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			sync	[color="#c46747",
-				fillcolor="#91b5c9",
-				fixedsize=true,
-				fontsize=10,
-				height=0.5,
-				label=synchronization,
-				shape=octagon,
-				style="filled,setlinewidth(3)"];
-			Tasks -> sync	[color="#c46747",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			sched	[color="#c46747",
-				fillcolor="#6a9ab1",
-				height=0.5,
-				label=Scheduler,
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			sync -> sched	[color="#c46747",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			IRQ	[color="#c46747",
-				fillcolor="#71809b",
-				fontsize=10,
-				height=0.5,
-				label="interrupts\ncore,\nCPU arch",
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			sched -> IRQ	[color="#c46747",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			CPU	[color="#c46747",
-				fillcolor="#777777",
-				fontcolor=white,
-				fontsize=10,
-				height=0.5,
-				row=chip,
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			IRQ -> CPU	[color="#c46747",
-				style="filled,setlinewidth(3)",
-				weight=10];
-		}
-		{
-			node [color="#cfbf57ff",
-				height=0.5
-				style="filled,setlinewidth(3)",
-			];
-			edge [color="#cfbf57ff"];
-			HI	[color="#cfbf57ff",
-				fillcolor=white,
-				fixedsize=true,
-				height=0.5,
-				label="human\ninterface",
-				row=func,
-				shape=box,
-				width=1];
-			char	[color="#cfbf57ff",
-				fillcolor="#d9e7ee",
-				fixedsize=true,
-				height=0.5,
-				label="char\ndevices",
-				row=usr,
-				shape=ellipse,
-				style="filled,setlinewidth(3)"];
-			HI -> HI_	[arrowhead="",
-				color="#cfbf57ff",
-				row=func,
-				style="filled,setlinewidth(3)",
-				weight=10];
-			input	[color="#cfbf57ff",
-				fillcolor="#b2d3e4",
-				height=0.5,
-				label="input\nsubsystem",
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			char -> input	[color="#cfbf57ff",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			F7	[color="#cfbf57ff",
-				fillcolor="#6a9ab1",
-				height=0.5,
-				label="HI class\ndrivers",
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			input -> F7	[color="#cfbf57ff",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			G7	[color="#cfbf57ff",
-				fillcolor="#71809b",
-				fontsize=10,
-				height=0.5,
-				label="HI\nperipherals\ndrivers",
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			F7 -> G7	[color="#cfbf57ff",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			H7	[color="#cfbf57ff",
-				fillcolor="#777777",
-				fontcolor=white,
-				fontsize=10,
-				height=0.5,
-				label="display, keyboard,\nmouse, audio",
-				row=chip,
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			G7 -> H7	[color="#cfbf57ff",
-				style="filled,setlinewidth(3)",
-				weight=10];
-		}
-		subgraph xcluster_layers {
-			usr_;
-			D0;
-			E0;
-			F0;
-			G0;
-			H0;
-			functions	[color=gray,
+		proc	[color="#c46747",
+			fillcolor="#d9e7ee",
+			fixedsize=true,
+			label=Processes,
+			row=usr,
+			shape=ellipse,
+			style="filled,setlinewidth(3)"];
+		processing -> processing_	[arrowhead="",
+			   color="#c46747",
+			   row=func,
+			   style="filled,setlinewidth(3)",
+			   weight=10];
+		Tasks	[color="#c46747",
+			fillcolor="#b2d3e4",
+			style="filled,setlinewidth(3)"];
+		proc -> Tasks	[color="#c46747",
+		     style="filled,setlinewidth(3)",
+		     weight=10];
+		sync	[color="#c46747",
+			fillcolor="#91b5c9",
+			fixedsize=true,
+			fontsize=10,
+			label=synchronization,
+			shape=octagon,
+			style="filled,setlinewidth(3)"];
+		Tasks -> sync	[color="#c46747",
+		      style="filled,setlinewidth(3)",
+		      weight=10];
+		sched	[color="#c46747",
+			fillcolor="#6a9ab1",
+			label=Scheduler,
+			style="filled,setlinewidth(3)"];
+		sync -> sched	[color="#c46747",
+		     style="filled,setlinewidth(3)",
+		     weight=10];
+		IRQ	[color="#c46747",
+			fillcolor="#71809b",
+			fontsize=10,
+			label="interrupts\ncore,\nCPU arch",
+			style="filled,setlinewidth(3)"];
+		sched -> IRQ	[color="#c46747",
+		      style="filled,setlinewidth(3)",
+		      weight=10];
+		CPU	[color="#c46747",
+			fillcolor="#777777",
+			fontcolor=white,
+			fontsize=10,
+			row=chip,
+			style="filled,setlinewidth(3)"];
+		IRQ -> CPU	[color="#c46747",
+		    style="filled,setlinewidth(3)",
+		    weight=10];
+	}
+	{
+		node [color="#cfbf57ff",
+			     style="filled,setlinewidth(3)",
+		];
+		edge [color="#cfbf57ff"];
+		HI	[color="#cfbf57ff",
+			fillcolor=white,
+			fixedsize=true,
+			label="human\ninterface",
+			row=func,
+			width=1];
+		char	[color="#cfbf57ff",
+			fillcolor="#d9e7ee",
+			fixedsize=true,
+			label="char\ndevices",
+			row=usr,
+			shape=ellipse,
+			style="filled,setlinewidth(3)"];
+		HI -> HI_	[arrowhead="",
+		   color="#cfbf57ff",
+		   row=func,
+		   style="filled,setlinewidth(3)",
+		   weight=10];
+		input	[color="#cfbf57ff",
+			fillcolor="#b2d3e4",
+			label="input\nsubsystem",
+			style="filled,setlinewidth(3)"];
+		char -> input	[color="#cfbf57ff",
+		     style="filled,setlinewidth(3)",
+		     weight=10];
+		F7	[color="#cfbf57ff",
+			fillcolor="#6a9ab1",
+			label="HI class\ndrivers",
+			style="filled,setlinewidth(3)"];
+		input -> F7	[color="#cfbf57ff",
+		      style="filled,setlinewidth(3)",
+		      weight=10];
+		G7	[color="#cfbf57ff",
+			fillcolor="#71809b",
+			fontsize=10,
+			label="HI\nperipherals\ndrivers",
+			style="filled,setlinewidth(3)"];
+		F7 -> G7	[color="#cfbf57ff",
+		   style="filled,setlinewidth(3)",
+		   weight=10];
+		H7	[color="#cfbf57ff",
+			fillcolor="#777777",
+			fontcolor=white,
+			fontsize=10,
+			label="display, keyboard,\nmouse, audio",
+			row=chip,
+			style="filled,setlinewidth(3)"];
+		G7 -> H7	[color="#cfbf57ff",
+		   style="filled,setlinewidth(3)",
+		   weight=10];
+	}
+	{
+		usr_;
+		D0;
+		E0;
+		F0;
+		G0;
+		H0;
+		functions	[color=gray,
 				fillcolor=gray,
 				fixedsize=true,
 				height=0.5,
 				row=func,
-				shape=box,
 				style=dashed,
 				width=0.8];
-			layers	[fillcolor=lightgray,
-				height=0.1,
-				shape=box,
-				style="filled,setlinewidth(0)",
-				width=0.5];
-			functions -> layers	[style=invis,
-				weight=10];
-			usr	[fillcolor="#d9e7eeff",
-				fixedsize=true,
-				height=0.5,
-				label="user space\ninterfaces",
-				row=usr,
-				shape=ellipse,
-				style="filled,setlinewidth(0)"];
-			layers -> usr	[arrowhead="",
-				color=gray,
-				style="filled,setlinewidth(1)",
-				weight=10];
-			usr -> usr_	[arrowhead="",
-				color="#d9e7eeff",
-				minlen=2,
-				style="filled,setlinewidth(3)",
-				weight=10];
-			virt	[fillcolor="#b2d3e4",
-				height=0.5,
-				label="virtual\nsubsystems",
-				shape=box,
-				style="filled,setlinewidth(0)"];
-			usr -> virt	[color="#d9e7eeff",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			virt -> D0	[arrowhead="",
-				color="#b2d3e4",
-				minlen=2,
-				style="filled,setlinewidth(3)",
-				weight=10];
-			bridges	[fillcolor="#91b5c9",
-				height=0.5,
-				shape=octagon,
-				style="filled,setlinewidth(0)"];
-			virt -> bridges	[color="#b2d3e4",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			bridges -> E0	[arrowhead="",
-				color="#91b5c9",
-				minlen=2,
-				style="filled,setlinewidth(3)",
-				weight=""];
-			logical	[fillcolor="#6a9ab1",
-				height=0.5,
-				shape=box,
-				style="filled,setlinewidth(0)"];
-			bridges -> logical	[color="#91b5c9",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			logical -> F0	[arrowhead="",
-				color="#6a9ab1",
-				minlen=2,
-				row=logical,
-				style="filled,setlinewidth(3)",
-				weight=""];
-			HWI	[fillcolor="#71809b",
-				height=0.5,
-				label="hardware\ninterfaces",
-				shape=box,
-				style="filled,setlinewidth(0)"];
-			logical -> HWI	[color="#6a9ab1",
-				row=logical,
-				style="filled,setlinewidth(3)",
-				weight=10];
-			HWI -> G0	[arrowhead="",
-				color="#71809b",
-				minlen=2,
-				row=HWI,
-				style="filled,setlinewidth(3)",
-				weight=""];
-			HW	[fillcolor="#777777",
-				fontcolor=white,
-				height=0.5,
-				label="electronics,\nhardware",
-				row=chip,
-				shape=box,
-				style="filled,setlinewidth(0)"];
-			HWI -> HW	[color="#71809b",
-				row=HWI,
-				style="filled,setlinewidth(3)",
-				weight=10];
-			HW -> H0	[arrowhead="",
-				color="#777777",
-				minlen=2,
-				row=chip,
-				style="filled,setlinewidth(3)",
-				weight=""];
-		}
-		subgraph mem {
-			node [color="#51bf5b",
-				height=0.5
-			];
-			edge [color="#51bf5b"];
-			PC;
-			mmap;
-			SW;
-			mmap -> SW	[color="#51bf5b",
-				style="filled,setlinewidth(3)",
-				weight=0];
-			log_mem	[color="#51bf5b",
-				fillcolor="#6a9ab1",
-				height=0.5,
-				label="logical\nmemory",
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			mmap -> log_mem	[color="#51bf5b",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			PA;
-			H5	[color="#51bf5b",
-				fillcolor="#777777",
-				fontcolor=white,
-				fontsize=10,
-				height=0.5,
-				label="MMU, RAM",
-				row=chip,
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			PA -> H5	[color="#51bf5b",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			log_mem -> PA	[color="#51bf5b",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			memory	[color="#51bf5b",
-				fillcolor=white,
-				fixedsize=true,
-				height=0.5,
-				row=func,
-				shape=box,
-				style="filled,setlinewidth(3)",
-				width=1];
-			MA	[color="#51bf5b",
-				fillcolor="#d9e7ee",
-				fixedsize=true,
-				height=0.5,
-				label="memory\naccess",
-				row=usr,
-				shape=ellipse,
-				style="filled,setlinewidth(3)"];
-			memory -> memory_	[arrowhead="",
-				color="#51bf5b",
-				row=func,
-				style="filled,setlinewidth(3)",
-				weight=10];
-			VM	[color="#51bf5b",
-				fillcolor="#b2d3e4",
-				height=0.5,
-				label="Virtual\nmemory",
-				shape=box,
-				style="filled,setlinewidth(3)"];
-			MA -> VM	[color="#51bf5b",
-				style="filled,setlinewidth(3)",
-				weight=10];
-			VM -> mmap	[color="#51bf5b",
-				style="filled,setlinewidth(3)",
-				weight=10];
-		}
+		layers	[fillcolor=lightgray,
+			height=0.1,
+			style="filled,setlinewidth(0)",
+			width=0.5];
+		functions -> layers	[style=invis,
+			  weight=10];
+		usr	[fillcolor="#d9e7eeff",
+			fixedsize=true,
+			height=0.5,
+			label="user space\ninterfaces",
+			row=usr,
+			shape=ellipse,
+			style="filled,setlinewidth(0)"];
+		layers -> usr	[arrowhead="",
+		       color=gray,
+		       style="filled,setlinewidth(1)",
+		       weight=10];
+		usr -> usr_	[arrowhead="",
+		    color="#d9e7eeff",
+		    minlen=2,
+		    style="filled,setlinewidth(3)",
+		    weight=10];
+		virt	[fillcolor="#b2d3e4",
+			height=0.5,
+			label="virtual\nsubsystems",
+			style="filled,setlinewidth(0)"];
+		usr -> virt	[color="#d9e7eeff",
+		    style="filled,setlinewidth(3)",
+		    weight=10];
+		virt -> D0	[arrowhead="",
+		     color="#b2d3e4",
+		     minlen=2,
+		     style="filled,setlinewidth(3)",
+		     weight=10];
+		bridges	[fillcolor="#91b5c9",
+			height=0.5,
+			shape=octagon,
+			style="filled,setlinewidth(0)"];
+		virt -> bridges	[color="#b2d3e4",
+		     style="filled,setlinewidth(3)",
+		     weight=10];
+		bridges -> E0	[arrowhead="",
+			color="#91b5c9",
+			minlen=2,
+			style="filled,setlinewidth(3)",
+			weight=""];
+		logical	[fillcolor="#6a9ab1",
+			height=0.5,
+			style="filled,setlinewidth(0)"];
+		bridges -> logical	[color="#91b5c9",
+			style="filled,setlinewidth(3)",
+			weight=10];
+		logical -> F0	[arrowhead="",
+			color="#6a9ab1",
+			minlen=2,
+			row=logical,
+			style="filled,setlinewidth(3)",
+			weight=""];
+		HWI	[fillcolor="#71809b",
+			height=0.5,
+			label="hardware\ninterfaces",
+			style="filled,setlinewidth(0)"];
+		logical -> HWI	[color="#6a9ab1",
+			row=logical,
+			style="filled,setlinewidth(3)",
+			weight=10];
+		HWI -> G0	[arrowhead="",
+		    color="#71809b",
+		    minlen=2,
+		    row=HWI,
+		    style="filled,setlinewidth(3)",
+		    weight=""];
+		HW	[fillcolor="#777777",
+			fontcolor=white,
+			height=0.5,
+			label="electronics,\nhardware",
+			row=chip,
+			style="filled,setlinewidth(0)"];
+		HWI -> HW	[color="#71809b",
+		    row=HWI,
+		    style="filled,setlinewidth(3)",
+		    weight=10];
+		HW -> H0	[arrowhead="",
+		   color="#777777",
+		   minlen=2,
+		   row=chip,
+		   style="filled,setlinewidth(3)",
+		   weight=""];
+	}
+	subgraph mem {
+		node [color="#51bf5b",
+		     height=0.5
+		];
+		edge [color="#51bf5b"];
+		PC;
+		mmap;
+		SW;
+		mmap -> SW	[color="#51bf5b",
+		     style="filled,setlinewidth(3)",
+		     weight=0];
+		log_mem	[color="#51bf5b",
+			fillcolor="#6a9ab1",
+			height=0.5,
+			label="logical\nmemory",
+			style="filled,setlinewidth(3)"];
+		mmap -> log_mem	[color="#51bf5b",
+		     style="filled,setlinewidth(3)",
+		     weight=10];
+		PA;
+		H5	[color="#51bf5b",
+			fillcolor="#777777",
+			fontcolor=white,
+			fontsize=10,
+			height=0.5,
+			label="MMU, RAM",
+			row=chip,
+			style="filled,setlinewidth(3)"];
+		PA -> H5	[color="#51bf5b",
+		   style="filled,setlinewidth(3)",
+		   weight=10];
+		log_mem -> PA	[color="#51bf5b",
+			style="filled,setlinewidth(3)",
+			weight=10];
+		memory	[color="#51bf5b",
+			fillcolor=white,
+			fixedsize=true,
+			height=0.5,
+			row=func,
+			style="filled,setlinewidth(3)",
+			width=1];
+		MA	[color="#51bf5b",
+			fillcolor="#d9e7ee",
+			fixedsize=true,
+			height=0.5,
+			label="memory\naccess",
+			row=usr,
+			shape=ellipse,
+			style="filled,setlinewidth(3)"];
+		memory -> memory_	[arrowhead="",
+		       color="#51bf5b",
+		       row=func,
+		       style="filled,setlinewidth(3)",
+		       weight=10];
+		VM	[color="#51bf5b",
+			fillcolor="#b2d3e4",
+			height=0.5,
+			label="Virtual\nmemory",
+			style="filled,setlinewidth(3)"];
+		MA -> VM	[color="#51bf5b",
+		   style="filled,setlinewidth(3)",
+		   weight=10];
+		VM -> mmap	[color="#51bf5b",
+		   style="filled,setlinewidth(3)",
+		   weight=10];
 	}
 	{
 		graph [rank=same];
+		edge [weight=10 style=invis];
 		functions_;
 		system;
 		functions_ -> system;
@@ -648,9 +574,9 @@ digraph matrix {
 		processing -> HI;
 		functions;
 		functions -> functions_	[arrowhead="",
-			color=gray,
-			style="",
-			weight=""];
+			  color=gray,
+			  style="",
+			  weight=""];
 		memory -> processing;
 	}
 	{
@@ -667,7 +593,7 @@ digraph matrix {
 	{
 		edge [weight=10 style=invis];
 		system_ -> SCI
-		networking_ -> sock;
+			networking_ -> sock;
 		storage_ -> FS;
 		memory_ -> MA;
 		processing_ -> proc;
@@ -733,5 +659,6 @@ digraph matrix {
 	LKD	[fontsize=20,
 		label="Linux kernel diagram",
 		shape=plain];
+	edge [weight=10 style=invis];
 	LKD -> storage;
 }
