@@ -480,6 +480,7 @@
       </cc:Work>
     </rdf:RDF>
   </metadata>
+  <g id="LKM">
   <g
      inkscape:groupmode="layer"
      id="layer3"
@@ -8256,5 +8257,6 @@
          id="tspan3853"
          style="font-size:10.53658581px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:FreeSans;-inkscape-font-specification:FreeSans">mm/slab.c</tspan>
     </text>
+    </g>
   </g>
 </svg>
