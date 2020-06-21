@@ -16,7 +16,7 @@ import os
 import sys
 import collections
 from munch import *
-import subprocess
+from subprocess import *
 import re
 import networkx as nx
 # from networkx.drawing.nx_agraph import read_dot # changes order of successors
@@ -33,6 +33,7 @@ import unittest
 import types
 from xml.dom.minidom import parse
 import xml.dom.minidom
+import ast
 
 default_root = 'starts'
 black_list = ('aligned unlikely typeof u32 '
@@ -65,13 +66,14 @@ black_list = ('aligned unlikely typeof u32 '
               ).split()
 
 
-level_limit = 20
+level_limit = 10
 limit = 1000
 n = 0
 cflow_structs = False
-
 scaled = False
+verbose = False
 
+files = collections.defaultdict(list)
 
 def print_limited(a, out=None):
     out = out if out else sys.stdout
@@ -93,44 +95,61 @@ def log(*args, **kwargs):
 
 
 def popen(p):
-    return subprocess.check_output(p, shell=True).decode('utf-8').splitlines()
+    return check_output(p, shell=True).decode('utf-8').splitlines()
 
 
 def extract_referer(line):
     line = re.sub(r'__ro_after_init', '', line)
     line = re.sub(r'FNAME\((\w+)\)', r'\1', line)
     line = re.sub(r'.*TRACE_EVENT.*', '', line)
-    m = re.match(r'^[^\s]+=[^,]*\(\*(\b\w+)\)\s*[\(\[=][^;]*$', line)
+    file_num = r'(^[^\s]+)=(\d+)=[^,]*'
+    # file=(*name)
+    m = re.match(file_num + r'\(\*(\b\w+)\)\s*[\(\[=][^;]*$', line)
     if not m:
-        m = re.match(r'^[^\s]+=[^,]*(\b\w+)\s*[\(\[=][^;]*$', line)
+        m = re.match(file_num + r'(\b\w+)\s*[\(\[=][^;]*$', line)
+    if not m:
+        m = re.match(file_num + r'struct (\b\w+)', line)
     if m:
-        return m.group(1)
+        return m.groups()
 
 
 def extract_referer_test():
+    passed = 0
     for a in {
-            "fs=good2()",
-            "f=static int fastop(struct x86_emulate_ctxt *ctxt, "
+            "f=1=good2()",
+            "f=2=static int fastop(struct x86_emulate_ctxt *ctxt, "
             + "void (*fop)(struct fastop *))",
-            "f=int good(a, bad (*func)(arg))",
-            "f=EXPORT_SYMBOL_GPL(bad);",
-            "f=bad (*good)()",
-            "f=int FNAME(good)(a)",
-            "f=TRACE_EVENT(a)",
-            "f: a=in bad()"}:
-        print(a, '->', extract_referer(a))
+            "f=3=int good(a, bad (*func)(arg))",
+            "f=4=EXPORT_SYMBOL_GPL(bad);",
+            "f=5=bad (*good)()",
+            "f=6=int FNAME(good)(a)",
+            "f=7=TRACE_EVENT(bad)",
+            "f:8: a=in bad()",
+            "f=9=struct good",
+            }:
+        r = extract_referer(a)
+        #print(a, '->', r)
+        if 'bad' in a and r and 'bad' in r[2]:
+            print("ERROR: ", a, '->', r)
+        elif 'good' in a and not r:
+            print("ERROR:", a)
+        else:
+            passed += 1
+    log(passed)
 
 
 def func_referers_git_grep(name):
     res = list()
     r = None
-    for line in popen(r'git grep --threads 1 --no-index --word-regexp --show-function '
+    for line in popen(r'git grep --threads 1 --no-index --word-regexp '
+                      r'--show-function --line-number '
                       r'"^\s.*\b%s" '
                       r'**.\[hc\] **.cpp **.cc **.hh || true' % (name)):
         # Filter out names in comment afer function,
         # when comment start from ' *'
         # To see the problem try "git grep -p and"
         for p in {
+                # exludes:
                 r'.*:\s+\* .*%s',
                 r'.*/\*.*%s',
                 r'.*//.*%s',
@@ -138,10 +157,12 @@ def func_referers_git_grep(name):
             if re.match(p % (name), line):
                 r = None
                 break
-        if r and r != name and r not in black_list:
+        if r and r[2] != name and r[2] not in black_list:
             res.append(r)
             r = None
         r = extract_referer(line)
+        if verbose and r:
+            print("%-40s\t%s"%(("%s:%s"%(r[0],r[1])),r[2]))
     return res
 
 
@@ -188,8 +209,13 @@ def referers_tree(name, referer=None, printed=None, level=0):
         print_limited((level + 1)*'\t' + '...')
         return ''
     for a in referer(name):
-        referers_tree(a, referer, printed, level + 1)
+        referers_tree(a[2], referer, printed, level + 1)
     return ''
+
+def referers(name):
+    #for a in func_referers_git_grep(name):
+    #    print("%s:%s: %s"%(a[0],a[1],a[2]))
+    print(' '.join([a[2] for a in func_referers_git_grep(name)]))
 
 
 def referers_dep(name, referer=None, printed=None, level=0):
@@ -441,6 +467,35 @@ def most_used(dg, ins=10, outs=10):
 def starts(dg):  # roots
     return {n: dg.out_degree(n) for (n, d) in dg.in_degree if not d}
 
+def exclude(i, excludes=[], black_list=black_list):
+    if i in black_list:
+        return True
+    for e in excludes:
+        if re.match(e, i):
+            return True
+
+def digraph_predecessors(dg, starts, levels = 100, excludes = [], black_list=black_list):
+    dg = to_dg(dg)
+    passed = set()
+    # for i in [_ for _ in dg.predecessors(start)]:
+    p = nx.DiGraph()
+    for e in excludes:
+        log(e)
+    while levels:
+        #log(levels)
+        #log(starts)
+        s2 = starts
+        starts = set()
+        for s in s2:
+            for i in dg.predecessors(s):
+                if i in passed or exclude(i, excludes, black_list):
+                    continue
+                passed.add(i)
+                starts.add(i)
+                p.add_edge(i, s)
+        levels-=1
+    return p
+
 
 def digraph_tree(dg, starts=None, black_list=black_list):
     tree = nx.DiGraph()
@@ -490,7 +545,9 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
             s = str(dg.nodes[node]['rank'])
             ranks[dg.nodes[node]['rank']].append(node)
         if outs:
-            s += ' ...' if level > level_limit - 2 else '  @' + path
+            s += ' ...' if level > level_limit - 2 else ''
+        else:
+            s+='  @' + path
         print_limited(level*'\t' + str(node) + s, dst)
         printed.add(node)
         if level > level_limit - 2:
@@ -673,6 +730,11 @@ def rank(g, n):
         return None
 
 
+def esc(s):
+    # re.escape(n))
+    return s
+
+
 def write_dot(g, dot):
     dot = str(dot)
     dot = open(dot, 'w')
@@ -690,13 +752,18 @@ def write_dot(g, dot):
             ranks[r].append(n)
         if not g.out_degree(n):
             continue
-        dot.write('"%s" -> { ' % re.escape(n))
-        dot.write(' '.join(['"%s"' % (re.escape(str(a)))
+        dot.write('"%s" -> { ' % esc(n))
+        dot.write(' '.join(['"%s"' % (esc(str(a)))
                             for a in g.successors(n)]))
         if scaled and r and int(r):
             dot.write(' } [penwidth=%d label=%d];\n' % (100/r, r))
         else:
             dot.write(' } ;\n')
+        # pred
+        dot.write('// "%s" <- { ' % esc(n))
+        dot.write(' '.join(['"%s"' % (esc(str(a)))
+            for a in g.predecessors(n)]))
+        dot.write(' } ;\n')
     print(ranks.keys())
     for r in ranks.keys():
         dot.write("{ rank=same %s }\n" %
@@ -709,7 +776,7 @@ def write_dot(g, dot):
 
         # prop.label = n + ' ' + str(rank(g,n))
         if prop:
-            dot.write('"%s" [%s]\n' % (re.escape(n), ','.join(
+            dot.write('"%s" [%s]\n' % (esc(n), ','.join(
                 ['%s="%s"' % (a, str(prop[a])) for a in prop])))
         elif not g.number_of_edges():
             dot.write('"%s"\n' % (n))
@@ -1013,6 +1080,35 @@ def dir_tree(d='.'):
     return g
 
 
+def doxygen(*input):
+    log(' '.join([i for i in input]))
+    p = run(['doxygen', '-'], stdout=PIPE,
+            input = "INPUT=" + ' '.join([i for i in input]) + """
+            EXCLUDE_SYMBOLS=*310* *311* SOC_ENUM_SINGLE* EXPORT_SYMBOL*
+            CALL_GRAPH            = YES
+            EXTRACT_ALL           = YES
+            OPTIMIZE_OUTPUT_FOR_C = YES
+            EXTRACT_STATIC        = YES
+            RECURSIVE             = YES
+            EXCLUDE               = html
+            #GENERATE_TREEVIEW    = YES
+            #HAVE_DOT             = YES
+            #DOT_FONTSIZE         = 15
+            #CALLER_GRAPH         = YES
+            #INTERACTIVE_SVG      = YES
+            #DOT_TRANSPARENT      = YES
+            #DOT_MULTI_TARGETS    = NO
+            #DOT_FONTNAME         = Ubuntu
+            #CASE_SENSE_NAMES     = YES
+            SOURCE_BROWSER        = NO
+            GENERATE_HTML         = NO
+            GENERATE_LATEX        = NO
+            #QUIET = NO
+            GENERATE_XML=YES
+            XML_OUTPUT=xml2""", encoding='ascii')
+    write_dot(doxygen_xml('xml2'), 'doxygen.dot')
+
+
 def doxygen_xml(a):
     g = my_graph()
     for x in list(glob.glob(os.path.join(a, "*.xml")) + [a]):
@@ -1020,9 +1116,18 @@ def doxygen_xml(a):
             d = xml.dom.minidom.parse(x)
             for m in d.getElementsByTagName("memberdef"):
                 n = m.getElementsByTagName("name")[0].firstChild.data
+                file = m.getElementsByTagName("location")[0].getAttribute('file')
+                if file not in files:
+                    print(file)
+                if n == 'main':
+                    n = file + '::' + n
+                files[file].append(n)
                 for r in m.getElementsByTagName("references"):
                     g.add_edge(n, r.firstChild.data)
+                for r in m.getElementsByTagName("ref"):
+                    g.add_edge(n, r.firstChild.data)
                 # referencedby
+    print(g.number_of_edges())
     return g
 
 
@@ -1058,6 +1163,7 @@ def usage():
     print("cd linux/init")
     print(me, "unittest")
     print(me, "referers_tree nfs_root_data")
+    print(me, "referers nfs_root_data")
     print(me, "call_tree start_kernel")
     print(me, "import_cflow $none_or_dir_or_file_or_mask")
     print(me, "stats $dot")
@@ -1065,7 +1171,9 @@ def usage():
     print(me, "cflow_linux")
     print(me, "\"write_dot(import_outline('outline.txt'),'outline.dot')\"")
     print(me, "\"write_dot(dir_tree('.'),'tree.dot')\"")
-    print(me, "\"write_dot(doxygen_xml('xml/'),'doxygen.dot')\"")
+    print(me, "\"doxygen *.c\"")
+    print(me, "\"write_dot(digraph_tree(read_dot('doxygen.dot'), ['main']), 'main.dot')\"")
+    print(me, "\"write_dot(reduce_graph(read_dot('doxygen.dot')),'reduced.dot')\"")
     print("Emergency termination: ^Z, kill %1")
     print()
 
@@ -1098,8 +1206,15 @@ def main():
     try:
         ret = False
         if len(sys.argv) == 1:
-            print('Run', me, 'usage')
+            #print('Run', me, 'usage')
+            usage()
         else:
+            while sys.argv[1].startswith('--'):
+                global verbose
+                log(sys.argv[1][2:])
+                verbose = verbose or sys.argv[1][2:] == 'verbose'
+                sys.argv = sys.argv[1:]
+
             a1 = sys.argv[1]
             sys.argv = sys.argv[1:]
             if '(' in a1:
