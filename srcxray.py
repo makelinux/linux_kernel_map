@@ -87,6 +87,8 @@ def print_limited(a, out=None):
 
 
 def log(*args, **kwargs):
+    if not verbose:
+        return
     s = str(*args).rstrip()
     frameinfo = getframeinfo(currentframe().f_back)
     print("%s:%d %s" % (frameinfo.filename, frameinfo.lineno, stack()[1][3]),
@@ -95,6 +97,7 @@ def log(*args, **kwargs):
 
 
 def popen(p):
+    log(p)
     return check_output(p, shell=True).decode('utf-8').splitlines()
 
 
@@ -180,6 +183,7 @@ def func_referers_cscope(name):
                                                           (name)) if l not in black_list]))
     if not res:
         res = func_referers_git_grep(name)
+    log(res)
     return res
 
 
@@ -1212,7 +1216,8 @@ def main():
             while sys.argv[1].startswith('--'):
                 global verbose
                 log(sys.argv[1][2:])
-                verbose = verbose or sys.argv[1][2:] == 'verbose'
+                if sys.argv[1][2:] == 'verbose':
+                    verbose = True
                 sys.argv = sys.argv[1:]
 
             a1 = sys.argv[1]
