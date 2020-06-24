@@ -41,6 +41,7 @@ digraph matrix {
 			fillcolor="#d9e7ee",
 			fixedsize=true,
 			label="System calls",
+			URL="https://en.wikibooks.org/wiki/The_Linux_Kernel/Syscalls",
 			row=usr,
 			shape=ellipse];
 		sysfs		 [color="#e27dd6ff",
@@ -442,6 +443,7 @@ digraph matrix {
 			width=0];
 		bridges		 [fillcolor="#91b5c9",
 			shape=octagon,
+			URL="https://en.wikipedia.org/wiki/Bridge_pattern",
 			style="filled,setlinewidth(0)"];
 	}
 	{
