@@ -164,6 +164,7 @@ def func_referers_git_grep(name):
             res.append(r)
             r = None
         r = extract_referer(line)
+        # r is list of file line func
         if verbose and r:
             print("%-40s\t%s"%(("%s:%s"%(r[0],r[1])),r[2]))
     return res
@@ -179,9 +180,16 @@ def func_referers_cscope(name):
             print("Recommended: cscope -Rcbk", file=sys.stderr)
             cscope_warned = True
         return []
-    res = list(dict.fromkeys([l.split()[1] for l in popen(r'cscope -d -L3 "%s"' %
-                                                          (name)) if l not in black_list]))
-    if not res:
+    res = list()
+    r = None
+    for l in popen(r'cscope -d -L3 "%s"' % (name)):
+        log(l)
+        m = re.match(r'([^ ]*) ([^ ]*) ([^ ]*) (.*)', l)
+        file, func, line_num, line_str = m.groups()
+        if func in black_list: continue
+        res.append([file, line_num, func])
+    if not res and len(name) > 3:
+        log(name)
         res = func_referers_git_grep(name)
     log(res)
     return res
