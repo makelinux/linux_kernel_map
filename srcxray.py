@@ -205,12 +205,14 @@ def referers_tree(name, referer=None, printed=None, level=0):
             referer = func_referers_cscope
         else:
             print("Using git grep only, recommended to run: cscope -Rcbk",
-                  file=sys.stderr)
+                    file=sys.stderr)
             referer = func_referers_git_grep
     if isinstance(referer, str):
         referer = eval(referer)
     if not printed:
         printed = set()
+    # definition
+    # cscope -d -L1 "arv_camera_new"
     if name in printed:
         print_limited(level*'\t' + name + ' ^')
         return
@@ -221,7 +223,8 @@ def referers_tree(name, referer=None, printed=None, level=0):
         print_limited((level + 1)*'\t' + '...')
         return ''
     for a in referer(name):
-        referers_tree(a[2], referer, printed, level + 1)
+        name = a[2]
+        referers_tree(name, referer, printed, level + 1)
     return ''
 
 def referers(name):
@@ -1124,6 +1127,7 @@ def doxygen(*input):
 def doxygen_xml(a):
     g = my_graph()
     for x in list(glob.glob(os.path.join(a, "*.xml")) + [a]):
+        # print(x)
         if os.path.isfile(x):
             d = xml.dom.minidom.parse(x)
             for m in d.getElementsByTagName("memberdef"):
@@ -1251,6 +1255,7 @@ def main():
                 print(ret)
     except KeyboardInterrupt:
         log("\nInterrupted")
+    # -fdump-rtl-expand
 
 
 if __name__ == "__main__":
