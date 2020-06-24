@@ -1215,9 +1215,13 @@ def main():
         else:
             while sys.argv[1].startswith('--'):
                 global verbose
+                global level_limit
                 log(sys.argv[1][2:])
                 if sys.argv[1][2:] == 'verbose':
                     verbose = True
+                if sys.argv[1][2:] == 'level_limit':
+                    level_limit = int(sys.argv[2])
+                    sys.argv = sys.argv[1:]
                 sys.argv = sys.argv[1:]
 
             a1 = sys.argv[1]
