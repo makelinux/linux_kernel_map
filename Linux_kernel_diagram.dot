@@ -1,8 +1,8 @@
 digraph matrix {
 	graph [newrank=true,
-		nodesep=0.1,
+		nodesep=0.3,
+		ranksep=0.2,
 		overlap=true,
-		ranksep=0.1,
 		splines=false,
 	];
 	node [fixedsize=false,
@@ -10,34 +10,33 @@ digraph matrix {
 		fontsize=24,
 		height=1,
 		shape=box,
-		style="filled,setlinewidth(3)",
+		style="filled,setlinewidth(5)",
 		width=2.2
 	];
 	edge [arrowhead=none,
 		arrowsize=0.5,
-		style=invis,
 		labelfontname="Ubuntu",
-		weight=10
+		weight=10,
+		style="filled,setlinewidth(5)"
 	];
 	{
 		node [color="#e27dd6ff"];
 		system_		 [color="#e27dd6ff",
 			fixedsize=true,
 			height=0,
-			shape="",
+			shape=point,
 			style=invis,
-			width=0];
+			shape=point
+			];
 		system		 [color="#e27dd6ff",
 			fillcolor=white,
 			fixedsize=true,
 			height=0.6,
 			row=func,
-			tooltip=TODO,
 			width=2];
 		system -> system_		 [arrowhead="",
 			color="#e27dd6ff",
-			row=func,
-			style="filled,setlinewidth(3)"];
+			row=func]
 		SCI		 [color="#e27dd6ff",
 			fillcolor="#d9e7ee",
 			fixedsize=true,
@@ -47,8 +46,7 @@ digraph matrix {
 		sysfs		 [color="#e27dd6ff",
 			fillcolor="#b2d3e4",
 			label="proc, sysfs,\nfile systems"];
-		SCI -> sysfs		 [color="#e27dd6ff",
-			style="filled,setlinewidth(3)"];
+		SCI -> sysfs		 [color="#e27dd6ff"];
 		DM		 [color="#e27dd6ff",
 			fillcolor="#91b5c9",
 			fixedsize=true,
@@ -57,27 +55,23 @@ digraph matrix {
 			label="Device\nModel",
 			shape=octagon,
 			width=2];
-		sysfs -> DM		 [color="#e27dd6ff",
-			style="filled,setlinewidth(3)"];
+		sysfs -> DM		 [color="#e27dd6ff"];
 		log_sys		 [color="#e27dd6ff",
 			fillcolor="#6a9ab1",
 			fontsize=20,
 			label="system run,\nmodules,\ngeneric\nHW access "];
-		DM -> log_sys		 [color="#e27dd6ff",
-			style="filled,setlinewidth(3)"];
+		DM -> log_sys		 [color="#e27dd6ff"];
 		bus_drv		 [color="#e27dd6ff",
 			fillcolor="#71809b",
 			label="bus drivers"];
-		log_sys -> bus_drv		 [color="#e27dd6ff",
-			style="filled,setlinewidth(3)"];
+		log_sys -> bus_drv		 [color="#e27dd6ff"];
 		H2		 [color="#e27dd6ff",
 			fillcolor="#777777",
 			fontcolor=white,
 			fontsize=20,
 			label="busess:\nPCI, USB ...",
 			row=chip];
-		bus_drv -> H2		 [color="#e27dd6ff",
-			style="filled,setlinewidth(3)"];
+		bus_drv -> H2		 [color="#e27dd6ff"];
 	}
 	{
 		node [color="#61c2c5"];
@@ -85,8 +79,9 @@ digraph matrix {
 		networking_		 [color="#61c2c5",
 			fixedsize=true,
 			height=0,
-			shape="",
+			shape=point,
 			style=invis,
+			shape=point
 			width=0];
 		networking		 [color="#61c2c5",
 			fillcolor=white,
@@ -96,8 +91,7 @@ digraph matrix {
 			width=2];
 		networking -> networking_		 [arrowhead="",
 			color="#61c2c5",
-			row=func,
-			style="filled,setlinewidth(3)"];
+			row=func];
 		sock		 [color="#61c2c5",
 			fillcolor="#d9e7ee",
 			fixedsize=true,
@@ -107,27 +101,23 @@ digraph matrix {
 		prot_fam		 [color="#61c2c5",
 			fillcolor="#b2d3e4",
 			label="protocol\nfamilies"];
-		sock -> prot_fam		 [color="#61c2c5",
-			style="filled,setlinewidth(3)"];
+		sock -> prot_fam		 [color="#61c2c5"];
 		log_prot		 [color="#61c2c5",
 			fillcolor="#6a9ab1",
 			label="protocols:\nTCP, UDP, IP"];
-		prot_fam -> log_prot		 [color="#61c2c5",
-			style="filled,setlinewidth(3)"];
+		prot_fam -> log_prot		 [color="#61c2c5"];
 		netif		 [color="#61c2c5",
 			fillcolor="#71809b",
 			fontsize=20,
 			label="network\ninterfaces\nand drivers"];
-		log_prot -> netif		 [color="#61c2c5",
-			style="filled,setlinewidth(3)"];
+		log_prot -> netif		 [color="#61c2c5"];
 		net_hw		 [color="#61c2c5",
 			fillcolor="#777777",
 			fontcolor=white,
 			fontsize=20,
 			label="network:\nEthernet, WiFi ...",
 			row=chip];
-		netif -> net_hw		 [color="#61c2c5",
-			style="filled,setlinewidth(3)"];
+		netif -> net_hw		 [color="#61c2c5"];
 		NFS		 [color="#8383cc",
 			fillcolor="#91b5c9",
 			fixedsize=true,
@@ -136,7 +126,6 @@ digraph matrix {
 			shape=octagon,
 			width=1.2];
 		NFS -> log_prot		 [color="#61c2c5",
-			style="filled,setlinewidth(3)",
 			weight=0];
 	}
 	{
@@ -144,9 +133,9 @@ digraph matrix {
 		edge [color="#8383cc"];
 		NFS;
 		storage_		 [color="#8383cc",
+			shape=point
 			fixedsize=true,
 			height=0,
-			shape="",
 			style=invis,
 			width=0];
 		storage		 [color="#8383cc",
@@ -157,8 +146,7 @@ digraph matrix {
 			width=2];
 		storage -> storage_		 [arrowhead="",
 			color="#8383cc",
-			row=func,
-			style="filled,setlinewidth(3)"];
+			row=func];
 		FS		 [color="#8383cc",
 			fillcolor="#d9e7ee",
 			fixedsize=true,
@@ -168,17 +156,14 @@ digraph matrix {
 		VFS		 [color="#8383cc",
 			fillcolor="#b2d3e4",
 			label="Virtual\nFile System"];
-		FS -> VFS		 [color="#8383cc",
-			style="filled,setlinewidth(3)"];
+		FS -> VFS		 [color="#8383cc"];
 		VFS -> NFS		 [color="#8383cc",
-			style="filled,setlinewidth(3)",
 			weight=0];
 		logFS		 [color="#8383cc",
 			fillcolor="#6a9ab1",
 			fontsize=20,
 			label="logical\nfilesystems:\next3, xfs ..."];
-		VFS -> logFS		 [color="#8383cc",
-			style="filled,setlinewidth(3)"];
+		VFS -> logFS		 [color="#8383cc"];
 		PC		 [color="#51bf5b",
 			fillcolor="#91b5c9",
 			fixedsize=true,
@@ -188,7 +173,6 @@ digraph matrix {
 			shape=octagon,
 			width=1.2];
 		VFS -> PC		 [color="#8383cc",
-			style="filled,setlinewidth(3)",
 			weight=0];
 		mmap		 [color="#51bf5b",
 			fillcolor="#91b5c9",
@@ -199,19 +183,16 @@ digraph matrix {
 			shape=octagon,
 			width=2];
 		VFS -> mmap		 [color="#8383cc",
-			style="filled,setlinewidth(3)",
 			weight=0];
 		block		 [color="#8383cc",
 			fillcolor="#71809b",
 			fontsize=20,
 			label="Block\ndevices\nand drivers"];
-		logFS -> block		 [color="#8383cc",
-			style="filled,setlinewidth(3)"];
+		logFS -> block		 [color="#8383cc"];
 		PA		 [color="#51bf5b",
 			fillcolor="#71809b",
 			label="Page\nAllocator"];
 		PC -> PA		 [color="#51bf5b",
-			style="filled,setlinewidth(3)",
 			weight=0];
 		H4		 [color="#8383cc",
 			fillcolor="#777777",
@@ -219,8 +200,7 @@ digraph matrix {
 			fontsize=20,
 			label="storage devices:\nSCSI, NVMe ...",
 			row=chip];
-		block -> H4		 [color="#8383cc",
-			style="filled,setlinewidth(3)"];
+		block -> H4		 [color="#8383cc"];
 		SW		 [color="#8383cc",
 			fillcolor="#91b5c9",
 			fixedsize=true,
@@ -229,18 +209,15 @@ digraph matrix {
 			shape=octagon,
 			width=1.2];
 		SW -> block		 [color="#8383cc",
-			style="filled,setlinewidth(3)",
 			weight=0];
 	}
 	{
-		node [color="#c46747",
-			style="filled,setlinewidth(3)"
-		];
+		node [color="#c46747"];
 		edge [color="#c46747"];
 		processing_		 [color="#c46747",
 			fixedsize=true,
 			height=0,
-			shape="",
+			shape=point
 			style=invis,
 			width=0];
 		processing		 [color="#c46747",
@@ -251,8 +228,7 @@ digraph matrix {
 			width=2];
 		processing -> processing_		 [arrowhead="",
 			color="#c46747",
-			row=func,
-			style="filled,setlinewidth(3)"];
+			row=func];
 		proc		 [color="#c46747",
 			fillcolor="#d9e7ee",
 			fixedsize=true,
@@ -261,38 +237,36 @@ digraph matrix {
 			shape=ellipse];
 		Tasks		 [color="#c46747",
 			fillcolor="#b2d3e4"];
-		proc -> Tasks		 [color="#c46747",
-			style="filled,setlinewidth(3)"];
+		proc -> Tasks		 [color="#c46747"];
 		sync		 [color="#c46747",
 			fillcolor="#91b5c9",
 			fixedsize=true,
 			fontsize=20,
+			fontname="Ubuntu Condensed"
 			label=synchronization,
+			height=0.7,
+			//width=2,
 			shape=octagon];
-		Tasks -> sync		 [color="#c46747",
-			style="filled,setlinewidth(3)"];
+		Tasks -> sync		 [color="#c46747"];
 		sched		 [color="#c46747",
 			fillcolor="#6a9ab1",
 			label=Scheduler];
-		sync -> sched		 [color="#c46747",
-			style="filled,setlinewidth(3)"];
+		sync -> sched		 [color="#c46747"];
 		IRQ		 [color="#c46747",
 			fillcolor="#71809b",
 			fontsize=20,
 			label="interrupts\ncore,\nCPU arch"];
-		sched -> IRQ		 [color="#c46747",
-			style="filled,setlinewidth(3)"];
+		sched -> IRQ		 [color="#c46747"];
 		CPU		 [color="#c46747",
 			fillcolor="#777777",
 			fontcolor=white,
 			fontsize=20,
 			row=chip];
-		IRQ -> CPU		 [color="#c46747",
-			style="filled,setlinewidth(3)"];
+		IRQ -> CPU		 [color="#c46747"];
 	}
 	{
 		node [color="#cfbf57ff",
-			style="filled,setlinewidth(3)"
+			
 		];
 		edge [color="#cfbf57ff",
 			weight=10
@@ -300,21 +274,20 @@ digraph matrix {
 		HI_		 [color="#cfbf57ff",
 			fixedsize=true,
 			height=0,
-			shape="",
+			shape=point
 			style=invis,
 			width=0];
 		HI		 [color="#cfbf57ff",
 			fillcolor=white,
 			fixedsize=true,
-			fontsize=20,
+			fontsize=12,
 			height=0.6,
 			label="human\ninterface",
 			row=func,
 			width=2];
 		HI -> HI_		 [arrowhead="",
 			color="#cfbf57ff",
-			row=func,
-			style="filled,setlinewidth(3)"];
+			row=func];
 		char		 [color="#cfbf57ff",
 			fillcolor="#d9e7ee",
 			fixedsize=true,
@@ -324,27 +297,25 @@ digraph matrix {
 		input		 [color="#cfbf57ff",
 			fillcolor="#b2d3e4",
 			label="input\nsubsystem"];
-		char -> input		 [color="#cfbf57ff",
-			style="filled,setlinewidth(3)"];
+		char -> input		 [color="#cfbf57ff"];
 		F7		 [color="#cfbf57ff",
 			fillcolor="#6a9ab1",
 			label="HI class\ndrivers"];
-		input -> F7		 [color="#cfbf57ff",
-			style="filled,setlinewidth(3)"];
-		G7		 [color="#cfbf57ff",
+		input -> F7		 [color="#cfbf57ff"];
+		HID		 [color="#cfbf57ff",
 			fillcolor="#71809b",
 			fontsize=20,
+			URL="https://www.kernel.org/doc/html/latest/hid/",
 			label="HI\nperipherals\ndrivers"];
-		F7 -> G7		 [color="#cfbf57ff",
-			style="filled,setlinewidth(3)"];
+		F7 -> HID		 [color="#cfbf57ff"
+			];
 		H7		 [color="#cfbf57ff",
 			fillcolor="#777777",
 			fontcolor=white,
 			fontsize=20,
 			label="display, keyboard,\nmouse, audio",
 			row=chip];
-		G7 -> H7		 [color="#cfbf57ff",
-			style="filled,setlinewidth(3)"];
+		HID -> H7		 [color="#cfbf57ff" ];
 	}
 	{
 		graph [rank=same];
@@ -369,11 +340,13 @@ digraph matrix {
 		memory -> processing		 [weight=1];
 		functions_		 [fixedsize=true,
 			height=0,
-			shape="",
+			shape=point
 			style=invis,
 			width=0];
 		functions_ -> system		 [weight=1];
 		functions		 [color=gray,
+			tooltip="Columns represent main functionalities of the kernel",
+			URL="http://www.makelinux.net/ldd3/chp-1-sect-2.shtml",
 			fillcolor=gray,
 			fixedsize=true,
 			height=0.6,
@@ -394,9 +367,9 @@ digraph matrix {
 		char;
 		usr_		 [fixedsize=true,
 			height=0,
-			shape="",
+			shape=point
 			style=invis,
-			width=0];
+			width=0.5];
 		usr		 [fillcolor="#d9e7eeff",
 			fixedsize=true,
 			label="user space\ninterfaces",
@@ -432,7 +405,7 @@ digraph matrix {
 		MA;
 		memory_		 [fixedsize=true,
 			height=0,
-			shape="",
+			shape=point,
 			style=invis,
 			width=0];
 		memory_ -> MA;
@@ -446,7 +419,7 @@ digraph matrix {
 		input;
 		D0		 [fixedsize=true,
 			height=0,
-			shape="",
+			shape=point,
 			style=invis,
 			width=0];
 		virt		 [fillcolor="#b2d3e4",
@@ -464,7 +437,7 @@ digraph matrix {
 		sync;
 		E0		 [fixedsize=true,
 			height=0,
-			shape="",
+			shape=point,
 			style=invis,
 			width=0];
 		bridges		 [fillcolor="#91b5c9",
@@ -480,7 +453,7 @@ digraph matrix {
 		F7;
 		F0		 [fixedsize=true,
 			height=0,
-			shape="",
+			shape=point,
 			style=invis,
 			width=0];
 		logical		 [fillcolor="#6a9ab1",
@@ -496,10 +469,10 @@ digraph matrix {
 		block;
 		PA;
 		IRQ;
-		G7;
+		HID;
 		G0		 [fixedsize=true,
 			height=0,
-			shape="",
+			shape=point,
 			style=invis,
 			width=0];
 		HWI		 [fillcolor="#71809b",
@@ -515,7 +488,7 @@ digraph matrix {
 		H7;
 		H0		 [fixedsize=true,
 			height=0,
-			shape="",
+			shape=point,
 			style=invis,
 			width=0];
 		HW		 [fillcolor="#777777",
@@ -539,81 +512,71 @@ digraph matrix {
 		mmap;
 		SW;
 		mmap -> SW		 [color="#51bf5b",
-			style="filled,setlinewidth(3)",
 			weight=0];
 		log_mem;
-		mmap -> log_mem		 [color="#51bf5b",
-			style="filled,setlinewidth(3)"];
+		mmap -> log_mem		 [color="#51bf5b"];
 		PA;
 		H5;
-		PA -> H5		 [color="#51bf5b",
-			style="filled,setlinewidth(3)"];
+		PA -> H5		 [color="#51bf5b"];
 		memory;
 		memory_;
 		memory -> memory_		 [arrowhead="",
 			color="#51bf5b",
-			row=func,
-			style="filled,setlinewidth(3)"];
+			row=func];
 		MA;
 		VM;
-		MA -> VM		 [color="#51bf5b",
-			style="filled,setlinewidth(3)"];
-		VM -> mmap		 [color="#51bf5b",
-			style="filled,setlinewidth(3)"];
-		log_mem -> PA		 [color="#51bf5b",
-			style="filled,setlinewidth(3)"];
+		MA -> VM		 [color="#51bf5b"];
+		VM -> mmap		 [color="#51bf5b"];
+		log_mem -> PA		 [color="#51bf5b"];
 	}
-	bottom	 [label="© 2007-2019 Constantine Shulyupin http://www.MakeLinux.net/kernel/diagram",
+	bottom	 [label="© 2007-2020 Constantine Shulyupin http://www.MakeLinux.net/kernel/diagram",
 		shape=plaintext,
 		style=""];
-	H4 -> bottom	 [weight=""];
+	H4 -> bottom	 [style=invis];
 	layers	 [fillcolor=lightgray,
+		tooltip="Functionalities are divided to common layers. It is approximate division.",
 		height=0.1,
 		style="filled,setlinewidth(0)",
 		width=0.5];
-	functions -> layers;
+	functions -> layers [ style=invis ];
 	usr -> usr_	 [arrowhead="",
 		color="#d9e7eeff",
-		minlen=2,
-		style="filled,setlinewidth(3)"];
-	usr -> virt	 [color="#d9e7eeff",
-		style="filled,setlinewidth(3)"];
+		minlen=2];
+	usr -> virt	 [color="#d9e7eeff"];
 	virt -> D0	 [arrowhead="",
 		color="#b2d3e4",
-		minlen=2,
-		style="filled,setlinewidth(3)"];
-	virt -> bridges	 [color="#b2d3e4",
-		style="filled,setlinewidth(3)"];
+		minlen=2];
+	virt -> bridges	 [color="#b2d3e4"];
 	bridges -> E0	 [arrowhead="",
 		color="#91b5c9",
 		minlen=2,
-		style="filled,setlinewidth(3)",
+		style="filled,setlinewidth(6)",
 		weight=""];
 	bridges -> logical	 [color="#91b5c9",
-		style="filled,setlinewidth(3)"];
+		style="filled,setlinewidth(6)"];
 	logical -> F0	 [arrowhead="",
 		color="#6a9ab1",
 		minlen=2,
 		row=logical,
-		style="filled,setlinewidth(3)",
+		style="filled,setlinewidth(6)",
 		weight=""];
 	logical -> HWI	 [color="#6a9ab1",
 		row=logical,
-		style="filled,setlinewidth(3)"];
+		style="filled,setlinewidth(6)"];
 	HWI -> G0	 [arrowhead="",
 		color="#71809b",
 		minlen=2,
 		row=HWI,
-		style="filled,setlinewidth(3)",
+		style="filled,setlinewidth(6)",
 		weight=""];
 	HWI -> HW	 [color="#71809b",
 		row=HWI,
-		style="filled,setlinewidth(3)"];
+		style="filled,setlinewidth(6)"];
 	HW -> H0	 [arrowhead="",
 		color="#777777",
 		minlen=2,
 		row=chip,
-		style="filled,setlinewidth(3)",
+		style="filled,setlinewidth(6)",
 		weight=""];
 	layers -> usr	 [arrowhead="",
 		color=gray,
@@ -622,5 +585,5 @@ digraph matrix {
 		label="Linux kernel diagram",
 		shape=plain,
 		style=""];
-	LKD -> storage;
+	LKD -> storage [style=invis];
 }
