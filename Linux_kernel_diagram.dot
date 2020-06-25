@@ -29,6 +29,7 @@ digraph matrix {
 			shape=point
 			];
 		system		 [color="#e27dd6ff",
+			URL="https://en.wikibooks.org/wiki/The_Linux_Kernel/System",
 			fillcolor=white,
 			fixedsize=true,
 			height=0.6,
@@ -38,15 +39,15 @@ digraph matrix {
 			color="#e27dd6ff",
 			row=func]
 		SCI		 [color="#e27dd6ff",
+			URL="https://en.wikibooks.org/wiki/The_Linux_Kernel/Syscalls",
 			fillcolor="#d9e7ee",
 			fixedsize=true,
 			label="System calls",
-			URL="https://en.wikibooks.org/wiki/The_Linux_Kernel/Syscalls",
 			row=usr,
 			shape=ellipse];
 		sysfs		 [color="#e27dd6ff",
 			fillcolor="#b2d3e4",
-			label="proc, sysfs,\nfile systems"];
+			label="proc & sysfs\nfile systems"];
 		SCI -> sysfs		 [color="#e27dd6ff"];
 		DM		 [color="#e27dd6ff",
 			fillcolor="#91b5c9",
@@ -85,6 +86,7 @@ digraph matrix {
 			shape=point
 			width=0];
 		networking		 [color="#61c2c5",
+			URL="https://en.wikibooks.org/wiki/The_Linux_Kernel/Networking",
 			fillcolor=white,
 			fixedsize=true,
 			height=0.6,
@@ -140,6 +142,7 @@ digraph matrix {
 			style=invis,
 			width=0];
 		storage		 [color="#8383cc",
+			URL="https://en.wikibooks.org/wiki/The_Linux_Kernel/Storage",
 			fillcolor=white,
 			fixedsize=true,
 			height=0.6,
@@ -222,6 +225,7 @@ digraph matrix {
 			style=invis,
 			width=0];
 		processing		 [color="#c46747",
+			URL="https://en.wikibooks.org/wiki/The_Linux_Kernel/Processing",
 			fillcolor=white,
 			fixedsize=true,
 			height=0.6,
@@ -279,6 +283,7 @@ digraph matrix {
 			style=invis,
 			width=0];
 		HI		 [color="#cfbf57ff",
+			URL="https://en.wikibooks.org/wiki/The_Linux_Kernel",
 			fillcolor=white,
 			fixedsize=true,
 			fontsize=12,
@@ -329,6 +334,7 @@ digraph matrix {
 		storage;
 		networking -> storage		 [weight=1];
 		memory		 [color="#51bf5b",
+			URL="https://en.wikibooks.org/wiki/The_Linux_Kernel/Memory",
 			fillcolor=white,
 			fixedsize=true,
 			height=0.6,
@@ -425,6 +431,8 @@ digraph matrix {
 			width=0];
 		virt		 [fillcolor="#b2d3e4",
 			label="virtual\nsubsystems",
+			URL="https://en.wikipedia.org/wiki/Proxy_pattern",
+			tooltip="proxy between standard user space interfaces and internal implementations",
 			style="filled,setlinewidth(0)"];
 		VM		 [color="#51bf5b",
 			fillcolor="#b2d3e4",
@@ -443,6 +451,7 @@ digraph matrix {
 			width=0];
 		bridges		 [fillcolor="#91b5c9",
 			shape=octagon,
+			tooltip="bridges between uniform virtual interfaces and various implementations",
 			URL="https://en.wikipedia.org/wiki/Bridge_pattern",
 			style="filled,setlinewidth(0)"];
 	}
