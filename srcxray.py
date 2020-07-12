@@ -4,10 +4,10 @@
 #
 # Analyzes interconnections between functions and structures in source code.
 #
-# Uses cscope and git grep --show-function to
+# Uses doxygen, git grep --show-functionm and cscope to
 # reveal references between identifiers.
 #
-# 2018 Constantine Shulyupin, const@MakeLinux.com
+# Since 2018, Costa Shulyupin, costa@MakeLinux.net
 #
 
 from inspect import currentframe, getframeinfo, getouterframes, stack
@@ -101,7 +101,7 @@ def popen(p):
     return check_output(p, shell=True).decode('utf-8').splitlines()
 
 
-def extract_referer(line):
+def extract_referrer(line):
     line = re.sub(r'__ro_after_init', '', line)
     line = re.sub(r'FNAME\((\w+)\)', r'\1', line)
     line = re.sub(r'.*TRACE_EVENT.*', '', line)
@@ -116,7 +116,7 @@ def extract_referer(line):
         return m.groups()
 
 
-def extract_referer_test():
+def extract_referrer_test():
     passed = 0
     for a in {
             "f=1=good2()",
@@ -130,7 +130,7 @@ def extract_referer_test():
             "f:8: a=in bad()",
             "f=9=struct good",
             }:
-        r = extract_referer(a)
+        r = extract_referrer(a)
         #print(a, '->', r)
         if 'bad' in a and r and 'bad' in r[2]:
             print("ERROR: ", a, '->', r)
@@ -141,7 +141,7 @@ def extract_referer_test():
     log(passed)
 
 
-def func_referers_git_grep(name):
+def func_referrers_git_grep(name):
     res = list()
     r = None
     for line in popen(r'git grep --threads 1 --no-index --word-regexp '
@@ -163,7 +163,7 @@ def func_referers_git_grep(name):
         if r and r[2] != name and r[2] not in black_list:
             res.append(r)
             r = None
-        r = extract_referer(line)
+        r = extract_referrer(line)
         # r is list of file line func
         if verbose and r:
             print("%-40s\t%s"%(("%s:%s"%(r[0],r[1])),r[2]))
@@ -173,7 +173,7 @@ def func_referers_git_grep(name):
 cscope_warned = False
 
 
-def func_referers_cscope(name):
+def func_referrers_cscope(name):
     global cscope_warned
     if not os.path.isfile('cscope.out'):
         if not cscope_warned:
@@ -190,25 +190,24 @@ def func_referers_cscope(name):
         res.append([file, line_num, func])
     if not res and len(name) > 3:
         log(name)
-        res = func_referers_git_grep(name)
+        res = func_referrers_git_grep(name)
     log(res)
     return res
 
 
-def func_referers_all(name):
-    return list(dict.fromkeys(func_referers_git_grep(name) + func_referers_cscope(name)))
+def func_referrers_all(name):
+    return list(dict.fromkeys(func_referrers_git_grep(name) + func_referrers_cscope(name)))
 
 
-def referers_tree(name, referer=None, printed=None, level=0):
-    if not referer:
+def referrers_tree(name, referrer=None, printed=None, level=0):
         if os.path.isfile('cscope.out'):
-            referer = func_referers_cscope
+            referrer = func_referrers_cscope
         else:
             print("Using git grep only, recommended to run: cscope -Rcbk",
                     file=sys.stderr)
-            referer = func_referers_git_grep
-    if isinstance(referer, str):
-        referer = eval(referer)
+            referrer = func_referrers_git_grep
+    if isinstance(referrer, str):
+        referrer = eval(referrer)
     if not printed:
         printed = set()
     # definition
@@ -222,39 +221,39 @@ def referers_tree(name, referer=None, printed=None, level=0):
     if level > level_limit - 2:
         print_limited((level + 1)*'\t' + '...')
         return ''
-    for a in referer(name):
+    for a in referrer(name):
         name = a[2]
-        referers_tree(name, referer, printed, level + 1)
+        referrers_tree(name, referrer, printed, level + 1)
     return ''
 
-def referers(name):
-    #for a in func_referers_git_grep(name):
+def referrers(name):
+    #for a in func_referrers_git_grep(name):
     #    print("%s:%s: %s"%(a[0],a[1],a[2]))
-    print(' '.join([a[2] for a in func_referers_git_grep(name)]))
+    print(' '.join([a[2] for a in func_referrers_git_grep(name)]))
 
 
-def referers_dep(name, referer=None, printed=None, level=0):
-    if not referer:
+def referrers_dep(name, referrer=None, printed=None, level=0):
+    if not referrer:
         if os.path.isfile('cscope.out'):
-            referer = func_referers_cscope
+            referrer = func_referrers_cscope
         else:
             print("Using git grep only, recommended to run: cscope -Rcbk",
                   file=sys.stderr)
-            referer = func_referers_git_grep
-    if isinstance(referer, str):
-        referer = eval(referer)
+            referrer = func_referrers_git_grep
+    if isinstance(referrer, str):
+        referrer = eval(referrer)
     if not printed:
         printed = set()
     if name in printed:
         return
     if level > level_limit - 2:
         return ''
-    referers = referer(name)
-    if referers:
+    referrers = referrer(name)
+    if referrers:
         printed.add(name)
-        print("%s:" % (name), ' '.join(referers))
-        for a in referers:
-            referers_dep(a, referer, printed, level + 1)
+        print("%s:" % (name), ' '.join(referrers))
+        for a in referrers:
+            referrers_dep(a, referrer, printed, level + 1)
     else:
         pass
         # TODO: print terminal
@@ -1202,9 +1201,9 @@ class _unittest_autotest(unittest.TestCase):
         self.assertTrue(os.path.isdir('include/linux/'))
         os.chdir('init')
         self.assertEqual('\t\t\t\t\tprepare_namespace ^', popen(
-            'srcxray.py referers_tree nfs_root_data')[-1])
+            'srcxray.py referrers_tree nfs_root_data')[-1])
         self.assertEqual('initrd_load: prepare_namespace', popen(
-            'srcxray.py referers_dep nfs_root_data')[-1])
+            'srcxray.py referrers_dep nfs_root_data')[-1])
         self.assertEqual('calibrate_delay_converge: __delay',
                          popen('srcxray.py call_dep start_kernel')[-2])
         self.assertEqual('\t\tcpu_startup_entry', popen(
