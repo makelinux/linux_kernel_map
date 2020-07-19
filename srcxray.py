@@ -233,9 +233,12 @@ def referrers_tree(name, referrer=None, printed=None, level=0):
     for a in referrer(name):
         name = a[2]
         referrers_tree(name, referrer, printed, level + 1)
-    return ''
 
 def referrers(name):
+    '''
+    Arg: <identifier>
+    Ex: nfs_root_data
+    '''
     #for a in func_referrers_git_grep(name):
     #    print("%s:%s: %s"%(a[0],a[1],a[2]))
     print(' '.join([a[2] for a in func_referrers_git_grep(name)]))
@@ -258,7 +261,7 @@ def referrers_dep(name, referrer=None, printed=None, level=0):
         return
     if level > level_limit - 2:
         return ''
-    referrers = referrer(name)
+    referrers = [a[2] for a in referrer(name)]
     if referrers:
         printed.add(name)
         print("%s:" % (name), ' '.join(referrers))
@@ -268,7 +271,6 @@ def referrers_dep(name, referrer=None, printed=None, level=0):
         pass
         # TODO: print terminal
         # print('...')
-    return ''
 
 
 def call_tree(node, printed=None, level=0):
@@ -300,7 +302,6 @@ def call_tree(node, printed=None, level=0):
         call_tree(line.split()[1], printed, level + 1)
         # except Exception:
         #    pass
-    return ''
 
 
 def call_dep(node, printed=None, level=0):
@@ -327,7 +328,6 @@ def call_dep(node, printed=None, level=0):
             pass
             # TODO: print terminal
             # print('...')
-    return ''
 
 
 def my_graph(name=None):
@@ -1232,8 +1232,9 @@ class _unittest_autotest(unittest.TestCase):
         # digraph_print:
         self.assertEqual("\t\tmount_initrd ^", popen(
             "srcxray.py import_cflow init/do_mounts_initrd.c")[-1])
-        self.assertEqual("\t\t4", popen(
-            'srcxray.py "nx.DiGraph([{1,2},{2,3},{2,4}])"')[-1])
+        self.assertRegex(popen(
+            'srcxray.py "nx.DiGraph([{1,2},{2,3},{2,4}])"')[-1],
+            "\t\t4.*")
 
 
 def main():
