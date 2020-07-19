@@ -40,7 +40,7 @@ import xml.dom.minidom
 import ast
 
 default_root = 'starts'
-black_list = ('aligned unlikely typeof u32 '
+ignores = ('aligned unlikely typeof u32 '
               'PVOP_CALLEE0 PVOP_VCALLEE0 PVOP_VCALLEE1 if trace_hardirqs_off '
               'i NULL likely unlikely true false test_bit NAPI_GRO_CB clear_bit '
               'atomic_read preempt_disable preempt_enable container_of ENOSYS '
@@ -164,7 +164,7 @@ def func_referrers_git_grep(name):
             if re.match(p % (name), line):
                 r = None
                 break
-        if r and r[2] != name and r[2] not in black_list:
+        if r and r[2] != name and r[2] not in ignores:
             res.append(r)
             r = None
         r = extract_referrer(line)
@@ -190,7 +190,7 @@ def func_referrers_cscope(name):
         log(l)
         m = re.match(r'([^ ]*) ([^ ]*) ([^ ]*) (.*)', l)
         file, func, line_num, line_str = m.groups()
-        if func in black_list: continue
+        if func in ignores: continue
         res.append([file, line_num, func])
     if not res and len(name) > 3:
         log(name)
@@ -295,7 +295,7 @@ def call_tree(node, printed=None, level=0):
     local_printed = set()
     for line in popen('cscope -d -L2 "%s"' % (node)):
         a = line.split()[1]
-        if a in local_printed or a in black_list:
+        if a in local_printed or a in ignores:
             continue
         local_printed.add(a)
         # try:
@@ -315,7 +315,7 @@ def call_dep(node, printed=None, level=0):
     calls = list()
     for a in [line.split()[1] for line in
               popen('cscope -d -L2 "%s"' % (node))]:
-        if a in black_list:
+        if a in ignores:
             continue
         calls.append(a)
     if calls:
@@ -468,7 +468,7 @@ def cleanup(a):
     log('')
     g = to_dg(a)
     print(dg.number_of_edges())
-    dg.remove_nodes_from(black_list)
+    dg.remove_nodes_from(ignores)
     print(dg.number_of_edges())
     write_dot(dg, a)
 
@@ -488,14 +488,14 @@ def most_used(dg, ins=10, outs=10):
 def starts(dg):  # roots
     return {n: dg.out_degree(n) for (n, d) in dg.in_degree if not d}
 
-def exclude(i, excludes=[], black_list=black_list):
-    if i in black_list:
+def exclude(i, excludes=[], ignores=ignores):
+    if i in ignores:
         return True
     for e in excludes:
         if re.match(e, i):
             return True
 
-def digraph_predecessors(dg, starts, levels = 100, excludes = [], black_list=black_list):
+def digraph_predecessors(dg, starts, levels = 100, excludes = [], ignores=ignores):
     dg = to_dg(dg)
     passed = set()
     # for i in [_ for _ in dg.predecessors(start)]:
@@ -509,7 +509,7 @@ def digraph_predecessors(dg, starts, levels = 100, excludes = [], black_list=bla
         starts = set()
         for s in s2:
             for i in dg.predecessors(s):
-                if i in passed or exclude(i, excludes, black_list):
+                if i in passed or exclude(i, excludes, ignores):
                     continue
                 passed.add(i)
                 starts.add(i)
@@ -518,7 +518,7 @@ def digraph_predecessors(dg, starts, levels = 100, excludes = [], black_list=bla
     return p
 
 
-def digraph_tree(dg, starts=None, black_list=black_list):
+def digraph_tree(dg, starts=None, ignores=ignores):
     '''
     Arg: <graph> <list if starting nodes> - extract a subgraph from a graph
     Ex2: \"write_dot(digraph_tree(read_dot('doxygen.dot'), ['main']), 'main.dot')\"
@@ -528,7 +528,7 @@ def digraph_tree(dg, starts=None, black_list=black_list):
     def sub(node):
         tree.add_node(node)
         for o in dg.successors(node):
-            if o in black_list or tree.has_edge(node, o) or o in starts:
+            if o in ignores or tree.has_edge(node, o) or o in starts:
                 # print(o)
                 continue
             tree.add_edge(node, o)
@@ -545,7 +545,7 @@ def digraph_tree(dg, starts=None, black_list=black_list):
         sub(starts[0])
     elif len(starts) > 1:
         for o in starts:
-            if o in black_list:
+            if o in ignores:
                 continue
             sub(o)
     return tree
@@ -559,7 +559,7 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
     printed = set()
 
     def digraph_print_sub(path='', node=None, level=0):
-        if node in black_list:
+        if node in ignores:
             return
         if node in printed:
             print_limited(level*'\t' + str(node) + ' ^', dst)
@@ -713,7 +713,7 @@ def import_cflow(a=None, cflow_out=None):
         if n <= nprev:
             stack = stack[:n - nprev - 1]
         # print(n, id, stack)
-        if id not in black_list:
+        if id not in ignores:
             if len(stack):
                 cf.add_edge(stack[-1], id)
         stack.append(id)
@@ -743,7 +743,7 @@ def import_outline(a=None):
             if n <= nprev:
                 stack = stack[:n - nprev - 1]
             # print(n, id, stack)
-            if id not in black_list:
+            if id not in ignores:
                 if len(stack):
                     cf.add_edge(stack[-1], id)
             stack.append(id)
@@ -780,7 +780,7 @@ def write_dot(g, dot):
     dot.write('node [fontname=Ubuntu,shape=none];\n')
     # dot.write('edge [width=10000];\n')
     dot.write('edge [width=1];\n')
-    g.remove_nodes_from(black_list)
+    g.remove_nodes_from(ignores)
     ranks = collections.defaultdict(list)
     for n in g.nodes():
         r = rank(g, n)
