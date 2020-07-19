@@ -10,10 +10,14 @@
 # Since 2018, Costa Shulyupin, costa@MakeLinux.net
 #
 
-from inspect import currentframe, getframeinfo, getouterframes, stack
+import inspect
+from inspect import (currentframe, getframeinfo, getouterframes, stack,
+    getmembers, isfunction)
+import types
 import random
 import os
 import sys
+from sys import *
 import collections
 from munch import *
 from subprocess import *
@@ -200,6 +204,11 @@ def func_referrers_all(name):
 
 
 def referrers_tree(name, referrer=None, printed=None, level=0):
+    '''
+    Arg: <identifier>
+    Ex: nfs_root_data
+    '''
+    if not referrer:
         if os.path.isfile('cscope.out'):
             referrer = func_referrers_cscope
         else:
@@ -233,6 +242,7 @@ def referrers(name):
 
 
 def referrers_dep(name, referrer=None, printed=None, level=0):
+    # Arg: <identifier>
     if not referrer:
         if os.path.isfile('cscope.out'):
             referrer = func_referrers_cscope
@@ -262,6 +272,10 @@ def referrers_dep(name, referrer=None, printed=None, level=0):
 
 
 def call_tree(node, printed=None, level=0):
+    '''
+    Arg: <identifier>
+    Ex: start_kernel
+    '''
     if not os.path.isfile('cscope.out'):
         print("Please run: cscope -Rcbk", file=sys.stderr)
         return False
@@ -324,10 +338,14 @@ def my_graph(name=None):
 
 
 def reduce_graph(g, m=None):
+    '''
+    Arg: <graph> [min in_degree]- removes leaves
+    Ex2: \"write_dot(reduce_graph(read_dot('doxygen.dot')),'reduced.dot')\"
+    '''
     rm = set()
-    m = g.number_of_nodes() if not m else m
+    m = g.number_of_nodes() + 1 if not m else m
     log(g.number_of_edges())
-    rm = [n for (n, d) in g.out_degree if not d and g.in_degree(n) <= m]
+    rm = [n for (n, d) in g.out_degree if not d and g.in_degree(n) < m]
     g.remove_nodes_from(rm)
     print(g.number_of_edges())
     return g
@@ -437,16 +455,12 @@ def syscalls():
 # write_dot to_agraph AGraph
 # agwrite
 # srcxray.py 'write_dot(syscalls(), "syscalls.dot")'
-# srcxray.py "write_dot(import_cflow(), 'a.dot')"
 # write_graphml
-# F=sys_mount; srcxray.py "digraph_print(import_cflow(), ['$F'])" > $F.tree
-# srcxray.py "leaves(read_dot('a.dot'))"
 # srcxray.py "most_used(read_dot('a.dot'))"
 # srcxray.py "digraph_print(read_dot('a.dot'))"
 # srcxray.py "write_dot(reduce_graph(read_dot('no-loops.dot')),'reduced.dot')"
 # a=sys_clone;srcxray.py "write_dot(rank_couples(reduce_graph(remove_loops(read_dot('$a.dot')))),'$a.dot')"
 # srcxray.py "pprint(most_used(read_dot('a.dot')))"
-# srcxray.py "write_dot(digraph_tree(read_dot('all.dot'), ['sys_clone']), 'sys_clone.dot')"
 # srcxray.py "write_dot(add_rank('reduced.dot'), 'ranked.dot')"
 # srcxray.py "write_dot(remove_loops(read_dot('reduced.dot')), 'no-loops.dot')"
 
@@ -457,13 +471,6 @@ def cleanup(a):
     dg.remove_nodes_from(black_list)
     print(dg.number_of_edges())
     write_dot(dg, a)
-
-
-def leaves(a):
-    dg = to_dg(a)
-    log(dg)
-    # [x for x in G.nodes() if G.out_degree(x)==0 and G.in_degree(x)==1]
-    return {n: dg.in_degree(n) for (n, d) in dg.out_degree if not d}
 
 
 def sort_dict(d):
@@ -512,6 +519,10 @@ def digraph_predecessors(dg, starts, levels = 100, excludes = [], black_list=bla
 
 
 def digraph_tree(dg, starts=None, black_list=black_list):
+    '''
+    Arg: <graph> <list if starting nodes> - extract a subgraph from a graph
+    Ex2: \"write_dot(digraph_tree(read_dot('doxygen.dot'), ['main']), 'main.dot')\"
+    '''
     tree = nx.DiGraph()
 
     def sub(node):
@@ -541,6 +552,9 @@ def digraph_tree(dg, starts=None, black_list=black_list):
 
 
 def digraph_print(dg, starts=None, dst_fn=None, sort=False):
+    '''
+    Arg: <graph> -  print graphs as text tree
+    '''
     dst = open(dst_fn, 'w') if dst_fn else None
     printed = set()
 
@@ -680,6 +694,7 @@ def cflow(a=None):
 
 
 def import_cflow(a=None, cflow_out=None):
+    # Arg: $none_or_dir_or_file_or_mask
     cf = my_graph()
     stack = list()
     nprev = -1
@@ -707,6 +722,10 @@ def import_cflow(a=None, cflow_out=None):
 
 
 def import_outline(a=None):
+    '''
+    Arg: <outline.txt> - convert tree text to graph
+    Ex2: \"write_dot(import_outline('outline.txt'),'outline.dot')\"
+    '''
     cf = my_graph()
     stack = list()
     nprev = -1
@@ -750,6 +769,9 @@ def esc(s):
 
 
 def write_dot(g, dot):
+    '''
+    Arg: <graph> <file> - writes a graph into a file with custom attributes
+    '''
     dot = str(dot)
     dot = open(dot, 'w')
     dot.write('strict digraph "None" {\n')
@@ -923,6 +945,7 @@ def cflow_dir(a):
 
 
 def cflow_linux():
+    # Arg:
     dirs = ('init kernel kernel/time '
             'fs fs/ext4 block '
             'ipc net '
@@ -965,6 +988,9 @@ def cflow_linux():
 
 
 def stats(a):
+    '''
+    Arg: <dot file> - measures various simple statistical metrics of a graph
+    '''
     dg = to_dg(a)
     stat = Munch()
     im = dict()
@@ -1067,6 +1093,10 @@ me = os.path.basename(sys.argv[0])
 
 
 def dir_tree(d='.'):
+    '''
+    Arg: [directory] - scan directory into graph
+    Ex2: \"write_dot(dir_tree('.'),'tree.dot')\"
+    '''
     stack = list()
     nprev = -1
     g = my_graph()
@@ -1095,6 +1125,10 @@ def dir_tree(d='.'):
 
 
 def doxygen(*input):
+    '''
+    Arg: <source files>
+    Ex: *.c
+    '''
     log(' '.join([i for i in input]))
     p = run(['doxygen', '-'], stdout=PIPE,
             input = "INPUT=" + ' '.join([i for i in input]) + """
@@ -1171,25 +1205,10 @@ def doxygen_length(a):
 
 
 def usage():
-    print("Usage:\n")
-    for c in ["referers_tree", "call_tree", "referers_dep", "call_dep"]:
-        print(me, c, "<identifier>")
     print("\nTry this:\n")
     print("cd linux/init")
     print(me, "unittest")
-    print(me, "referers_tree nfs_root_data")
-    print(me, "referers nfs_root_data")
-    print(me, "call_tree start_kernel")
-    print(me, "import_cflow $none_or_dir_or_file_or_mask")
-    print(me, "stats $dot")
-    print(me, "leaves $dot")
-    print(me, "cflow_linux")
-    print(me, "\"write_dot(import_outline('outline.txt'),'outline.dot')\"")
-    print(me, "\"write_dot(dir_tree('.'),'tree.dot')\"")
-    print(me, "\"doxygen *.c\"")
-    print(me, "\"write_dot(digraph_tree(read_dot('doxygen.dot'), ['main']), 'main.dot')\"")
-    print(me, "\"write_dot(reduce_graph(read_dot('doxygen.dot')),'reduced.dot')\"")
-    print("Emergency termination: ^Z, kill %1")
+    print("\nEmergency termination: ^Z, kill %1")
     print()
 
 
@@ -1200,10 +1219,10 @@ class _unittest_autotest(unittest.TestCase):
         self.assertEqual(list(g.successors("2")), ["3", "4"])
         self.assertTrue(os.path.isdir('include/linux/'))
         os.chdir('init')
-        self.assertEqual('\t\t\t\t\tprepare_namespace ^', popen(
-            'srcxray.py referrers_tree nfs_root_data')[-1])
-        self.assertEqual('initrd_load: prepare_namespace', popen(
-            'srcxray.py referrers_dep nfs_root_data')[-1])
+        self.assertRegex(popen('srcxray.py referrers_tree nfs_root_data')[-1],
+            r'.*prepare_namespace.*')
+        self.assertEqual('initrd_load: prepare_namespace',
+                popen('srcxray.py referrers_dep nfs_root_data')[-1])
         self.assertEqual('calibrate_delay_converge: __delay',
                          popen('srcxray.py call_dep start_kernel')[-2])
         self.assertEqual('\t\tcpu_startup_entry', popen(
@@ -1222,6 +1241,16 @@ def main():
         ret = False
         if len(sys.argv) == 1:
             #print('Run', me, 'usage')
+            for m in getmembers(modules[__name__]):
+                if isfunction(m[1]) and m[1].__module__ == __name__:
+                    d = inspect.getdoc(m[1])
+                    if not d:
+                        continue
+                    print('\n' + d.replace('Arg:', '\033[1m' + m[1].__name__ + '\033[0m').
+                            replace('Ex:', '\033[3mExample usage:\033[0m\n' + me +
+                                ' ' + m[1].__name__).
+                            replace('Ex2:', '\033[3mExample usage:\033[0m\n' + me + ' ')
+                            )
             usage()
         else:
             while sys.argv[1].startswith('--'):
