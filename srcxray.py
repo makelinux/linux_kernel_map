@@ -12,7 +12,7 @@
 
 import inspect
 from inspect import (currentframe, getframeinfo, getouterframes, stack,
-    getmembers, isfunction)
+                     getmembers, isfunction)
 import types
 import random
 import os
@@ -41,33 +41,33 @@ import ast
 
 default_root = 'starts'
 ignores = ('aligned unlikely typeof u32 '
-              'PVOP_CALLEE0 PVOP_VCALLEE0 PVOP_VCALLEE1 if trace_hardirqs_off '
-              'i NULL likely unlikely true false test_bit NAPI_GRO_CB clear_bit '
-              'atomic_read preempt_disable preempt_enable container_of ENOSYS '
-              'READ_ONCE u64 u8 _RET_IP_ ret current '
-              'AT_FDCWD fdput EBADF file_inode '
-              'ssize_t path_put __user '
-              'list_empty memcpy size_t loff_t pos d_inode dput copy_to_user EIO bool out IS_ERR '
-              'EPERM rcu_read_lock rcu_read_unlock spin_lock spin_unlock list_for_each_entry kfree '
-              'GFP_KERNEL ENOMEM EFAULT ENOENT EAGAIN PTR_ERR PAGE_SHIFT PAGE_SIZE '
-              'pgoff_t pte_t pmd_t HPAGE_PMD_NR PageLocked entry swp_entry_t next unlock_page spinlock_t end XXstart '
-              ' VM_BUG_ON VM_BUG_ON_PAGE BDI_SHOW max '
-              'ssize_t path_put __user '
-              'list_del compound_head list_add cond_resched put_page nr_pages min spin_lock_irqsave IS_ENABLED '
-              'EBUSY UL NODE_DATA pr_err memset list size ptl PAGE_MASK pr_info offset addr get_page sprintf '
-              'INIT_LIST_HEAD NUMA_NO_NODE spin_unlock_irqrestore mutex_unlock mutex_lock '
-              'page_to_nid page_to_pfn pfn page_zone pfn_to_page '
-              'BUG BUG_ON flags WARN_ON_ONCE ENODEV cpu_to_le16 cpumask_bits '
-              'ERR_PTR ENOTSUPP EOPNOTSUPP EOPNOTSUPP WARN_ON EINVAL i name '
-              'sigset_t fdget put_user get_user copy_from_user LOOKUP_FOLLOW LOOKUP_EMPTY EINTR '
-              'O_CLOEXEC err getname access_ok task_pid_vnr cred '
-              'percpu_ref_put get_timespec64 sigdelsetmask ns_capable kzalloc capable f_mode O_LARGEFILE pos_from_hilo '
-              'pr_debug error current_cred ESRCH f_path find_task_by_vpid '
-              'retry LOOKUP_REVAL retry_estale user_path_at lookup_flags old '
-              'current_user_ns spin_lock_irq spin_unlock_irq prepare_creds '
-              'tasklist_lock commit_creds read_lock read_unlock SIGKILL SIGSTOP abort_creds fd_install '
-              'real_mount FMODE_WRITE tv_nsec putname '
-              ).split()
+           'PVOP_CALLEE0 PVOP_VCALLEE0 PVOP_VCALLEE1 if trace_hardirqs_off '
+           'i NULL likely unlikely true false test_bit NAPI_GRO_CB clear_bit '
+           'atomic_read preempt_disable preempt_enable container_of ENOSYS '
+           'READ_ONCE u64 u8 _RET_IP_ ret current '
+           'AT_FDCWD fdput EBADF file_inode '
+           'ssize_t path_put __user '
+           'list_empty memcpy size_t loff_t pos d_inode dput copy_to_user EIO bool out IS_ERR '
+           'EPERM rcu_read_lock rcu_read_unlock spin_lock spin_unlock list_for_each_entry kfree '
+           'GFP_KERNEL ENOMEM EFAULT ENOENT EAGAIN PTR_ERR PAGE_SHIFT PAGE_SIZE '
+           'pgoff_t pte_t pmd_t HPAGE_PMD_NR PageLocked entry swp_entry_t next unlock_page spinlock_t end XXstart '
+           ' VM_BUG_ON VM_BUG_ON_PAGE BDI_SHOW max '
+           'ssize_t path_put __user '
+           'list_del compound_head list_add cond_resched put_page nr_pages min spin_lock_irqsave IS_ENABLED '
+           'EBUSY UL NODE_DATA pr_err memset list size ptl PAGE_MASK pr_info offset addr get_page sprintf '
+           'INIT_LIST_HEAD NUMA_NO_NODE spin_unlock_irqrestore mutex_unlock mutex_lock '
+           'page_to_nid page_to_pfn pfn page_zone pfn_to_page '
+           'BUG BUG_ON flags WARN_ON_ONCE ENODEV cpu_to_le16 cpumask_bits '
+           'ERR_PTR ENOTSUPP EOPNOTSUPP EOPNOTSUPP WARN_ON EINVAL i name '
+           'sigset_t fdget put_user get_user copy_from_user LOOKUP_FOLLOW LOOKUP_EMPTY EINTR '
+           'O_CLOEXEC err getname access_ok task_pid_vnr cred '
+           'percpu_ref_put get_timespec64 sigdelsetmask ns_capable kzalloc capable f_mode O_LARGEFILE pos_from_hilo '
+           'pr_debug error current_cred ESRCH f_path find_task_by_vpid '
+           'retry LOOKUP_REVAL retry_estale user_path_at lookup_flags old '
+           'current_user_ns spin_lock_irq spin_unlock_irq prepare_creds '
+           'tasklist_lock commit_creds read_lock read_unlock SIGKILL SIGSTOP abort_creds fd_install '
+           'real_mount FMODE_WRITE tv_nsec putname '
+           ).split()
 
 
 level_limit = 10
@@ -78,6 +78,7 @@ scaled = False
 verbose = False
 
 files = collections.defaultdict(list)
+
 
 def print_limited(a, out=None):
     out = out if out else sys.stdout
@@ -133,7 +134,7 @@ def extract_referrer_test():
             "f=7=TRACE_EVENT(bad)",
             "f:8: a=in bad()",
             "f=9=struct good",
-            }:
+    }:
         r = extract_referrer(a)
         #print(a, '->', r)
         if 'bad' in a and r and 'bad' in r[2]:
@@ -170,7 +171,7 @@ def func_referrers_git_grep(name):
         r = extract_referrer(line)
         # r is list of file line func
         if verbose and r:
-            print("%-40s\t%s"%(("%s:%s"%(r[0],r[1])),r[2]))
+            print("%-40s\t%s" % (("%s:%s" % (r[0], r[1])), r[2]))
     return res
 
 
@@ -190,7 +191,8 @@ def func_referrers_cscope(name):
         log(l)
         m = re.match(r'([^ ]*) ([^ ]*) ([^ ]*) (.*)', l)
         file, func, line_num, line_str = m.groups()
-        if func in ignores: continue
+        if func in ignores:
+            continue
         res.append([file, line_num, func])
     if not res and len(name) > 3:
         log(name)
@@ -213,7 +215,7 @@ def referrers_tree(name, referrer=None, printed=None, level=0):
             referrer = func_referrers_cscope
         else:
             print("Using git grep only, recommended to run: cscope -Rcbk",
-                    file=sys.stderr)
+                  file=sys.stderr)
             referrer = func_referrers_git_grep
     if isinstance(referrer, str):
         referrer = eval(referrer)
@@ -234,12 +236,13 @@ def referrers_tree(name, referrer=None, printed=None, level=0):
         name = a[2]
         referrers_tree(name, referrer, printed, level + 1)
 
+
 def referrers(name):
     '''
     Arg: <identifier>
     Ex: nfs_root_data
     '''
-    #for a in func_referrers_git_grep(name):
+    # for a in func_referrers_git_grep(name):
     #    print("%s:%s: %s"%(a[0],a[1],a[2]))
     print(' '.join([a[2] for a in func_referrers_git_grep(name)]))
 
@@ -488,6 +491,7 @@ def most_used(dg, ins=10, outs=10):
 def starts(dg):  # roots
     return {n: dg.out_degree(n) for (n, d) in dg.in_degree if not d}
 
+
 def exclude(i, excludes=[], ignores=ignores):
     if i in ignores:
         return True
@@ -495,7 +499,8 @@ def exclude(i, excludes=[], ignores=ignores):
         if re.match(e, i):
             return True
 
-def digraph_predecessors(dg, starts, levels = 100, excludes = [], ignores=ignores):
+
+def digraph_predecessors(dg, starts, levels=100, excludes=[], ignores=ignores):
     dg = to_dg(dg)
     passed = set()
     # for i in [_ for _ in dg.predecessors(start)]:
@@ -503,8 +508,8 @@ def digraph_predecessors(dg, starts, levels = 100, excludes = [], ignores=ignore
     for e in excludes:
         log(e)
     while levels:
-        #log(levels)
-        #log(starts)
+        # log(levels)
+        # log(starts)
         s2 = starts
         starts = set()
         for s in s2:
@@ -514,7 +519,7 @@ def digraph_predecessors(dg, starts, levels = 100, excludes = [], ignores=ignore
                 passed.add(i)
                 starts.add(i)
                 p.add_edge(i, s)
-        levels-=1
+        levels -= 1
     return p
 
 
@@ -575,7 +580,7 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
         if outs:
             s += ' ...' if level > level_limit - 2 else ''
         else:
-            s+='  @' + path
+            s += '  @' + path
         print_limited(level*'\t' + str(node) + s, dst)
         printed.add(node)
         if level > level_limit - 2:
@@ -798,7 +803,7 @@ def write_dot(g, dot):
         # pred
         dot.write('// "%s" <- { ' % esc(n))
         dot.write(' '.join(['"%s"' % (esc(str(a)))
-            for a in g.predecessors(n)]))
+                            for a in g.predecessors(n)]))
         dot.write(' } ;\n')
     print(ranks.keys())
     for r in ranks.keys():
@@ -1131,7 +1136,7 @@ def doxygen(*input):
     '''
     log(' '.join([i for i in input]))
     p = run(['doxygen', '-'], stdout=PIPE,
-            input = "INPUT=" + ' '.join([i for i in input]) + """
+            input="INPUT=" + ' '.join([i for i in input]) + """
             EXCLUDE_SYMBOLS=*310* *311* SOC_ENUM_SINGLE* EXPORT_SYMBOL*
             CALL_GRAPH            = YES
             EXTRACT_ALL           = YES
@@ -1168,7 +1173,8 @@ def doxygen_xml(a):
             d = xml.dom.minidom.parse(x)
             for m in d.getElementsByTagName("memberdef"):
                 n = m.getElementsByTagName("name")[0].firstChild.data
-                file = m.getElementsByTagName("location")[0].getAttribute('file')
+                file = (m.getElementsByTagName("location")[0]
+                        .getAttribute('file'))
                 if file not in files:
                     print(file)
                 if n == 'main':
@@ -1223,9 +1229,9 @@ class _unittest_autotest(unittest.TestCase):
         self.assertTrue(os.path.isdir('include/linux/'))
         os.chdir('init')
         self.assertRegex(popen('srcxray.py referrers_tree nfs_root_data')[-1],
-            r'.*prepare_namespace.*')
+                         r'.*prepare_namespace.*')
         self.assertEqual('initrd_load: prepare_namespace',
-                popen('srcxray.py referrers_dep nfs_root_data')[-1])
+                         popen('srcxray.py referrers_dep nfs_root_data')[-1])
         self.assertEqual('calibrate_delay_converge: __delay',
                          popen('srcxray.py call_dep start_kernel')[-2])
         self.assertEqual('\t\tcpu_startup_entry', popen(
