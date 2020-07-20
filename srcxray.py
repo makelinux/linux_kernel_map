@@ -67,7 +67,7 @@ ignores = ('aligned unlikely typeof u32 '
            'current_user_ns spin_lock_irq spin_unlock_irq prepare_creds '
            'tasklist_lock commit_creds read_lock read_unlock SIGKILL SIGSTOP abort_creds fd_install '
            'real_mount FMODE_WRITE tv_nsec putname '
-           ).split()
+           ).split()  # TODO: move to file
 
 
 level_limit = 10
@@ -81,6 +81,7 @@ files = collections.defaultdict(list)
 
 
 def print_limited(a, out=None):
+    # exits when reaches limit of printed lines
     out = out if out else sys.stdout
     out.write(str(a) + '\n')
     global n
@@ -92,6 +93,7 @@ def print_limited(a, out=None):
 
 
 def log(*args, **kwargs):
+    # log with context function
     if not verbose:
         return
     s = str(*args).rstrip()
@@ -102,11 +104,15 @@ def log(*args, **kwargs):
 
 
 def popen(p):
+    # shortcut for reading output of subcommand
     log(p)
     return check_output(p, shell=True).decode('utf-8').splitlines()
 
 
 def extract_referrer(line):
+    # Extract referrer function from oupput of
+    # git grep --show-function.
+    # With quirks for linux kernel
     line = re.sub(r'__ro_after_init', '', line)
     line = re.sub(r'FNAME\((\w+)\)', r'\1', line)
     line = re.sub(r'.*TRACE_EVENT.*', '', line)
@@ -122,6 +128,7 @@ def extract_referrer(line):
 
 
 def extract_referrer_test():
+    # unittest of extract_referrer
     passed = 0
     for a in {
             "f=1=good2()",
@@ -147,6 +154,10 @@ def extract_referrer_test():
 
 
 def func_referrers_git_grep(name):
+    # Subfunction for searching referrers with
+    # git grep --show-function.
+    # Works slowly.
+    # Obsoleted by doxygen_xml.
     res = list()
     r = None
     for line in popen(r'git grep --threads 1 --no-index --word-regexp '
@@ -179,6 +190,9 @@ cscope_warned = False
 
 
 def func_referrers_cscope(name):
+    # Subfunction for searching referrers with cscope.
+    # Works fast.
+    # Obsoleted by doxygen_xml.
     global cscope_warned
     if not os.path.isfile('cscope.out'):
         if not cscope_warned:
@@ -201,14 +215,11 @@ def func_referrers_cscope(name):
     return res
 
 
-def func_referrers_all(name):
-    return list(dict.fromkeys(func_referrers_git_grep(name) + func_referrers_cscope(name)))
-
-
 def referrers_tree(name, referrer=None, printed=None, level=0):
     '''
-    Arg: <identifier>
+    Arg: <identifier> - prints text referrers tree.
     Ex: nfs_root_data
+    Obsoleted by doxygen_xml.
     '''
     if not referrer:
         if os.path.isfile('cscope.out'):
@@ -239,16 +250,17 @@ def referrers_tree(name, referrer=None, printed=None, level=0):
 
 def referrers(name):
     '''
-    Arg: <identifier>
+    Arg: <identifier> - simply greps referrers of a symbol
     Ex: nfs_root_data
+    Prefer to use doxygen_xml.
     '''
-    # for a in func_referrers_git_grep(name):
-    #    print("%s:%s: %s"%(a[0],a[1],a[2]))
     print(' '.join([a[2] for a in func_referrers_git_grep(name)]))
 
 
 def referrers_dep(name, referrer=None, printed=None, level=0):
-    # Arg: <identifier>
+    # Arg: <identifier> - prints referrers tree in compact format of
+    # dependency of make
+    # Obsoleted by doxygen_xml.
     if not referrer:
         if os.path.isfile('cscope.out'):
             referrer = func_referrers_cscope
@@ -278,8 +290,9 @@ def referrers_dep(name, referrer=None, printed=None, level=0):
 
 def call_tree(node, printed=None, level=0):
     '''
-    Arg: <identifier>
+    Arg: <identifier> - prints call tree of a function
     Ex: start_kernel
+    Obsoleted by doxygen_xml.
     '''
     if not os.path.isfile('cscope.out'):
         print("Please run: cscope -Rcbk", file=sys.stderr)
@@ -308,6 +321,8 @@ def call_tree(node, printed=None, level=0):
 
 
 def call_dep(node, printed=None, level=0):
+    # prints call tree in compact format of dependency of make
+    # Obsoleted by doxygen_xml.
     if not os.path.isfile('cscope.out'):
         print("Please run: cscope -Rcbk", file=sys.stderr)
         return False
@@ -334,6 +349,7 @@ def call_dep(node, printed=None, level=0):
 
 
 def my_graph(name=None):
+    # common subfunction
     g = nx.DiGraph(name=name)
     # g.graph.update({'node': {'shape': 'none', 'fontsize': 50}})
     # g.graph.update({'rankdir': 'LR', 'nodesep': 0, })
@@ -354,7 +370,9 @@ def reduce_graph(g, m=None):
     return g
 
 
-def includes(a):
+def includes(sym):
+    # subfunction, used in syscalls
+    # extracts include files of a symbol
     res = []
     # log(a)
     for a in popen('man -s 2 %s 2> /dev/null |'
@@ -376,12 +394,12 @@ def includes(a):
     if res and len(res) > 1:
         r = set()
         for f in res:
-            # log('grep " %s \+\(" --include "%s" -r /usr/include/'%(a, f))
+            # log('grep " %s \+\(" --include "%s" -r /usr/include/'%(sym, f))
             # log(os.system(
-            # 'grep -w "%s" --include "%s" -r /usr/include/'%(a, f)))
+            # 'grep -w "%s" --include "%s" -r /usr/include/'%(sym, f)))
             if 0 != os.system(
                     'grep " %s *(" --include "%s" -r /usr/include/ -q'
-                    % (a, os.path.basename(f))):
+                    % (sym, os.path.basename(f))):
                 r.add(f)
         res = res.difference(r)
     log(res)
@@ -389,6 +407,11 @@ def includes(a):
 
 
 def syscalls():
+    # Experimental function for exporting syscalls info
+    # from various sources.
+    # Used in creation of
+    # https://en.wikibooks.org/wiki/The_Linux_Kernel/Syscalls
+    # Ex: srcxray.py "write_dot(syscalls(), 'syscalls.dot')"
     sc = my_graph('syscalls')
     inc = 'includes.list'
     if not os.path.isfile(inc):
@@ -454,20 +477,9 @@ def syscalls():
     return sc
 
 
-# DiGraph
-# write_dot to_agraph AGraph
-# agwrite
-# srcxray.py 'write_dot(syscalls(), "syscalls.dot")'
-# write_graphml
-# srcxray.py "most_used(read_dot('a.dot'))"
-# srcxray.py "digraph_print(read_dot('a.dot'))"
-# srcxray.py "write_dot(reduce_graph(read_dot('no-loops.dot')),'reduced.dot')"
-# a=sys_clone;srcxray.py "write_dot(rank_couples(reduce_graph(remove_loops(read_dot('$a.dot')))),'$a.dot')"
-# srcxray.py "pprint(most_used(read_dot('a.dot')))"
-# srcxray.py "write_dot(add_rank('reduced.dot'), 'ranked.dot')"
-# srcxray.py "write_dot(remove_loops(read_dot('reduced.dot')), 'no-loops.dot')"
-
 def cleanup(a):
+    # cleanups graph file
+    # wrapper for remove_nodes_from
     log('')
     g = to_dg(a)
     print(dg.number_of_edges())
@@ -480,15 +492,7 @@ def sort_dict(d):
     return [a for a, b in sorted(d.items(), key=lambda k: k[1], reverse=True)]
 
 
-def most_used(dg, ins=10, outs=10):
-    # return {a: b for a, b in sorted(dg.in_degree, key=lambda k: k[1]) if b > 1 and}
-    # return [(x, dg.in_degree(x), dg.out_degree(x))
-    return [x
-            for x in dg.nodes()
-            if dg.in_degree(x) >= ins and dg.out_degree(x) >= outs]
-
-
-def starts(dg):  # roots
+def starts(dg):  # roots of trees in a graph
     return {n: dg.out_degree(n) for (n, d) in dg.in_degree if not d}
 
 
@@ -559,6 +563,7 @@ def digraph_tree(dg, starts=None, ignores=ignores):
 def digraph_print(dg, starts=None, dst_fn=None, sort=False):
     '''
     Arg: <graph> -  print graphs as text tree
+    Ex2: \"digraph_print(read_dot('a.dot'))\"
     '''
     dst = open(dst_fn, 'w') if dst_fn else None
     printed = set()
@@ -777,6 +782,7 @@ def write_dot(g, dot):
     '''
     Arg: <graph> <file> - writes a graph into a file with custom attributes
     '''
+    # Other similar external functions to_agraph agwrite
     dot = str(dot)
     dot = open(dot, 'w')
     dot.write('strict digraph "None" {\n')
@@ -867,6 +873,7 @@ def to_dg(a):
 
 
 def remove_loops(dg):
+    # srcxray.py "write_dot(remove_loops(read_dot('reduced.dot')), 'no-loops.dot')"
     rm = []
     visited = set()
     path = [object()]
@@ -903,6 +910,7 @@ def remove_couples(dg):
 
 
 def rank_couples(dg):
+    # a=sys_clone;srcxray.py "write_dot(rank_couples(reduce_graph(remove_loops(read_dot('$a.dot')))),'$a.dot')"
     couples = []
     ranked = set()
     for n in dg:
@@ -1048,6 +1056,7 @@ def dot_expand(a, b):
 
 
 def add_rank(g):
+    # srcxray.py "write_dot(add_rank('reduced.dot'), 'ranked.dot')"
     g = to_dg(g)
     passed1 = set()
     passed2 = set()
@@ -1079,6 +1088,7 @@ def add_rank(g):
 
 
 def import_symbols():
+    # extracts and import symbols from shared libraries
     sym = my_graph('symbols')
     for l in popen('(shopt -s globstar;  nm -D -C -A **/*.so.*)'):
         q = l.split(maxsplit=2)
@@ -1165,6 +1175,7 @@ def doxygen(*input):
 def doxygen_xml(a):
     '''
     Arg: <xml directory generated by doxygen> - extracts call graph
+    Ex2: \"write_dot(doxygen_xml('xml'), 'doxygen.dot')\"
     '''
     g = my_graph()
     for x in list(glob.glob(os.path.join(a, "*.xml")) + [a]):
@@ -1234,6 +1245,7 @@ def usage():
 
 class _unittest_autotest(unittest.TestCase):
     def test_1(self):
+        extract_referrer_test()
         write_dot(nx.DiGraph([(1, 2), (2, 3), (2, 4)]), 'test.dot')
         g = read_dot("test.dot")
         self.assertEqual(list(g.successors("2")), ["3", "4"])
