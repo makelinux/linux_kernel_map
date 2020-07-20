@@ -1214,9 +1214,20 @@ def doxygen_length(a):
 
 
 def usage():
-    print("\nTry this:\n")
-    print("cd linux/init")
-    print(me, "unittest")
+    #print('Run', me, 'usage')
+    for m in getmembers(modules[__name__]):
+        if isfunction(m[1]) and m[1].__module__ == __name__:
+            d = inspect.getdoc(m[1])
+            if not d:
+                continue
+            print('\n' + d.replace('Arg:', '\033[1m' + m[1].__name__ + '\033[0m').
+                  replace('Ex:',
+                          '\033[3mExample usage:\033[0m\n' + me + ' ' + m[1].__name__).
+                  replace('Ex2:',
+                          '\033[3mExample usage:\033[0m\n' + me)
+                  )
+    print("\nTry this: ")
+    print("cd linux/init;", me, "unittest")
     print("\nEmergency termination: ^Z, kill %1")
     print()
 
@@ -1250,17 +1261,6 @@ def main():
     try:
         ret = False
         if len(sys.argv) == 1:
-            #print('Run', me, 'usage')
-            for m in getmembers(modules[__name__]):
-                if isfunction(m[1]) and m[1].__module__ == __name__:
-                    d = inspect.getdoc(m[1])
-                    if not d:
-                        continue
-                    print('\n' + d.replace('Arg:', '\033[1m' + m[1].__name__ + '\033[0m').
-                            replace('Ex:', '\033[3mExample usage:\033[0m\n' + me +
-                                ' ' + m[1].__name__).
-                            replace('Ex2:', '\033[3mExample usage:\033[0m\n' + me + ' ')
-                            )
             usage()
         else:
             while sys.argv[1].startswith('--'):
