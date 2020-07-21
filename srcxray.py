@@ -497,20 +497,23 @@ def starts(dg):  # roots of trees in a graph
     return {n: dg.out_degree(n) for (n, d) in dg.in_degree if not d}
 
 
-def exclude(i, excludes=[], ignores=ignores):
+def exclude(i, excludes_re=[]):
     if i in ignores:
         return True
-    for e in excludes:
+    for e in excludes_re:
         if re.match(e, i):
             return True
 
 
-def digraph_predecessors(dg, starts, levels=100, excludes=[], ignores=ignores):
+def digraph_predecessors(dg, starts, levels=100, excludes_re=[]):
+    '''
+    extracts referrers subgraph
+    '''
     dg = to_dg(dg)
     passed = set()
     # for i in [_ for _ in dg.predecessors(start)]:
     p = nx.DiGraph()
-    for e in excludes:
+    for e in excludes_re:
         log(e)
     while levels:
         # log(levels)
@@ -519,7 +522,7 @@ def digraph_predecessors(dg, starts, levels=100, excludes=[], ignores=ignores):
         starts = set()
         for s in s2:
             for i in dg.predecessors(s):
-                if i in passed or exclude(i, excludes, ignores):
+                if i in passed or exclude(i, excludes_re):
                     continue
                 passed.add(i)
                 starts.add(i)
