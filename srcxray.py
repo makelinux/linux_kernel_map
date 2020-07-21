@@ -1224,10 +1224,11 @@ def doxygen_length(a):
                 l = int(e) - int(location.getAttribute('bodystart'))
                 if l < 20:
                     continue
-                print(location.getAttribute('bodystart'), n, location.getAttribute('file'), location.getAttribute('bodyfile'), x, file=sys.stderr)
+                print(location.getAttribute('bodystart'), n, location.getAttribute(
+                    'file'), location.getAttribute('bodyfile'), x, file=sys.stderr)
                 print("{0}:{1}:".format(location.getAttribute('bodyfile'),
                                         location.getAttribute('bodystart')), n, l, "SLOC")
-                #<location file="common/log.cpp" line="21" column="1" bodyfile="common/log.cpp" bodystart="21" bodyend="49"/>
+                # <location file="common/log.cpp" line="21" column="1" bodyfile="common/log.cpp" bodystart="21" bodyend="49"/>
     return g
 
 
