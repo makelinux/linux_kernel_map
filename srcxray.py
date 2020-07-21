@@ -217,7 +217,7 @@ def func_referrers_cscope(name):
 
 def referrers_tree(name, referrer=None, printed=None, level=0):
     '''
-    Arg: <identifier> - prints text referrers tree.
+    prints text referrers outline.
     Ex: nfs_root_data
     Obsoleted by doxygen_xml.
     '''
@@ -250,7 +250,7 @@ def referrers_tree(name, referrer=None, printed=None, level=0):
 
 def referrers(name):
     '''
-    Arg: <identifier> - simply greps referrers of a symbol
+    simply greps referrers of a symbol
     Ex: nfs_root_data
     Prefer to use doxygen_xml.
     '''
@@ -258,7 +258,7 @@ def referrers(name):
 
 
 def referrers_dep(name, referrer=None, printed=None, level=0):
-    # Arg: <identifier> - prints referrers tree in compact format of
+    # prints referrers tree in compact format of
     # dependency of make
     # Obsoleted by doxygen_xml.
     if not referrer:
@@ -290,7 +290,7 @@ def referrers_dep(name, referrer=None, printed=None, level=0):
 
 def call_tree(node, printed=None, level=0):
     '''
-    Arg: <identifier> - prints call tree of a function
+    prints call tree of a function
     Ex: start_kernel
     Obsoleted by doxygen_xml.
     '''
@@ -356,15 +356,16 @@ def my_graph(name=None):
     return g
 
 
-def reduce_graph(g, m=None):
+def reduce_graph(g, min_in_degree=None):
     '''
-    Arg: <graph> [min in_degree]- removes leaves
+    removes leaves
     Ex2: \"write_dot(reduce_graph(read_dot('doxygen.dot')),'reduced.dot')\"
     '''
     rm = set()
-    m = g.number_of_nodes() + 1 if not m else m
+    min_in_degree = g.number_of_nodes() + 1 if not min_in_degree else min_in_degree
     log(g.number_of_edges())
-    rm = [n for (n, d) in g.out_degree if not d and g.in_degree(n) < m]
+    rm = [n for (n, d) in g.out_degree if not d and g.in_degree(n)
+          < min_in_degree]
     g.remove_nodes_from(rm)
     print(g.number_of_edges())
     return g
@@ -527,9 +528,9 @@ def digraph_predecessors(dg, starts, levels=100, excludes=[], ignores=ignores):
     return p
 
 
-def digraph_tree(dg, starts=None, ignores=ignores):
+def digraph_tree(dg, starts=None):
     '''
-    Arg: <graph> <list if starting nodes> - extract a subgraph from a graph
+    extract a subgraph from a graph
     Ex2: \"write_dot(digraph_tree(read_dot('doxygen.dot'), ['main']), 'main.dot')\"
     '''
     tree = nx.DiGraph()
@@ -562,7 +563,7 @@ def digraph_tree(dg, starts=None, ignores=ignores):
 
 def digraph_print(dg, starts=None, dst_fn=None, sort=False):
     '''
-    Arg: <graph> -  print graphs as text tree
+    prints graph as text tree
     Ex2: \"digraph_print(read_dot('a.dot'))\"
     '''
     dst = open(dst_fn, 'w') if dst_fn else None
@@ -704,7 +705,7 @@ def cflow(a=None):
 
 
 def import_cflow(a=None, cflow_out=None):
-    # Arg: $none_or_dir_or_file_or_mask
+    # $none_or_dir_or_file_or_mask
     cf = my_graph()
     stack = list()
     nprev = -1
@@ -731,15 +732,15 @@ def import_cflow(a=None, cflow_out=None):
     return cf
 
 
-def import_outline(a=None):
+def import_outline(outline_txt=None):
     '''
-    Arg: <outline.txt> - convert tree text to graph
+    converts outline to graph
     Ex2: \"write_dot(import_outline('outline.txt'),'outline.dot')\"
     '''
     cf = my_graph()
     stack = list()
     nprev = -1
-    with open(a, 'r') as f:
+    with open(outline_txt, 'r') as f:
         for line in f:
             m = re.match(r'^([\t ]*)(.*)', str(line))
             if m:
@@ -780,7 +781,7 @@ def esc(s):
 
 def write_dot(g, dot):
     '''
-    Arg: <graph> <file> - writes a graph into a file with custom attributes
+    writes a graph into a file with custom attributes
     '''
     # Other similar external functions to_agraph agwrite
     dot = str(dot)
@@ -958,7 +959,9 @@ def cflow_dir(a):
 
 
 def cflow_linux():
-    # Arg:
+    '''
+    extracts with cflow various graphs from Linux kernel source
+    '''
     dirs = ('init kernel kernel/time '
             'fs fs/ext4 block '
             'ipc net '
@@ -1000,11 +1003,12 @@ def cflow_linux():
     write_dot(reduce_graph(digraph_tree(all, ['sys_clone'])), 'sys_clone.dot')
 
 
-def stats(a):
+def stats(graph):
     '''
-    Arg: <dot file> - measures various simple statistical metrics of a graph
+    measures various simple statistical metrics of a graph
+    Ex: graph.dot
     '''
-    dg = to_dg(a)
+    dg = to_dg(graph)
     stat = Munch()
     im = dict()
     om = dict()
@@ -1107,9 +1111,9 @@ def import_symbols():
 me = os.path.basename(sys.argv[0])
 
 
-def dir_tree(d='.'):
+def dir_tree(path='.'):
     '''
-    Arg: [directory] - scan directory into graph
+    scans directory into graph
     Ex2: \"write_dot(dir_tree('.'),'tree.dot')\"
     '''
     stack = list()
@@ -1117,7 +1121,7 @@ def dir_tree(d='.'):
     g = my_graph()
     # all = nx.DiGraph()
     # TODO
-    for path, dirs, files, fds in os.fwalk(d):
+    for path, dirs, files, fds in os.fwalk(path):
         (dir, base) = os.path.split(path)
         dir = re.sub(r'^\.\/', '', dir)
         path = re.sub(r'^\.\/', '', path)
@@ -1139,14 +1143,14 @@ def dir_tree(d='.'):
     return g
 
 
-def doxygen(*input):
+def doxygen(*sources):
     '''
-    Arg: <source files>
+    extracts call graph from sources with doxygen
     Ex: *.c
     '''
-    log(' '.join([i for i in input]))
+    log(' '.join([i for i in sources]))
     p = run(['doxygen', '-'], stdout=PIPE,
-            input="INPUT=" + ' '.join([i for i in input]) + """
+            input="INPUT=" + ' '.join([i for i in sources]) + """
             EXCLUDE_SYMBOLS=*310* *311* SOC_ENUM_SINGLE* EXPORT_SYMBOL*
             CALL_GRAPH            = YES
             EXTRACT_ALL           = YES
@@ -1174,7 +1178,7 @@ def doxygen(*input):
 
 def doxygen_xml(a):
     '''
-    Arg: <xml directory generated by doxygen> - extracts call graph
+    extracts call graph from xml directory generated by doxygen
     Ex2: \"write_dot(doxygen_xml('xml'), 'doxygen.dot')\"
     '''
     g = my_graph()
@@ -1231,14 +1235,15 @@ def usage():
             d = inspect.getdoc(m[1])
             if not d:
                 continue
-            print('\n' + d.replace('Arg:', '\033[1m' + m[1].__name__ + '\033[0m').
-                  replace('Ex:',
-                          '\033[3mExample usage:\033[0m\n' + me + ' ' + m[1].__name__).
+            print('\n\033[1m' + m[1].__name__ + '\033[0m' +
+                  str(inspect.signature(m[1])) + ' -',
+                  d.replace('Ex:',
+                            '\033[3mExample:\033[0m ' + me + ' ' + m[1].__name__).
                   replace('Ex2:',
-                          '\033[3mExample usage:\033[0m\n' + me)
+                          '\033[3mExample:\033[0m ' + me)
                   )
     print("\nTry this: ")
-    print("cd linux/init;", me, "unittest")
+    print("cd linux;", me, "unittest")
     print("\nEmergency termination: ^Z, kill %1")
     print()
 
