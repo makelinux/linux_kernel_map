@@ -628,6 +628,9 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
 
 
 def cflow_preprocess(a):
+    '''
+    prepare Linux source for better cflow parsing results
+    '''
     with open(a, 'rb') as f:
         for s in f:
             try:
@@ -662,21 +665,24 @@ def cflow_preprocess(a):
             sys.stdout.write(s)
 
 
-cflow_param = {
-    "modifier": "__init __inline__ noinline __initdata __randomize_layout asmlinkage "
-                " __visible __init __leaf__ __ref __latent_entropy __init_or_module  libmosq_EXPORT",
-                "wrapper": "__attribute__ __section__ "
-                "TRACE_EVENT MODULE_AUTHOR MODULE_DESCRIPTION MODULE_LICENSE MODULE_LICENSE MODULE_SOFTDEP "
-                "INIT_THREAD_INFO "
-                "__acquires __releases __ATTR"
-                # "wrapper": "__setup early_param"
-}
-
 # export CPATH=:include:arch/x86/include:../build/include/:../build/arch/x86/include/generated/:include/uapi
 # srcxray.py "'\n'.join(cflow('init/main.c'))"
 
 
 def cflow(a=None):
+    '''
+    configure and use cflow on Linux sources
+    '''
+    cflow_param = {
+            "modifier": "__init __inline__ noinline __initdata __randomize_layout asmlinkage "
+            " __visible __init __leaf__ __ref __latent_entropy __init_or_module  libmosq_EXPORT",
+            "wrapper": "__attribute__ __section__ "
+            "TRACE_EVENT MODULE_AUTHOR MODULE_DESCRIPTION MODULE_LICENSE MODULE_LICENSE MODULE_SOFTDEP "
+            "INIT_THREAD_INFO "
+            "__acquires __releases __ATTR"
+            # "wrapper": "__setup early_param"
+            }
+
     if os.path.isfile('include/linux/cache.h'):
         for m in popen("ctags -x --c-kinds=d include/linux/cache.h | cut -d' '  -f 1 | sort -u"):
             if m in cflow_param['modifier']:
@@ -708,7 +714,9 @@ def cflow(a=None):
 
 
 def import_cflow(a=None, cflow_out=None):
-    # $none_or_dir_or_file_or_mask
+    '''
+    extract graph with cflow from Linux sources
+    '''
     cf = my_graph()
     stack = list()
     nprev = -1
