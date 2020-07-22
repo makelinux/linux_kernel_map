@@ -773,21 +773,66 @@ def import_outline(outline_txt=None):
     return cf
 
 
-def rank(g, n):
-    try:
-        if g.nodes[n]['rank1'] == g.nodes[n]['rank2']:
-            return g.nodes[n]['rank1']
-        if g.nodes[n]['rank1'] < abs(g.nodes[n]['rank2']):
-            return g.nodes[n]['rank1']
-        else:
-            return g.__dict__['max_rank'] + 1 + g.nodes[n]['rank2']
-    except KeyError:
-        return None
+def rank_couples(dg):
+    '''
+    put couples on same rank to reduce total number of ranks and make
+    graph layout more compact
+    '''
+    # a=sys_clone;srcxray.py "write_dot(rank_couples(reduce_graph(remove_loops(read_dot('$a.dot')))),'$a.dot')"
+    couples = []
+    ranked = set()
+    for n in dg:
+        if n in ranked:
+            continue
+        m = n
+        while True:
+            if dg.out_degree(m) == 1:
+                s = list(dg.successors(m))[0]
+                if dg.in_degree(s) == 1:
+                    couples.append((m, s))
+                ranked.update(set((m, s)))
+                dg.nodes[m]['rank1'] = dg.nodes[m]['rank2'] = dg.nodes[s]['rank1'] = dg.nodes[s]['rank2'] = n
+                m = s
+                continue
+            break
+    return dg
 
 
-def esc(s):
-    # re.escape(n))
-    return s
+def add_rank(g):
+    '''
+    explicitly calculate and store ranks for further processing to
+    improve xdot output
+    '''
+    #
+    # srcxray.py "write_dot(add_rank('reduced.dot'), 'ranked.dot')"
+    g = to_dg(g)
+    passed1 = set()
+    passed2 = set()
+    rn1 = 1
+    rn2 = -1
+    r1 = [n for (n, d) in g.in_degree if not d]
+    r2 = [n for (n, d) in g.out_degree if not d]
+    while r1 or r2:
+        if r1:
+            nxt = set()
+            for n in r1:
+                g.nodes[n]['rank1'] = max(rn1, g.nodes[n].get('rank1', rn1))
+                for i in [_ for _ in g.successors(n)]:
+                    nxt.add(i)
+                    passed1.add(i)
+            rn1 += 1
+            r1 = nxt
+        if r2:
+            nxt = set()
+            for n in r2:
+                g.nodes[n]['rank2'] = min(rn2, g.nodes[n].get('rank2', rn2))
+                for i in [_ for _ in g.predecessors(n)]:
+                    nxt.add(i)
+                    passed2.add(i)
+            rn2 -= 1
+            r2 = nxt
+    g.__dict__['max_rank'] = rn1
+    return g
 
 
 def write_dot(g, dot):
@@ -795,6 +840,23 @@ def write_dot(g, dot):
     writes a graph into a file with custom attributes
     '''
     # Other similar external functions to_agraph agwrite
+
+    def rank(g, n):
+        try:
+            if g.nodes[n]['rank1'] == g.nodes[n]['rank2']:
+                return g.nodes[n]['rank1']
+            if g.nodes[n]['rank1'] < abs(g.nodes[n]['rank2']):
+                return g.nodes[n]['rank1']
+            else:
+                return g.__dict__['max_rank'] + 1 + g.nodes[n]['rank2']
+        except KeyError:
+            return None
+
+    def esc(s):
+        # re.escape(n))
+        return s
+
+
     dot = str(dot)
     dot = open(dot, 'w')
     dot.write('strict digraph "None" {\n')
@@ -921,27 +983,6 @@ def remove_couples(dg):
     return dg
 
 
-def rank_couples(dg):
-    # a=sys_clone;srcxray.py "write_dot(rank_couples(reduce_graph(remove_loops(read_dot('$a.dot')))),'$a.dot')"
-    couples = []
-    ranked = set()
-    for n in dg:
-        if n in ranked:
-            continue
-        m = n
-        while True:
-            if dg.out_degree(m) == 1:
-                s = list(dg.successors(m))[0]
-                if dg.in_degree(s) == 1:
-                    couples.append((m, s))
-                ranked.update(set((m, s)))
-                dg.nodes[m]['rank1'] = dg.nodes[m]['rank2'] = dg.nodes[s]['rank1'] = dg.nodes[s]['rank2'] = n
-                m = s
-                continue
-            break
-    return dg
-
-
 def cflow_dir(a):
     index = nx.DiGraph()
     for c in glob.glob(os.path.join(a, "*.c")):
@@ -1061,6 +1102,7 @@ def stats(graph):
 
 
 def dot_expand(a, b):
+    # combine graphs
     a = to_dg(a)
     b = to_dg(b)
     c = my_graph()
@@ -1068,38 +1110,6 @@ def dot_expand(a, b):
     c.add_edges_from(b.out_edges(b.nbunch_iter(a.nodes())))
     print(list(b.nbunch_iter(a.nodes())))
     return c
-
-
-def add_rank(g):
-    # srcxray.py "write_dot(add_rank('reduced.dot'), 'ranked.dot')"
-    g = to_dg(g)
-    passed1 = set()
-    passed2 = set()
-    rn1 = 1
-    rn2 = -1
-    r1 = [n for (n, d) in g.in_degree if not d]
-    r2 = [n for (n, d) in g.out_degree if not d]
-    while r1 or r2:
-        if r1:
-            nxt = set()
-            for n in r1:
-                g.nodes[n]['rank1'] = max(rn1, g.nodes[n].get('rank1', rn1))
-                for i in [_ for _ in g.successors(n)]:
-                    nxt.add(i)
-                    passed1.add(i)
-            rn1 += 1
-            r1 = nxt
-        if r2:
-            nxt = set()
-            for n in r2:
-                g.nodes[n]['rank2'] = min(rn2, g.nodes[n].get('rank2', rn2))
-                for i in [_ for _ in g.predecessors(n)]:
-                    nxt.add(i)
-                    passed2.add(i)
-            rn2 -= 1
-            r2 = nxt
-    g.__dict__['max_rank'] = rn1
-    return g
 
 
 def import_symbols():
