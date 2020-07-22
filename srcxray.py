@@ -910,7 +910,8 @@ def write_dot(g, dot):
 
 @open_file(0, mode='r')
 def read_dot(dot):
-    # read_dot pydot.graph_from_dot_data parse_dot_data from_pydot
+    # faster custom version of eponymous function from external library
+    # pydot.graph_from_dot_data parse_dot_data from_pydot
     dg = nx.DiGraph()
     for a in dot:
         a = a.strip()
@@ -1226,6 +1227,9 @@ def doxygen_xml(a):
 
 
 def doxygen_length(a):
+    '''
+    calculates length of functions using doxygen xml
+    '''
     g = my_graph()
     for x in list(glob.glob(os.path.join(a, "*.xml")) + [a]):
         if os.path.isfile(x):
@@ -1294,6 +1298,8 @@ class _unittest_autotest(unittest.TestCase):
         self.assertRegex(popen(
             'srcxray.py "nx.DiGraph([{1,2},{2,3},{2,4}])"')[-1],
             "\t\t4.*")
+        os.system('srcxray.py doxygen init')
+        self.assertTrue(read_dot("doxygen.dot").number_of_edges() > 400)
 
 
 def main():
