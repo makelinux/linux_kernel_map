@@ -193,7 +193,7 @@ cscope_warned = False
 def func_referrers_cscope(name):
     # Subfunction for searching referrers with cscope.
     # Works fast.
-    # Obsoleted by doxygen_xml.
+    # Prefer to use doxygen_xml.
     global cscope_warned
     if not os.path.isfile('cscope.out'):
         if not cscope_warned:
@@ -857,7 +857,6 @@ def write_dot(g, dot):
         # re.escape(n))
         return s
 
-
     if isinstance(g, graphviz.Digraph):
         g.save(dot)
         print(dot)
@@ -991,6 +990,7 @@ def remove_couples(dg):
 
 
 def cflow_dir(a):
+    # generates dot files with cflow for c files
     index = nx.DiGraph()
     for c in glob.glob(os.path.join(a, "*.c")):
         g = None
@@ -1040,6 +1040,7 @@ def cflow_linux():
         # all = nx.DiGraph(read_dot('all.dot'))
     except FileNotFoundError:
         pass
+    log(all)
     if not all:
         all = nx.DiGraph()
         for a in dirs:
@@ -1109,7 +1110,7 @@ def stats(graph):
 
 
 def dot_expand(a, b):
-    # combine graphs
+    # nodes from a with edges from b
     a = to_dg(a)
     b = to_dg(b)
     c = my_graph()
@@ -1142,7 +1143,7 @@ me = os.path.basename(sys.argv[0])
 def dir_tree(path='.'):
     '''
     scans directory into graph
-    Ex2: \"write_dot(dir_tree('.'),'tree.dot')\"
+    Ex2: "write_dot(dir_tree('.'),'tree.dot')"
     '''
     stack = list()
     nprev = -1
