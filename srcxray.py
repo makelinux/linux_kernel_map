@@ -39,6 +39,7 @@ import types
 from xml.dom.minidom import parse
 import xml.dom.minidom
 import ast
+import xml.etree.ElementTree as ET
 
 default_root = 'starts'
 ignores = ('aligned unlikely typeof u32 '
@@ -1304,6 +1305,47 @@ def doxygen_length(a):
                 print("{0}:{1}:".format(location.getAttribute('bodyfile'),
                                         location.getAttribute('bodystart')), n, l, "SLOC")
                 # <location file="common/log.cpp" line="21" column="1" bodyfile="common/log.cpp" bodystart="21" bodyend="49"/>
+    return g
+
+
+def svg_xml(svg=None) -> nx.DiGraph:
+    '''
+    extracts call graph from svg
+    Ex2: \"write_dot(svg_xml('LKM.svg'), 'LKM.dot')\"
+    '''
+    if not svg:
+        return doc()
+    g = my_graph(svg)
+    s = xml.dom.minidom.parse(svg)
+    '''
+    for p in s.getElementsByTagName("path"):
+        print(p.getAttribute('inkscape:connection-end'))
+        print(p.getAttribute('inkscape:connection-start'))
+        '''
+    et = ET.parse(svg)
+    root = et.getroot()
+    print(svg)
+    print(et)
+    print(root)
+    # for e in root.iter():
+    #    print(e.tag)
+
+    def text(c):
+        for t in root.findall('.//ns0:text[@id="' + c + '"]', ns):
+            return t.find('.//ns0:tspan', ns).text
+
+    ns = {'ns0': 'http://www.w3.org/2000/svg',
+          'ns1': 'http://www.inkscape.org/namespaces/inkscape'}
+    # for t in root.findall('.//ns0:text', ns):
+    #    print(t.find('.//ns0:tspan', ns).text)
+    for p in root.findall('.//ns0:path', ns):
+        try:
+            c = (p.get("{"+ns['ns1'] + "}connection-start")[1:],
+                 p.get("{"+ns['ns1'] + "}connection-end")[1:])
+            print(text(c[0]), text(c[1]))
+            g.add_edge(text(c[0]), text(c[1]))
+        except (TypeError):
+            pass
     return g
 
 
