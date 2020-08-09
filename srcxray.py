@@ -1307,20 +1307,32 @@ def doxygen_length(a):
     return g
 
 
+def doc(m=None):
+    full = False
+    if not m:
+        m = (dict((name, func) for name, func
+                  in getmembers(modules[__name__]))[stack()[1][3]])
+        full = True
+    d = inspect.getdoc(m)
+    if not d:
+        return False
+    if full:
+        print('\033[1m' + m.__name__ + '\033[0m' +
+              str(inspect.signature(m)) + ' -',
+              d.replace('Ex:',
+                        '\033[3mExample:\033[0m ' + me + ' ' + m.__name__).
+              replace('Ex2:',
+                      '\033[3mExample:\033[0m ' + me)
+              )
+    else:
+        print(m.__name__, '-', d.partition('\n')[0])
+
+
 def usage():
     #print('Run', me, 'usage')
     for m in getmembers(modules[__name__]):
         if isfunction(m[1]) and m[1].__module__ == __name__:
-            d = inspect.getdoc(m[1])
-            if not d:
-                continue
-            print('\n\033[1m' + m[1].__name__ + '\033[0m' +
-                  str(inspect.signature(m[1])) + ' -',
-                  d.replace('Ex:',
-                            '\033[3mExample:\033[0m ' + me + ' ' + m[1].__name__).
-                  replace('Ex2:',
-                          '\033[3mExample:\033[0m ' + me)
-                  )
+            doc(m[1])
     print("\nTry this: ")
     print("cd linux;", me, "unittest")
     print("\nEmergency termination: ^Z, kill %1")
