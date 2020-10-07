@@ -56,13 +56,14 @@ files = collections.defaultdict(list)
 def print_limited(a, out=None):
     # exits when reaches limit of printed lines
     out = out if out else sys.stdout
-    out.write(str(a) + '\n')
     global n
     n += 1
     if n > limit + 1:
-        out.write('...')
+        out.write(str(a) + ' ...\n')
+        out.write('\t...\n')
         sys.exit(1)
         # raise(Exception('Reached limit'))
+    out.write(str(a) + '\n')
 
 
 def log(*args, **kwargs):
@@ -207,15 +208,14 @@ def referrers_tree(name, referrer=None, printed=None, level=0):
         printed = set()
     # definition
     # cscope -d -L1 "arv_camera_new"
+    if level > level_limit - 2:
+        print_limited(level*'\t' + name + ' ...')
+        return ''
     if name in printed:
         print_limited(level*'\t' + name + ' ^')
         return
-    else:
-        print_limited(level*'\t' + name)
     printed.add(name)
-    if level > level_limit - 2:
-        print_limited((level + 1)*'\t' + '...')
-        return ''
+    print_limited(level*'\t' + name)
     for a in referrer(name):
         name = a[2]
         referrers_tree(name, referrer, printed, level + 1)
@@ -272,15 +272,15 @@ def call_tree(node, printed=None, level=0):
         return False
     if printed is None:
         printed = set()
+    if level > level_limit - 2:
+        print_limited(level*'\t' + node + ' ...')
+        return ''
     if node in printed:
         print_limited(level*'\t' + node + ' ^')
         return
     else:
         print_limited(level*'\t' + node)
     printed.add(node)
-    if level > level_limit - 2:
-        print_limited((level + 1)*'\t' + '...')
-        return ''
     local_printed = set()
     for line in popen('cscope -d -L2 "%s"' % (node)):
         a = line.split()[1]
