@@ -42,37 +42,8 @@ import ast
 import xml.etree.ElementTree as ET
 
 default_root = 'starts'
-ignores = ('aligned unlikely typeof u32 '
-           'PVOP_CALLEE0 PVOP_VCALLEE0 PVOP_VCALLEE1 if trace_hardirqs_off '
-           'i NULL likely unlikely true false test_bit NAPI_GRO_CB clear_bit '
-           'atomic_read preempt_disable preempt_enable container_of ENOSYS '
-           'READ_ONCE u64 u8 _RET_IP_ ret current '
-           'AT_FDCWD fdput EBADF file_inode '
-           'ssize_t path_put __user '
-           'list_empty memcpy size_t loff_t pos d_inode dput copy_to_user EIO bool out IS_ERR '
-           'EPERM rcu_read_lock rcu_read_unlock spin_lock spin_unlock list_for_each_entry kfree '
-           'GFP_KERNEL ENOMEM EFAULT ENOENT EAGAIN PTR_ERR PAGE_SHIFT PAGE_SIZE '
-           'pgoff_t pte_t pmd_t HPAGE_PMD_NR PageLocked entry swp_entry_t next unlock_page spinlock_t end XXstart '
-           ' VM_BUG_ON VM_BUG_ON_PAGE BDI_SHOW max '
-           'ssize_t path_put __user '
-           'list_del compound_head list_add cond_resched put_page nr_pages min spin_lock_irqsave IS_ENABLED '
-           'EBUSY UL NODE_DATA pr_err memset list size ptl PAGE_MASK pr_info offset addr get_page sprintf '
-           'INIT_LIST_HEAD NUMA_NO_NODE spin_unlock_irqrestore mutex_unlock mutex_lock '
-           'page_to_nid page_to_pfn pfn page_zone pfn_to_page '
-           'BUG BUG_ON flags WARN_ON_ONCE ENODEV cpu_to_le16 cpumask_bits '
-           'ERR_PTR ENOTSUPP EOPNOTSUPP EOPNOTSUPP WARN_ON EINVAL i name '
-           'sigset_t fdget put_user get_user copy_from_user LOOKUP_FOLLOW LOOKUP_EMPTY EINTR '
-           'O_CLOEXEC err getname access_ok task_pid_vnr cred '
-           'percpu_ref_put get_timespec64 sigdelsetmask ns_capable kzalloc capable f_mode O_LARGEFILE pos_from_hilo '
-           'pr_debug error current_cred ESRCH f_path find_task_by_vpid '
-           'retry LOOKUP_REVAL retry_estale user_path_at lookup_flags old '
-           'current_user_ns spin_lock_irq spin_unlock_irq prepare_creds '
-           'tasklist_lock commit_creds read_lock read_unlock SIGKILL SIGSTOP abort_creds fd_install '
-           'real_mount FMODE_WRITE tv_nsec putname '
-           ).split()  # TODO: move to file
-
-
-level_limit = 10
+ignores = list()
+level_limit = 6
 limit = 1000
 n = 0
 cflow_structs = False
@@ -1418,6 +1389,12 @@ class _unittest_autotest(unittest.TestCase):
 
 
 def main():
+    global ignores
+    try:
+        f = open("ignore.txt")
+        ignores = f.read().splitlines()
+    except FileNotFoundError:
+        pass
     try:
         ret = False
         if len(sys.argv) == 1:
