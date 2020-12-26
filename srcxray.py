@@ -611,9 +611,7 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
 
 
 def cflow_preprocess(a):
-    '''
-    prepare Linux source for better cflow parsing results
-    '''
+    # prepare Linux source for better cflow parsing results
     with open(a, 'rb') as f:
         for s in f:
             try:
@@ -657,12 +655,22 @@ def cflow(a=None):
     configure and use cflow on Linux sources
     '''
     cflow_param = {
-            "modifier": "__init __inline__ noinline __initdata __randomize_layout asmlinkage "
+            "modifier": "__init __inline__ noinline __initdata __randomize_layout asmlinkage __maybe_unused"
             " __visible __init __leaf__ __ref __latent_entropy __init_or_module  libmosq_EXPORT",
             "wrapper": "__attribute__ __section__ "
             "TRACE_EVENT MODULE_AUTHOR MODULE_DESCRIPTION MODULE_LICENSE MODULE_LICENSE MODULE_SOFTDEP "
             "INIT_THREAD_INFO "
-            "__acquires __releases __ATTR"
+            "BUG READ_ONCE EEXIST MAJOR "
+            "VM_FAULT_ERROR VM_FAULT_MAJOR VM_FAULT_RETRY VM_PFNMAP VM_READ VM_WRITE "
+            "FAULT_FLAG_ALLOW_RETRY FAULT_FLAG_KILLABLE "
+            "VM_BUG_ON_VMA FOLL_TOUCH FOLL_POPULATE FOLL_MLOCK VM_LOCKONFAULT VM_SHARED FOLL_WRITE "
+            "FOLL_PIN FOLL_NUMA FOLL_GET FOLL_FORCE FOLL_LONGTERM FOLL_FAST_ONLY"
+            "TASK_SIZE "
+            "fallthrough EHWPOISON "
+            "__assume_kmalloc_alignment __malloc "
+            "__acquires __releases __ATTR",
+            "type":
+            "pgd_t p4d_t pud_t pmd_t pte_t vm_flags_t"
             # "wrapper": "__setup early_param"
             }
 
