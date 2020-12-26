@@ -43,6 +43,7 @@ import xml.etree.ElementTree as ET
 
 default_root = 'starts'
 ignores = list()
+show_ignored = False
 level_limit = 6
 lines = 0
 lines_limit = 20
@@ -294,11 +295,18 @@ def call_tree(node, printed=None, level=0):
     local_printed = set()
     for line in popen('cscope -d -L2 "%s"' % (node)):
         a = line.split()[1]
-        if a in local_printed or a in ignores:
+        if a in local_printed:
+            continue
+        if a in ignores:
+            if show_ignored:
+                print_limited2((level + 1)*'\t' + '\033[2;30m' + a +
+                        (' ^' if a in local_printed else '') +
+                        '\033[0m')
+                local_printed.add(a)
             continue
         local_printed.add(a)
         # try:
-        call_tree(line.split()[1], printed, level + 1)
+        call_tree(a, printed, level + 1)
         # except Exception:
         #    pass
 
