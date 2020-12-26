@@ -44,8 +44,9 @@ import xml.etree.ElementTree as ET
 default_root = 'starts'
 ignores = list()
 level_limit = 6
-limit = 1000
-n = 0
+lines = 0
+lines_limit = 20
+print(lines_limit)
 cflow_structs = False
 scaled = False
 verbose = False
@@ -56,15 +57,24 @@ files = collections.defaultdict(list)
 def print_limited(a, out=None):
     # exits when reaches limit of printed lines
     out = out if out else sys.stdout
-    global n
-    n += 1
-    if n > limit + 1:
-        out.write(str(a) + ' ...\n')
-        out.write('\t...\n')
+    global lines
+    lines += 1
+    if lines > lines_limit + 1:
+        out.write(str(a) + ' …\n')
+        out.write('\t…\n')
         sys.exit(1)
-        # raise(Exception('Reached limit'))
+        # raise(Exception('Reached lines limit'))
     out.write(str(a) + '\n')
 
+def print_limited2(a, out=None):
+    # exits when reaches limit of printed lines
+    out = out if out else sys.stdout
+    global lines
+    lines += 1
+    if lines > lines_limit + 1:
+        global level_limit
+        level_limit = 2
+    out.write(str(a) + '\n')
 
 def log(*args, **kwargs):
     # log with context function
@@ -209,7 +219,7 @@ def referrers_tree(name, referrer=None, printed=None, level=0):
     # definition
     # cscope -d -L1 "arv_camera_new"
     if level > level_limit - 2:
-        print_limited(level*'\t' + name + ' ...')
+        print_limited(level*'\t' + name + ' …')
         return ''
     if name in printed:
         print_limited(level*'\t' + name + ' ^')
@@ -258,7 +268,7 @@ def referrers_dep(name, referrer=None, printed=None, level=0):
     else:
         pass
         # TODO: print terminal
-        # print('...')
+        # print('…')
 
 
 def call_tree(node, printed=None, level=0):
@@ -272,14 +282,14 @@ def call_tree(node, printed=None, level=0):
         return False
     if printed is None:
         printed = set()
-    if level > level_limit - 2:
-        print_limited(level*'\t' + node + ' ...')
-        return ''
     if node in printed:
-        print_limited(level*'\t' + node + ' ^')
+        print_limited2(level*'\t' + node + ' ^')
         return
+    elif level > level_limit - 2:
+        print_limited2(level*'\t' + node + ' …')
+        return ''
     else:
-        print_limited(level*'\t' + node)
+        print_limited2(level*'\t' + node)
     printed.add(node)
     local_printed = set()
     for line in popen('cscope -d -L2 "%s"' % (node)):
@@ -318,7 +328,7 @@ def call_dep(node, printed=None, level=0):
         else:
             pass
             # TODO: print terminal
-            # print('...')
+            # print('…')
 
 
 def my_graph(name=None):
@@ -549,7 +559,7 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
         if node in ignores:
             return
         if node in printed:
-            print_limited(level*'\t' + str(node) + ' ^', dst)
+            print_limited2(level*'\t' + str(node) + ' ^', dst)
             return
         outs = {_: dg.out_degree(_) for _ in dg.successors(node)}
         if sort:
@@ -560,10 +570,10 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
             s = str(dg.nodes[node]['rank'])
             ranks[dg.nodes[node]['rank']].append(node)
         if outs:
-            s += ' ...' if level > level_limit - 2 else ''
+            s += ' …' if level > level_limit - 2 else ''
         else:
             s += '  @' + path
-        print_limited(level*'\t' + str(node) + s, dst)
+        print_limited2(level*'\t' + str(node) + s, dst)
         printed.add(node)
         if level > level_limit - 2:
             return ''
@@ -581,9 +591,9 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
         starts = [a[0] for a in sorted(
             starts.items(), key=lambda k: k[1], reverse=True)]
     if len(starts) > 1:
-        print_limited(default_root, dst)
+        print_limited2(default_root, dst)
         for s in starts:
-            print_limited('\t' + s + ' ->', dst)
+            print_limited2('\t' + s + ' ->', dst)
     passed = set()
     for o in starts:
         if o in passed:
@@ -1133,8 +1143,8 @@ def dir_tree(path='.'):
             continue
         if len(path2) > 1:
             # g.add_edge(path2[-2] + str(), path2[-1])
-            if g.number_of_edges() > limit:
-                g.add_edge(dir, '...')
+            if g.number_of_edges() > lines_limit:
+                g.add_edge(dir, '…')
                 break
             g.add_edge(dir, path)
             #g.add_node(path, label=path2[-1], xlabel='<<font point-size="1">'+path+'</font>>')
@@ -1408,6 +1418,10 @@ def main():
                     verbose = True
                 if sys.argv[1][2:] == 'level_limit':
                     level_limit = int(sys.argv[2])
+                    sys.argv = sys.argv[1:]
+                global lines_limit
+                if sys.argv[1][2:] == 'lines_limit':
+                    lines_limit = int(sys.argv[2])
                     sys.argv = sys.argv[1:]
                 sys.argv = sys.argv[1:]
 
