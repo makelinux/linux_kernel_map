@@ -42,7 +42,7 @@ import ast
 import xml.etree.ElementTree as ET
 
 default_root = 'starts'
-ignores = list()
+ignore = list()
 show_ignored = False
 level_limit = 6
 lines = 0
@@ -161,7 +161,7 @@ def func_referrers_git_grep(name):
             if re.match(p % (name), line):
                 r = None
                 break
-        if r and r[2] != name and r[2] not in ignores:
+        if r and r[2] != name and r[2] not in ignore:
             res.append(r)
             r = None
         r = extract_referrer(line)
@@ -190,7 +190,7 @@ def func_referrers_cscope(name):
         log(l)
         m = re.match(r'([^ ]*) ([^ ]*) ([^ ]*) (.*)', l)
         file, func, line_num, line_str = m.groups()
-        if func in ignores:
+        if func in ignore:
             continue
         res.append([file, line_num, func])
     if not res and len(name) > 3:
@@ -297,7 +297,7 @@ def call_tree(node, printed=None, level=0):
         a = line.split()[1]
         if a in local_printed:
             continue
-        if a in ignores:
+        if a in ignore:
             if show_ignored:
                 print_limited2((level + 1)*'\t' + '\033[2;30m' + a +
                         (' ^' if a in local_printed else '') +
@@ -324,7 +324,7 @@ def call_dep(node, printed=None, level=0):
     calls = list()
     for a in [line.split()[1] for line in
               popen('cscope -d -L2 "%s"' % (node))]:
-        if a in ignores:
+        if a in ignore:
             continue
         calls.append(a)
     if calls:
@@ -475,7 +475,7 @@ def cleanup(a):
     log('')
     g = to_dg(a)
     print(dg.number_of_edges())
-    dg.remove_nodes_from(ignores)
+    dg.remove_nodes_from(ignore)
     print(dg.number_of_edges())
     write_dot(dg, a)
 
@@ -489,7 +489,7 @@ def starts(dg):  # roots of trees in a graph
 
 
 def exclude(i, excludes_re=[]):
-    if i in ignores:
+    if i in ignore:
         return True
     for e in excludes_re:
         if re.match(e, i):
@@ -532,7 +532,7 @@ def digraph_tree(dg, starts=None):
     def sub(node):
         tree.add_node(node)
         for o in dg.successors(node):
-            if o in ignores or tree.has_edge(node, o) or o in starts:
+            if o in ignore or tree.has_edge(node, o) or o in starts:
                 # print(o)
                 continue
             tree.add_edge(node, o)
@@ -549,7 +549,7 @@ def digraph_tree(dg, starts=None):
         sub(starts[0])
     elif len(starts) > 1:
         for o in starts:
-            if o in ignores:
+            if o in ignore:
                 continue
             sub(o)
     return tree
@@ -564,7 +564,7 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
     printed = set()
 
     def digraph_print_sub(path='', node=None, level=0):
-        if node in ignores:
+        if node in ignore:
             return
         if node in printed:
             print_limited2(level*'\t' + str(node) + ' ^', dst)
@@ -734,7 +734,7 @@ def import_cflow(a=None, cflow_out=None):
         if n <= nprev:
             stack = stack[:n - nprev - 1]
         # print(n, id, stack)
-        if id not in ignores:
+        if id not in ignore:
             if len(stack):
                 cf.add_edge(stack[-1], id)
         stack.append(id)
@@ -764,7 +764,7 @@ def import_outline(outline_txt=None):
             if n <= nprev:
                 stack = stack[:n - nprev - 1]
             # print(n, id, stack)
-            if id not in ignores:
+            if id not in ignore:
                 if len(stack):
                     cf.add_edge(stack[-1], id)
             stack.append(id)
@@ -868,7 +868,7 @@ def write_dot(g, dot):
     # dot.write('edge [width=10000];\n')
     dot.write('edge [width=1];\n')
     if isinstance(g, nx.DiGraph):
-        g.remove_nodes_from(ignores)
+        g.remove_nodes_from(ignore)
     ranks = collections.defaultdict(list)
     for n in g.nodes():
         r = rank(g, n)
@@ -1415,10 +1415,10 @@ class _unittest_autotest(unittest.TestCase):
 
 
 def main():
-    global ignores
+    global ignore
     try:
         f = open("ignore.txt")
-        ignores = f.read().splitlines()
+        ignore = f.read().splitlines()
     except FileNotFoundError:
         pass
     try:
