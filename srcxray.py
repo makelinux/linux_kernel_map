@@ -61,8 +61,8 @@ def print_limited(a, out=None):
     global lines
     lines += 1
     if lines > lines_limit + 1:
-        out.write(str(a) + ' …\n')
-        out.write('\t…\n')
+        out.write(str(a) + ' ⋮\n')
+        out.write('\t⋮\n')
         sys.exit(1)
         # raise(Exception('Reached lines limit'))
     out.write(str(a) + '\n')
@@ -220,7 +220,7 @@ def referrers_tree(name, referrer=None, printed=None, level=0):
     # definition
     # cscope -d -L1 "arv_camera_new"
     if level > level_limit - 2:
-        print_limited(level*'\t' + name + ' …')
+        print_limited(level*'\t' + name + ' ⋮')
         return ''
     if name in printed:
         print_limited(level*'\t' + name + ' ^')
@@ -269,7 +269,7 @@ def referrers_dep(name, referrer=None, printed=None, level=0):
     else:
         pass
         # TODO: print terminal
-        # print('…')
+        # print('⋮')
 
 
 def call_tree(node, printed=None, level=0):
@@ -287,7 +287,7 @@ def call_tree(node, printed=None, level=0):
         print_limited2(level*'\t' + node + ' ^')
         return
     elif level > level_limit - 2:
-        print_limited2(level*'\t' + node + ' …')
+        print_limited2(level*'\t' + node + ' ⋮')
         return ''
     else:
         print_limited2(level*'\t' + node)
@@ -336,7 +336,7 @@ def call_dep(node, printed=None, level=0):
         else:
             pass
             # TODO: print terminal
-            # print('…')
+            # print('⋮')
 
 
 def my_graph(name=None):
@@ -578,7 +578,7 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
             s = str(dg.nodes[node]['rank'])
             ranks[dg.nodes[node]['rank']].append(node)
         if outs:
-            s += ' …' if level > level_limit - 2 else ''
+            s += ' ⋮' if level > level_limit - 2 else ''
         else:
             s += '  @' + path
         print_limited2(level*'\t' + str(node) + s, dst)
@@ -1160,7 +1160,7 @@ def dir_tree(path='.'):
         if len(path2) > 1:
             # g.add_edge(path2[-2] + str(), path2[-1])
             if g.number_of_edges() > lines_limit:
-                g.add_edge(dir, '…')
+                g.add_edge(dir, '⋮')
                 break
             g.add_edge(dir, path)
             #g.add_node(path, label=path2[-1], xlabel='<<font point-size="1">'+path+'</font>>')
