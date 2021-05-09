@@ -43,6 +43,7 @@ import xml.etree.ElementTree as ET
 
 default_root = 'starts'
 ignore = list()
+ignored = set()
 show_ignored = False
 level_limit = 6
 lines = 0
@@ -298,6 +299,7 @@ def call_tree(node, printed=None, level=0):
         if a in local_printed:
             continue
         if a in ignore:
+            ignored.add(a)
             if show_ignored:
                 print_limited2((level + 1)*'\t' + '\033[2;30m' + a +
                         (' ^' if a in local_printed else '') +
@@ -1451,6 +1453,8 @@ def main():
             else:
                 ret = eval(a1 + '(' + ', '.join("'%s'" % (a)
                                                 for a in sys.argv[1:]) + ')')
+            if ignored:
+                print("Ignored:", " ".join(ignored))
         if isinstance(ret, nx.DiGraph):
             digraph_print(ret)
         elif isinstance(ret, bool) and ret is False:
