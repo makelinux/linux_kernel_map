@@ -42,6 +42,7 @@ import ast
 import xml.etree.ElementTree as ET
 
 default_root = 'starts'
+stop = list()
 ignore = list()
 ignored = set()
 show_ignored = False
@@ -297,6 +298,11 @@ def call_tree(node, printed=None, level=0):
     for line in popen('cscope -d -L2 "%s"' % (node)):
         a = line.split()[1]
         if a in local_printed:
+            continue
+        if a in stop:
+            print_limited2((level + 1)*'\t' + a +
+                    (' ^' if a in local_printed else ''))
+            local_printed.add(a)
             continue
         if a in ignore:
             ignored.add(a)
@@ -1417,6 +1423,12 @@ class _unittest_autotest(unittest.TestCase):
 
 
 def main():
+    global stop
+    try:
+        f = open("stop.txt")
+        stop = f.read().splitlines()
+    except FileNotFoundError:
+        pass
     global ignore
     try:
         f = open("ignore.txt")
