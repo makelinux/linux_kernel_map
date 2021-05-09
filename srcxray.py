@@ -48,8 +48,7 @@ ignored = set()
 show_ignored = False
 level_limit = 6
 lines = 0
-lines_limit = 20
-print(lines_limit)
+lines_limit = int(os.popen('stty size', 'r').read().split()[0]) or 30
 cflow_structs = False
 scaled = False
 verbose = False
