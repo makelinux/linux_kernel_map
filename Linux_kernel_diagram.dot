@@ -193,9 +193,6 @@ digraph matrix {
 			fontsize=20,
 			label="Block\ndevices\nand drivers"];
 		logFS -> block		 [color="#8383cc"];
-		PA		 [color="#51bf5b",
-			fillcolor="#71809b",
-			label="Page\nAllocator"];
 		SD		 [color="#8383cc",
 			fillcolor="#777777",
 			fontcolor=white,
@@ -203,15 +200,6 @@ digraph matrix {
 			label="storage devices:\nSCSI, NVMe ...",
 			row=chip];
 		block -> SD		 [color="#8383cc"];
-		SW		 [color="#8383cc",
-			fillcolor="#91b5c9",
-			fixedsize=true,
-			label=Swap,
-			height=0.8,
-			shape=octagon,
-			width=1.2];
-		SW -> block		 [color="#8383cc",
-			weight=0];
 	}	// storge
 	subgraph processing {
 		node [color="#c46747"];
@@ -328,9 +316,8 @@ digraph matrix {
 		];
 		system;
 		networking;
-		system -> networking		 [weight=1];
-		storage;
-		networking -> storage		 [weight=1];
+		system -> processing [weight=1];
+		storage -> networking 		 [weight=1];
 		memory		 [color="#51bf5b",
 			URL="https://en.wikibooks.org/wiki/The_Linux_Kernel/Memory",
 			fillcolor=white,
@@ -338,17 +325,14 @@ digraph matrix {
 			height=0.6,
 			row=func,
 			width=2];
-		storage -> memory		 [weight=1];
-		processing;
-		HI;
-		processing -> HI		 [weight=1];
-		memory -> processing		 [weight=1];
+		memory -> storage 		[weight=1];
+		processing -> memory 		 [weight=1];
 		functions_		 [fixedsize=true,
 			height=0,
 			shape=point
 			style=invis,
 			width=0];
-		functions_ -> system		 [weight=1];
+		functions_ -> HI -> system [weight=1];
 		functions		 [color=gray,
 			tooltip="Columns represent main functionalities of the kernel",
 			URL="http://www.makelinux.net/ldd3/chp-1-sect-2.shtml",
@@ -515,21 +499,34 @@ digraph matrix {
 			height=0.5
 		];
 		edge [color="#51bf5b"];
-		mmap -> SW		 [color="#51bf5b",
-			weight=0];
+		PA
+			[color="#51bf5b",
+			fillcolor="#71809b",
+			label="Page\nAllocator"];
 		mmap -> log_mem		 [color="#51bf5b"];
+		log_mem -> PA		 [color="#51bf5b"];
+		//VFS -> SW [ style=invis];
+		SW               [color="#8383cc",
+				 fillcolor="#91b5c9",
+				 fixedsize=true,
+				 label=Swap,
+				 height=0.8,
+				 shape=octagon,
+				 width=1.2];
+		mmap -> SW		 [color="#51bf5b", weight=1];
+		SW -> block              [color="#8383cc", weight=1];
+		log_mem;
 		PA -> RAM		 [color="#51bf5b"];
 		memory -> memory_		 [arrowhead="",
 			color="#51bf5b",
 			row=func];
 		MA -> VM		 [color="#51bf5b"];
 		VM -> mmap		 [color="#51bf5b"];
-		log_mem -> PA		 [color="#51bf5b"];
 	}
 	bottom	 [label="© 2007-2021 Constantine Shulyupin http://www.MakeLinux.net/kernel/diagram",
 		shape=plaintext,
 		style=""];
-	H4 -> bottom	 [style=invis];
+	CPU -> bottom	 [style=invis];
 	layers	 [fillcolor=lightgray,
 		tooltip="Functionalities are divided to common layers. It is approximate division.",
 		height=0.1,
@@ -582,5 +579,5 @@ digraph matrix {
 		label="Linux kernel diagram",
 		shape=plain,
 		style=""];
-	LKD -> storage [style=invis];
+	LKD -> processing [style=invis];
 }
