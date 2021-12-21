@@ -271,7 +271,7 @@ digraph matrix {
 	}
 	{
 		node [color="#cfbf57ff",
-			
+
 		];
 		edge [color="#cfbf57ff",
 			weight=10

@@ -311,3 +311,8 @@ va_start
 write_reg16
 writel_relaxed
 net_warn_ratelimited
+kstrdup
+strchr
+kvasprintf_const
+kfree_const
+kobject_set_name_vargs
