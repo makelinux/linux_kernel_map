@@ -269,7 +269,7 @@ digraph matrix {
 			style=invis,
 			width=0];
 		HI		 [color="#cfbf57ff",
-			URL="https://en.wikibooks.org/wiki/The_Linux_Kernel",
+			URL="https://en.wikibooks.org/wiki/The_Linux_Kernel/Human_interfaces",
 			fillcolor=white,
 			fixedsize=true,
 			fontsize=12,
