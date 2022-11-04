@@ -1402,7 +1402,7 @@ class _unittest_autotest(unittest.TestCase):
         self.assertEqual('\t\tcpu_startup_entry', popen(
             'srcxray.py call_tree start_kernel')[-1])
         os.chdir('..')
-        self.assertTrue(syscalls().number_of_edges() > 400)
+        self.assertGreater(syscalls().number_of_edges(), 400)
         # digraph_print:
         self.assertEqual("\t\tmount_initrd ^", popen(
             "srcxray.py import_cflow init/do_mounts_initrd.c")[-1])
@@ -1412,11 +1412,12 @@ class _unittest_autotest(unittest.TestCase):
         os.system('srcxray.py doxygen init')
         os.system(
             "srcxray.py \"write_dot(doxygen_xml('xml2'), 'call_graph_dx.dot')\"")
-        self.assertTrue(read_dot("call_graph_dx.dot").number_of_edges() > 400)
+        self.assertGreater(
+            read_dot("call_graph_dx.dot").number_of_edges(), 400)
         os.system(
             "srcxray.py \"write_dot(doxygen_xml_files('xml2'), 'call_graph_dx_files.dot')\"")
-        self.assertTrue(
-            read_dot("call_graph_dx_files.dot").number_of_edges() > 400)
+        self.assertGreater(
+            read_dot("call_graph_dx_files.dot").number_of_edges(), 400)
         self.assertFalse(0 == os.system(
             "grep DECLARE_COMPLETION call_graph_dx_files.dot"))
 
