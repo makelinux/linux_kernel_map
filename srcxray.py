@@ -1401,12 +1401,12 @@ class _unittest_autotest(unittest.TestCase):
                          popen('srcxray.py referrers_dep nfs_root_data')[-1])
         self.assertEqual('calibrate_delay_converge: __delay',
                          popen('srcxray.py call_dep start_kernel')[-2])
-        self.assertEqual('\t\tcpu_startup_entry', popen(
+        self.assertEqual('\trest_init ⋮', popen(
             'srcxray.py call_tree start_kernel')[-1])
         os.chdir('..')
         self.assertGreater(syscalls().number_of_edges(), 400)
         # digraph_print:
-        self.assertEqual("\t\tmount_initrd ^", popen(
+        self.assertEqual("\tkernel_do_mounts_initrd_sysctls_init ⋮", popen(
             "srcxray.py import_cflow init/do_mounts_initrd.c")[-1])
         self.assertRegex(popen(
             'srcxray.py "nx.DiGraph([{1,2},{2,3},{2,4}])"')[-1],
