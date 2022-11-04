@@ -68,6 +68,7 @@ def print_limited(a, out=None):
         # raise(Exception('Reached lines limit'))
     out.write(str(a) + '\n')
 
+
 def print_limited2(a, out=None):
     # exits when reaches limit of printed lines
     out = out if out else sys.stdout
@@ -77,6 +78,7 @@ def print_limited2(a, out=None):
         global level_limit
         level_limit = 2
     out.write(str(a) + '\n')
+
 
 def log(*args, **kwargs):
     # log with context function
@@ -300,15 +302,15 @@ def call_tree(node, printed=None, level=0):
             continue
         if a in stop:
             print_limited2((level + 1)*'\t' + a +
-                    (' ^' if a in local_printed else ''))
+                           (' ^' if a in local_printed else ''))
             local_printed.add(a)
             continue
         if a in ignore:
             ignored.add(a)
             if show_ignored:
                 print_limited2((level + 1)*'\t' + '\033[2;30m' + a +
-                        (' ^' if a in local_printed else '') +
-                        '\033[0m')
+                               (' ^' if a in local_printed else '') +
+                               '\033[0m')
                 local_printed.add(a)
             continue
         local_printed.add(a)
@@ -670,24 +672,24 @@ def cflow(a=None):
     configure and use cflow on Linux sources
     '''
     cflow_param = {
-            "modifier": "__init __inline__ noinline __initdata __randomize_layout asmlinkage __maybe_unused"
-            " __visible __init __leaf__ __ref __latent_entropy __init_or_module  libmosq_EXPORT",
-            "wrapper": "__attribute__ __section__ "
-            "TRACE_EVENT MODULE_AUTHOR MODULE_DESCRIPTION MODULE_LICENSE MODULE_LICENSE MODULE_SOFTDEP "
-            "INIT_THREAD_INFO "
-            "BUG READ_ONCE EEXIST MAJOR "
-            "VM_FAULT_ERROR VM_FAULT_MAJOR VM_FAULT_RETRY VM_PFNMAP VM_READ VM_WRITE "
-            "FAULT_FLAG_ALLOW_RETRY FAULT_FLAG_KILLABLE "
-            "VM_BUG_ON_VMA FOLL_TOUCH FOLL_POPULATE FOLL_MLOCK VM_LOCKONFAULT VM_SHARED FOLL_WRITE "
-            "FOLL_PIN FOLL_NUMA FOLL_GET FOLL_FORCE FOLL_LONGTERM FOLL_FAST_ONLY"
-            "TASK_SIZE "
-            "fallthrough EHWPOISON "
-            "__assume_kmalloc_alignment __malloc "
-            "__acquires __releases __ATTR",
-            "type":
+        "modifier": "__init __inline__ noinline __initdata __randomize_layout asmlinkage __maybe_unused"
+        " __visible __init __leaf__ __ref __latent_entropy __init_or_module  libmosq_EXPORT",
+        "wrapper": "__attribute__ __section__ "
+        "TRACE_EVENT MODULE_AUTHOR MODULE_DESCRIPTION MODULE_LICENSE MODULE_LICENSE MODULE_SOFTDEP "
+        "INIT_THREAD_INFO "
+        "BUG READ_ONCE EEXIST MAJOR "
+        "VM_FAULT_ERROR VM_FAULT_MAJOR VM_FAULT_RETRY VM_PFNMAP VM_READ VM_WRITE "
+        "FAULT_FLAG_ALLOW_RETRY FAULT_FLAG_KILLABLE "
+        "VM_BUG_ON_VMA FOLL_TOUCH FOLL_POPULATE FOLL_MLOCK VM_LOCKONFAULT VM_SHARED FOLL_WRITE "
+        "FOLL_PIN FOLL_NUMA FOLL_GET FOLL_FORCE FOLL_LONGTERM FOLL_FAST_ONLY"
+        "TASK_SIZE "
+        "fallthrough EHWPOISON "
+        "__assume_kmalloc_alignment __malloc "
+        "__acquires __releases __ATTR",
+        "type":
             "pgd_t p4d_t pud_t pmd_t pte_t vm_flags_t"
             # "wrapper": "__setup early_param"
-            }
+    }
 
     if os.path.isfile('include/linux/cache.h'):
         for m in popen("ctags -x --c-kinds=d include/linux/cache.h | cut -d' '  -f 1 | sort -u"):
@@ -954,7 +956,7 @@ def to_dg(a):
     if os.path.isfile(a):
         log(a)
         return read_dot(a)
-    raise(Exception(a))
+    raise (Exception(a))
 
 
 def remove_loops(dg):
