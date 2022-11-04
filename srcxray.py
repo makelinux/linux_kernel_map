@@ -1271,16 +1271,15 @@ def doxygen_xml_files(a):
                     n = file + '::' + n
                 files[file].append(n)
                 if not clusters.get(file):
-                    clusters[file] = g.subgraph(
-                        name='cluster_' + file.replace('.', '_8'))
-                    clusters[file].graph.attr(
-                        'graph', label=file, fontsize="50")
-                with clusters[file] as c:
-                    c.node(n)
-                    for r in m.getElementsByTagName("references"):
-                        edges.append((n, r.firstChild.data))
-                    for r in m.getElementsByTagName("ref"):
-                        edges.append((n, r.firstChild.data))
+                    with g.subgraph(
+                            name='cluster_' + file.replace('.', '_8')) as c:
+                        clusters[file] = c
+                        c.attr('graph', label=file, fontsize="50")
+                clusters[file].node(n)
+                for r in m.getElementsByTagName("references"):
+                    edges.append((n, r.firstChild.data))
+                for r in m.getElementsByTagName("ref"):
+                    edges.append((n, r.firstChild.data))
     for (a, b) in edges:
         g.edge(a, b.replace('::', '__'))
     return g
