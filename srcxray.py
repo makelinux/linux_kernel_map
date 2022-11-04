@@ -1196,6 +1196,7 @@ def doxygen(*sources, output_dir='xml2'):
             EXTRACT_STATIC        = YES
             RECURSIVE             = YES
             EXCLUDE               = html
+            DOT_GRAPH_MAX_NODES   = 100
             #GENERATE_TREEVIEW    = YES
             #HAVE_DOT             = YES
             #DOT_FONTSIZE         = 15
