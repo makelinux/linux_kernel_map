@@ -619,9 +619,10 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
         if o in dg:
             digraph_print_sub('', o)
     #  not yet printed rest:
-    for o in dg.nodes():
-        if o not in printed:
-            digraph_print_sub('', o)
+    if lines < lines_limit:
+        for o in dg.nodes():
+            if o not in printed:
+                digraph_print_sub('', o)
     if dst_fn:
         print(dst_fn)
         dst.close()
