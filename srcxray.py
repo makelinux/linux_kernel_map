@@ -9,6 +9,7 @@
 #
 # Since 2018, Costa Shulyupin, costa@MakeLinux.net
 #
+# install system packages: python3-scipy cscope
 
 import inspect
 from inspect import (currentframe, getframeinfo, getouterframes, stack,
