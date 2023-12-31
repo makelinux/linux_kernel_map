@@ -41,6 +41,7 @@ from xml.dom.minidom import parse
 import xml.dom.minidom
 import ast
 import xml.etree.ElementTree as ET
+from bs4 import BeautifulSoup
 
 default_root = 'starts'
 stop = list()
@@ -1368,6 +1369,90 @@ def svg_xml(svg=None) -> nx.DiGraph:
         except (TypeError):
             pass
     return g
+
+
+def svg_to_dot(a):
+    data = open(a, 'r').read()
+    soup = BeautifulSoup(data, "lxml")
+    print('digraph {')
+    print('node [shape=box]')
+    global verbose
+    verbose = True
+    for r in soup.find_all("rect"):
+        print('"BOX-{}-{}" [pos="{},{}!" width={} height={}]'.format(
+            r.attrs['x'], r.attrs['y'],
+            int(float(r.attrs['x']))/50,
+            - int(float(r.attrs['y']))/50,
+            int(float(r.attrs['width']))/50,
+            int(float(r.attrs['height']))/50
+        ))
+    log("")
+    for p in soup.find_all("path"):
+        if 'inkscape:connection-end' in p.attrs:
+            continue
+        # d="M 263.41462,579.5122 L 500.48778,579.5122 L 500.48778,777.07317 L 263.41462,777.07317 L 263.41462,579.5122 z"
+        try:
+            # d="M 237.07316,65.853659 L 526.82924,65.853659 L 526.82924,1435.6098 L 237.07316,1435.6098 L 237.07316,65.853659 L 237.07316,65.853659 z"
+
+            m = re.match(
+                'M ([^,]*),([^ ]*) L [^,]*,[^ ]* L([^,]*),([^ ]*) L .*,.* L .*,.* z', p.attrs['d'])
+            if m:
+                bb = [float(m.group(1)), float(m.group(2)),
+                      float(m.group(3)), float(m.group(4))]
+                bb = [c / 50 for c in bb]
+                log(p['id'])
+                log(bb)
+                print('"BOX-{}" [pos="{},{}!" width={} height={}]'.format(
+                    p.attrs['id'], (bb[0] + bb[2])/2, - (bb[1] + bb[3]) /
+                    2, abs(bb[2] - bb[0]), abs(bb[3] - bb[1])
+                ))
+            else:
+                log(p.attrs['id'])
+                log(p.attrs['d'])
+        except Exception as e:
+            log(str(e))
+            log(m)
+            pass
+        pass
+    print('layout=neato; node [shape=none]')
+    # , {"incscape:connector-type": "polyline"}):
+    for p in soup.find_all("path"):
+        n = []
+        if not 'inkscape:connection-start' in p.attrs or \
+                not 'inkscape:connection-end' in p.attrs:
+            continue
+        try:
+            for k in ['inkscape:connection-start', 'inkscape:connection-end']:
+                n.append(soup.find('text', {'id': p.attrs.get(k)[1:]}))
+
+            #print(s, e)
+            print('"' + n[0].text.strip('\n') + '"',
+                  '->', '"' + n[1].text.strip('\n')+'"')
+            # <text transform="scale(0.781625,1.2793859)"/>
+            for i in n:
+                tspan = i.find('tspan')
+                s = [1, 1]
+                try:
+                    m = re.match(r'scale\((.*),(.*)\)', i.attrs['transform'])
+                    if m:
+                        s = [float(m.group(1)), float(m.group(2))]
+                except:
+                    pass
+                print('"{}" [pos="{},{}!"]'.format(i.text.strip('\n'),
+                                                   int(s[0] *
+                                                       float(tspan.attrs['x']))/50,
+                                                   - int(s[1] * float(tspan.attrs['y']))/50))
+            if len(n) < 2:
+                continue
+            # '#text4794', 'inkscape:connection-end
+            # if 'incscape:connector-type' not in p.attrs or p.attrs['incscape:connector-type'] != 'polyline':
+            #    continue
+        except Exception as e:
+            log(str(e))
+            log(p)
+            log(n)
+            # break
+    print('}')
 
 
 def doc(m=None):
