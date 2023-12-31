@@ -28,7 +28,7 @@ import networkx as nx
 # from networkx.drawing.nx_pydot import read_dot # no bad
 from networkx.generators.ego import *
 from networkx.algorithms.dag import *
-from networkx.utils import open_file, make_str
+from networkx.utils import open_file
 from pprint import pprint
 import difflib
 import glob
