@@ -9,7 +9,7 @@
 #
 # Since 2018, Costa Shulyupin, costa@MakeLinux.net
 #
-# install system packages: python3-scipy cscope
+# install system packages: python3-scipy cscope graphviz-dev
 
 import inspect
 from inspect import (currentframe, getframeinfo, getouterframes, stack,
@@ -34,7 +34,7 @@ import difflib
 import glob
 from pathlib import *
 import pygraphviz  # python3-pygraphviz
-import graphviz
+import graphviz # python3-graphviz
 import unittest
 import types
 from xml.dom.minidom import parse
@@ -781,6 +781,19 @@ def import_outline(outline_txt=None):
             stack.append(id)
             nprev = n
     return cf
+
+
+def reverse_graph(dg=None):
+    '''
+    srcxray.py $ID trace_softirq_noise | srcxray.py reverse_graph
+    '''
+    if not isinstance(dg, nx.DiGraph):
+        dg = import_outline(dg)
+    rev = my_graph()
+    for e in dg.edges:
+        #print(e[0], e[1])
+        rev.add_edge(e[1].split(' ')[0], e[0])
+    return rev
 
 
 def rank_couples(dg):
