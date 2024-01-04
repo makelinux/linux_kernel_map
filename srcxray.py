@@ -813,7 +813,7 @@ def import_outline(outline_txt=None):
                     cf.add_edge(stack[-1], id)
             stack.append(id)
             nprev = n
-    return cf
+        return cf
 
 
 def reverse_graph(dg=None):
