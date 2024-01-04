@@ -17,6 +17,7 @@ from inspect import (currentframe, getframeinfo, getouterframes, stack,
 import types
 import random
 import os
+import io
 import sys
 from sys import *
 import collections
@@ -44,6 +45,7 @@ import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 
 default_root = 'starts'
+usage = dict()
 stop = list()
 ignore = list()
 ignored = set()
@@ -1559,7 +1561,14 @@ class _unittest_autotest(unittest.TestCase):
 
 
 def main():
-    global stop
+    global usage, stop
+    try:
+        with open('usage.list', 'r') as f:
+            for s in f:
+                p = s.split()
+                usage[p[1]] = p[0]
+    except FileNotFoundError:
+        pass
     try:
         f = open("stop.txt")
         stop = f.read().splitlines()
