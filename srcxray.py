@@ -192,14 +192,14 @@ def func_referrers_cscope(name):
     # Works fast.
     # Prefer to use doxygen_xml.
     global cscope_warned
-    if not os.path.isfile('cscope.out'):
+    if not os.path.isfile('data.cscope'):
         if not cscope_warned:
-            print("Recommended: cscope -Rcbk", file=sys.stderr)
+            print("Recommended: cscope -Rcbk -fdata.cscope", file=sys.stderr)
             cscope_warned = True
         return []
     res = list()
     r = None
-    for l in popen(r'cscope -d -L3 "%s"' % (name)):
+    for l in popen(r'cscope -fdata.cscope -d -L3 "%s"' % (name)):
         log(l)
         m = re.match(r'([^ ]*) ([^ ]*) ([^ ]*) (.*)', l)
         file, func, line_num, line_str = m.groups()
@@ -220,10 +220,10 @@ def referrers_tree(name, referrer=None, printed=None, level=0):
     Obsoleted by doxygen_xml.
     '''
     if not referrer:
-        if os.path.isfile('cscope.out'):
+        if os.path.isfile('data.cscope'):
             referrer = func_referrers_cscope
         else:
-            print("Using git grep only, recommended to run: cscope -Rcbk",
+            print("Using git grep only, recommended to run: cscope -Rcbk -fdata.cscope",
                   file=sys.stderr)
             referrer = func_referrers_git_grep
     if isinstance(referrer, str):
@@ -259,10 +259,10 @@ def referrers_dep(name, referrer=None, printed=None, level=0):
     # dependency of make
     # Obsoleted by doxygen_xml.
     if not referrer:
-        if os.path.isfile('cscope.out'):
+        if os.path.isfile('data.cscope'):
             referrer = func_referrers_cscope
         else:
-            print("Using git grep only, recommended to run: cscope -Rcbk",
+            print("Using git grep only, recommended to run: cscope -Rcbk -fdata.cscope",
                   file=sys.stderr)
             referrer = func_referrers_git_grep
     if isinstance(referrer, str):
@@ -291,8 +291,9 @@ def call_tree(node, printed=None, level=0):
     Ex: start_kernel
     Obsoleted by doxygen_xml.
     '''
-    if not os.path.isfile('cscope.out'):
-        print("Please run: cscope -Rcbk", file=sys.stderr)
+    log(node)
+    if not os.path.isfile('data.cscope'):
+        print("Please run: cscope -Rcbk -fdata.cscope", file=sys.stderr)
         return False
     if printed is None:
         printed = set()
@@ -306,7 +307,7 @@ def call_tree(node, printed=None, level=0):
         print_limited2(level*'\t' + node)
     printed.add(node)
     local_printed = set()
-    for line in popen('cscope -d -L2 "%s"' % (node)):
+    for line in popen('cscope -fdata.cscope -d -L2 "%s"' % (node)):
         a = line.split()[1]
         if a in local_printed:
             continue
@@ -333,8 +334,8 @@ def call_tree(node, printed=None, level=0):
 def call_dep(node, printed=None, level=0):
     # prints call tree in compact format of dependency of make
     # Obsoleted by doxygen_xml.
-    if not os.path.isfile('cscope.out'):
-        print("Please run: cscope -Rcbk", file=sys.stderr)
+    if not os.path.isfile('data.cscope'):
+        print("Please run: cscope -fdata.cscope -Rcbk", file=sys.stderr)
         return False
     if printed is None:
         printed = set()
@@ -342,7 +343,7 @@ def call_dep(node, printed=None, level=0):
         return
     calls = list()
     for a in [line.split()[1] for line in
-              popen('cscope -d -L2 "%s"' % (node))]:
+              popen('cscope -fdata.cscope -d -L2 "%s"' % (node))]:
         if a in ignore:
             continue
         calls.append(a)
