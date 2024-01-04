@@ -47,7 +47,6 @@ default_root = 'starts'
 stop = list()
 ignore = list()
 ignored = set()
-show_ignored = False
 level_limit = 6
 lines = 0
 lines_limit = 30
@@ -295,40 +294,42 @@ def call_tree(node, printed=None, level=0):
     if not os.path.isfile('data.cscope'):
         print("Please run: cscope -Rcbk -fdata.cscope", file=sys.stderr)
         return False
-    if printed is None:
+    if not printed:
         printed = set()
-    if node in printed:
-        print_limited2(level*'\t' + node + ' ^')
+    u = 0
+    if node in usage:
+        u = int(usage[node])
+    else:
+        p = node
+    p = "%s %u" % (node, u)
+    if level and (node in ignore or u > 100):
+        if verbose:
+            print_limited2((level + 1)*'\t' + '\033[2;30m' + p +
+                           (' ^' if node in printed else '') +
+                           '\033[0m')
+        ignored.add(node)
+        log(node)
         return
-    elif level > level_limit - 2:
-        print_limited2(level*'\t' + node + ' ⋮')
+    if node in printed:
+        print_limited2(level*'\t' + p + ' ^')
+        log('')
+        return
+    elif level > level_limit - 2 or (level and u and u > 9):
+        print_limited2(level*'\t' + p + ' ⋮')
+        log('')
         return ''
     else:
-        print_limited2(level*'\t' + node)
+        print_limited2(level*'\t' + p)
     printed.add(node)
+    if level and node in stop:
+        return
     local_printed = set()
     for line in popen('cscope -fdata.cscope -d -L2 "%s"' % (node)):
         a = line.split()[1]
         if a in local_printed:
             continue
-        if a in stop:
-            print_limited2((level + 1)*'\t' + a +
-                           (' ^' if a in local_printed else ''))
-            local_printed.add(a)
-            continue
-        if a in ignore:
-            ignored.add(a)
-            if show_ignored:
-                print_limited2((level + 1)*'\t' + '\033[2;30m' + a +
-                               (' ^' if a in local_printed else '') +
-                               '\033[0m')
-                local_printed.add(a)
-            continue
         local_printed.add(a)
-        # try:
         call_tree(a, printed, level + 1)
-        # except Exception:
-        #    pass
 
 
 def call_dep(node, printed=None, level=0):
