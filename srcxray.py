@@ -47,7 +47,7 @@ default_root = 'starts'
 stop = list()
 ignore = list()
 ignored = set()
-level_limit = 6
+level_limit = 5
 lines = 0
 lines_limit = 30
 columns = 80
@@ -228,6 +228,7 @@ def referrers_tree(name, referrer=None, printed=None, level=0):
     '''
     prints text referrers outline.
     Ex: nfs_root_data
+    Ex2: srcxray.py referrers_tree X|srcxray.py reverse_graph
     Obsoleted by doxygen_xml.
     '''
     if not referrer:
