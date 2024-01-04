@@ -89,6 +89,18 @@ def print_limited2(a, out=None):
     out.write(str(a) + '\n')
 
 
+def warn(a):
+    print(a, file=sys.stderr)
+
+
+def log(*args, **kwargs):
+    global verbose
+    if verbose:
+        print(inspect.stack()[1][3], str(
+            *args).rstrip(), file=sys.stderr, **kwargs)
+    pass
+
+
 def log(*args, **kwargs):
     # log with context function
     if not verbose:
