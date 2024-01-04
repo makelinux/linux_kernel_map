@@ -1245,7 +1245,6 @@ def doxygen(*sources, output_dir='xml2'):
             EXCLUDE               = html
             DOT_GRAPH_MAX_NODES   = 100
             #GENERATE_TREEVIEW    = YES
-            #HAVE_DOT             = YES
             #DOT_FONTSIZE         = 15
             #CALLER_GRAPH         = YES
             #INTERACTIVE_SVG      = YES
@@ -1254,7 +1253,10 @@ def doxygen(*sources, output_dir='xml2'):
             #DOT_FONTNAME         = Ubuntu
             #CASE_SENSE_NAMES     = YES
             SOURCE_BROWSER        = NO
-            GENERATE_HTML         = NO
+            GENERATE_HTML         = YES
+            HAVE_DOT              = YES
+            DOT_NODE_ATTR         = shape=plaintext
+            DOT_EDGE_ATTR         = "labelfontsize=10 arrowhead=open arrowtail=open arrowsize=0.3"
             GENERATE_LATEX        = NO
             #QUIET = NO
             GENERATE_XML=YES
