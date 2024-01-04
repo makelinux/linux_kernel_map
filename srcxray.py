@@ -1485,7 +1485,7 @@ def doc(m=None):
         print(m.__name__, '-', d.partition('\n')[0])
 
 
-def usage():
+def print_usage():
     #print('Run', me, 'usage')
     for m in getmembers(modules[__name__]):
         if isfunction(m[1]) and m[1].__module__ == __name__:
@@ -1549,7 +1549,7 @@ def main():
     try:
         ret = False
         if len(sys.argv) == 1:
-            usage()
+            print_usage()
         else:
             while sys.argv[1].startswith('--'):
                 global verbose
