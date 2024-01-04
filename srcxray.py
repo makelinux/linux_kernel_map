@@ -611,13 +611,15 @@ def digraph_print(dg, starts=None, dst_fn=None, sort=False):
         if 'rank' in dg.nodes[node]:
             s = str(dg.nodes[node]['rank'])
             ranks[dg.nodes[node]['rank']].append(node)
+        final = node in stop or level > level_limit - 2
         if outs:
-            s += ' ⋮' if level > level_limit - 2 else ''
+            s += ' ⋮' if final else ''
         else:
-            s += '  @' + path
+            # s += '  @' + path
+            pass
         print_limited2(level*'\t' + str(node) + s, dst)
         printed.add(node)
-        if level > level_limit - 2:
+        if final:
             return ''
         passed = set()
         for o in outs.keys():
