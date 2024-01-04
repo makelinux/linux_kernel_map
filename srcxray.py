@@ -784,12 +784,19 @@ def import_outline(outline_txt=None):
     converts outline to graph
     Ex2: \"write_dot(import_outline('outline.txt'),'outline.dot')\"
     '''
-    cf = my_graph()
-    stack = list()
-    nprev = -1
-    with open(outline_txt, 'r') as f:
+    if not outline_txt:
+        return import_outline(stdin)
+    if isinstance(outline_txt, str):
+        with open(outline_txt, 'r') as f:
+            return import_outline(f)
+    if isinstance(outline_txt, io.IOBase):
+        f = outline_txt
+        stack = list()
+        nprev = -1
+        cf = my_graph()
         for line in f:
-            m = re.match(r'^([\t ]*)(.*)', str(line))
+            l = line.replace(8*' ', '\t')
+            m = re.match(r'^([\t ]*)(.*)', l)
             if m:
                 n = len(m.group(1))
                 id = str(m.group(2))
