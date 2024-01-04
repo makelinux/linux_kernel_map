@@ -50,7 +50,15 @@ ignored = set()
 show_ignored = False
 level_limit = 6
 lines = 0
-lines_limit = int(os.popen('stty size', 'r').read().split()[0]) or 30
+lines_limit = 30
+columns = 80
+try:
+    size = os.popen('stty size', 'r').read().split()
+    lines_limit = int(size[0]) or 30
+    columns = int(size[1]) or 40
+except:
+    pass
+
 cflow_structs = False
 scaled = False
 verbose = False
@@ -76,7 +84,7 @@ def print_limited2(a, out=None):
     out = out if out else sys.stdout
     global lines
     lines += 1
-    if lines > lines_limit + 1:
+    if lines > lines_limit // 2:
         global level_limit
         level_limit = 2
     out.write(str(a) + '\n')
