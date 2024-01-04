@@ -781,7 +781,7 @@ def import_outline(outline_txt=None):
                 raise Exception(line)
             if not id:
                 continue
-            id = re.sub(' \^$', '', id)
+            id = re.sub(r' \^$', '', id)
             if n <= nprev:
                 stack = stack[:n - nprev - 1]
             # print(n, id, stack)
@@ -964,7 +964,7 @@ def read_dot(dot):
                         dg.add_edge(m.group(1), m.group(2))
                 else:
                     log(a)
-        elif re.match('.*[=\[\]{}]', a):
+        elif re.match(r'.*[=\[\]{}]', a):
             continue
         else:
             m = re.match('"?([^"]+)"?', a)
@@ -1509,7 +1509,7 @@ class _unittest_autotest(unittest.TestCase):
         self.assertEqual('initrd_load: prepare_namespace',
                          popen('srcxray.py referrers_dep nfs_root_data')[-1])
         self.assertTrue('parse_early_options: parse_args' in
-                         popen('srcxray.py call_dep start_kernel'))
+                        popen('srcxray.py call_dep start_kernel'))
         self.assertTrue('\tsched_init ⋮' in popen(
             'srcxray.py call_tree start_kernel'))
         os.chdir('..')
