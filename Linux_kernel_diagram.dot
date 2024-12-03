@@ -385,7 +385,7 @@ digraph "Linux_kernel_diagram" {
 		functions [
 			color = gray,
 			tooltip = "Columns represent main functionalities of the kernel",
-			URL = "http://www.makelinux.net/ldd3/chp-1-sect-2.shtml",
+			URL = "https://makelinux.github.io/ldd3/chp-1-sect-2.shtml",
 			fillcolor = gray,
 			fixedsize = true,
 			height = 0.6,
@@ -553,7 +553,7 @@ digraph "Linux_kernel_diagram" {
 		RAM;
 	}
 	bottom [
-		label = "© 2007-2021 Constantine Shulyupin http://www.MakeLinux.net/kernel/diagram",
+		label = "© 2007 Constantine Shulyupin https://makelinux.github.io/kernel/diagram",
 		shape = plaintext,
 		style = ""]
 	CPU -> bottom [style = invis]
