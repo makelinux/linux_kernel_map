@@ -385,7 +385,7 @@ digraph "Linux_kernel_diagram" {
 		functions [
 			color = gray,
 			tooltip = "Columns represent main functionalities of the kernel",
-			URL = "https://makelinux.github.io/ldd3/chp-1-sect-2.shtml",
+			URL = "https://www.oreilly.com/library/view/linux-device-drivers/0596000081/ch01s02.html",
 			fillcolor = gray,
 			fixedsize = true,
 			height = 0.6,
