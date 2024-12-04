@@ -135,23 +135,23 @@ digraph "Linux_kernel_diagram" {
 			width = 1.2]
 		NFS -> log_prot [weight = 0]
 	}
-	subgraph processing {
+	subgraph multitasking {
 		node [color = "#c46747"]
 		edge [color = "#c46747"]
-		processing_ [
+		multitasking_ [
 			fixedsize = true,
 			height = 0,
 			shape = point
 				style = invis,
 			width = 0]
-		processing [
-			URL = "https://en.wikibooks.org/wiki/The_Linux_Kernel/Processing",
+		multitasking [
+			URL = "https://en.wikibooks.org/wiki/The_Linux_Kernel/Multitasking",
 			fillcolor = white,
 			fixedsize = true,
 			height = 0.6,
 			row = func,
 			width = 2]
-		processing -> processing_ [
+		multitasking -> multitasking_ [
 			arrowhead = "",
 			row = func]
 		proc [
@@ -188,7 +188,7 @@ digraph "Linux_kernel_diagram" {
 			fontsize = 20,
 			row = chip]
 		IRQ -> CPU
-	}	// processing
+	}	// multitasking
 	subgraph mem {
 		node [
 			color = "#51bf5b",
@@ -363,7 +363,7 @@ digraph "Linux_kernel_diagram" {
 		]
 		system;
 		networking;
-		system -> processing [weight = 1]
+		system -> multitasking [weight = 1]
 		storage -> networking [weight = 1]
 		memory [
 			color = "#51bf5b",
@@ -374,7 +374,7 @@ digraph "Linux_kernel_diagram" {
 			row = func,
 			width = 2]
 		memory -> storage [weight = 1]
-		processing -> memory [weight = 1]
+		multitasking -> memory [weight = 1]
 		functions_ [
 			fixedsize = true,
 			height = 0,
@@ -431,9 +431,9 @@ digraph "Linux_kernel_diagram" {
 		storage_;
 		FS;
 		storage_ -> FS;
-		processing_;
+		multitasking_;
 		proc;
-		processing_ -> proc;
+		multitasking_ -> proc;
 		HI_;
 		char;
 		HI_ -> char;
