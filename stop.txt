@@ -45,6 +45,7 @@ dma_unmap_single
 do_tmpfile
 down_write
 driver_find
+dup_task_struct
 __dynamic_array
 enqueue
 f
@@ -77,6 +78,7 @@ kset_find_obj
 kthread_create
 kzalloc_node
 list_add_tail
+list_add_tail_rcu
 LIST_HEAD
 lock_sock_nested
 mask_irq
@@ -152,3 +154,4 @@ vsnprintf
 wait_for_completion_timeout
 wake_up_all
 writel_relaxed
+WRITE_ONCE
