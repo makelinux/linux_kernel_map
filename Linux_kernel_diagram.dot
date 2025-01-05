@@ -623,5 +623,5 @@ digraph "Linux_kernel_diagram" {
 		label = "Linux kernel diagram",
 		shape = plain,
 		style = ""]
-	LKD -> processing [style = invis]
+	LKD -> multitasking [style = invis]
 }
