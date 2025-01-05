@@ -1,9 +1,11 @@
 #!/usr/bin/python3
-#
-#                   srcxray - source code X-ray
-#
-# Analyzes interconnections between functions and structures in source code.
-#
+
+"""
+
+                   srcxray - source code X-ray
+
+Analyzes interconnections between functions and structures in source code.
+"""
 # Uses doxygen, git grep --show-functionm and cscope to
 # reveal references between identifiers.
 #
@@ -34,7 +36,7 @@ from pprint import pprint
 import difflib
 import glob
 from pathlib import *
-import pygraphviz  # python3-pygraphviz
+import pygraphviz  # sudo dnf install -yq python3-pygraphviz
 import graphviz # python3-graphviz
 import unittest
 import types
@@ -171,10 +173,14 @@ def func_referrers_git_grep(name):
     # Obsoleted by doxygen_xml.
     res = list()
     r = None
-    for line in popen(r'git grep --threads 1 --no-index --word-regexp '
-                      r'--show-function --line-number '
+    #  --threads 1--no-index r'**.\[hc\] **.cpp **.cc **.hh'
+    for line in popen(r'git grep '
+                      r'--show-function '
+                      r'--line-number '
                       r'"^\s.*\b%s" '
-                      r'**.\[hc\] **.cpp **.cc **.hh || true' % (name)):
+                      r'$(git grep --word-regexp --files-with-matches '
+                        r'"%s" )'
+                      r'|| true' % (name, name)):
         # Filter out names in comment afer function,
         # when comment start from ' *'
         # To see the problem try "git grep -p and"
@@ -230,7 +236,7 @@ def referrers_tree(name, referrer=None, printed=None, level=0):
     '''
     prints text referrers outline.
     Ex: nfs_root_data
-    Ex2: srcxray.py referrers_tree X|srcxray.py reverse_graph
+    Ex2: srcxray.py referrers_tree X | srcxray.py reverse_graph
     Obsoleted by doxygen_xml.
     '''
     if not referrer:
@@ -265,7 +271,7 @@ def referrers(name):
     Ex: nfs_root_data
     Prefer to use doxygen_xml.
     '''
-    print(' '.join([a[2] for a in func_referrers_git_grep(name)]))
+    print('\n'.join([a[2] for a in func_referrers_git_grep(name)]))
 
 
 def referrers_dep(name, referrer=None, printed=None, level=0):
@@ -1196,7 +1202,6 @@ def import_symbols():
 
 me = os.path.basename(sys.argv[0])
 
-
 def dir_tree(path='.'):
     '''
     scans directory into graph
@@ -1252,7 +1257,7 @@ def doxygen(*sources, output_dir='xml2'):
             #INTERACTIVE_SVG      = YES
             #DOT_TRANSPARENT      = YES
             #DOT_MULTI_TARGETS    = NO
-            #DOT_FONTNAME         = Ubuntu
+            #DOT_FONTNAME         = Helvetica
             #CASE_SENSE_NAMES     = YES
             SOURCE_BROWSER        = NO
             GENERATE_HTML         = YES
@@ -1559,7 +1564,6 @@ class _unittest_autotest(unittest.TestCase):
         self.assertFalse(0 == os.system(
             "grep DECLARE_COMPLETION call_graph_dx_files.dot"))
 
-
 def main():
     global usage, stop
     try:
@@ -1591,6 +1595,7 @@ def main():
                 log(sys.argv[1][2:])
                 if sys.argv[1][2:] == 'verbose':
                     verbose = True
+                log(level_limit)
                 if sys.argv[1][2:] == 'level_limit':
                     level_limit = int(sys.argv[2])
                     sys.argv = sys.argv[1:]
