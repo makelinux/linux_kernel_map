@@ -36,6 +36,7 @@ compound_head
 cond_resched
 container_of
 cpumask_bits
+cpu_of
 cpu_relax
 cpu_to_le16
 current
@@ -44,7 +45,9 @@ DECLARE_BITMAP
 DECLARE_COMPLETION_ONSTACK
 DECLARE_WAITQUEUE
 defined
+DEFINE_IO_COMP_BATCH
 DEFINE_MUTEX
+dequeue_entity
 dev_dbg
 dev_err
 device_add
@@ -59,8 +62,10 @@ d_inode
 disable_irq
 DIV_ROUND_UP
 DMA_BIT_MASK
+dma_rmb
 dma_set_mask_and_coherent
 dput
+drm_dev_dbg
 dump_stack
 EAGAIN
 EBADF
@@ -124,6 +129,7 @@ init_completion
 __initdata
 INIT_LIST_HEAD
 init_waitqueue_head
+inw
 irq_state_set_disabled
 irq_state_set_masked
 IS_ENABLED
@@ -145,6 +151,8 @@ _kstrtoul
 kstrtoull
 kvasprintf_const
 kzalloc
+le16_to_cpu
+le32_to_cpu
 likely
 list
 list_add
@@ -171,6 +179,7 @@ memset
 might_sleep
 min
 MINOR
+min_t
 MKDEV
 msleep
 mutex_init
@@ -201,6 +210,7 @@ PAGE_SIZE
 page_to_nid
 page_to_pfn
 page_zone
+parent_entity
 path_put
 path_put
 pci_dev_put
@@ -229,7 +239,9 @@ pr_err
 pr_fmt
 pr_info
 pr_info_once
+__printf
 printk
+printk_once
 pr_warn
 pte_t
 ptl
@@ -241,7 +253,12 @@ PVOP_CALLEE0
 PVOP_VCALLEE0
 PVOP_VCALLEE1
 raw_local_irq_save
+raw_spin_*lock
+raw_spin_lock
+raw_spin_lock_irq
 raw_spin_lock_irqsave
+raw_spin_unlock
+raw_spin_unlock_irq
 raw_spin_unlock_irqrestore
 rcu_read_lock
 rcu_read_unlock
@@ -251,6 +268,7 @@ readl_relaxed
 READ_ONCE
 read_unlock
 real_mount
+reg_write
 __releases
 resource_size
 ret
@@ -258,6 +276,7 @@ _RET_IP_
 retry
 retry_estale
 rmb
+rq_list_empty
 __set_bit
 sigdelsetmask
 SIGKILL
@@ -266,6 +285,10 @@ SIGSTOP
 simple_strtoul
 size
 size_t
+smp_mb
+smp_mb__after_spinlock
+smp_rmb
+smp_wmb
 spi_master_get_devdata
 spin_lock
 spin_lock_init
@@ -315,6 +338,8 @@ __volatile__
 WARN
 WARN_ON
 WARN_ON_ONCE
+wmb
+writel
 writel_relaxed
 write_reg16
 XXstart
