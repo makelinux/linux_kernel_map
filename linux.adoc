@@ -5,70 +5,61 @@
 
 = Costa's Linux kernel research scratchpad
 
-RESEND DEFINE_TIMER
-
-vim format paragpaph: gqip
-
-cpuhp online interferes oslat delay 3540 us RT; std 1300/5000
-hwnoise - pass
-
-dell-per660-01 emr
-	STD
-		oslat -c 3 -D 1h -b 100
-		  100 (us):    4 (including overflows)
-		   Maximum:    425 (us)
-	RT
-		oslat -c 3 -D 1h -b 10 -f 1; Maximum:    670 (us), 5 times
-
-		oslat --cpu-main-thread 4 -c 4,5,6,7,8,9,10,11,12,13 -b 5 -f 1
-			Maximum:    426 us, 7678.620sec / 20 times per cpu
-
-
-
 keywords:
-	TODO
-	takedown_cpu
-	take_cpu_down
 
-	cache_ap_online
+	
+	scale_freq_tick
+		"Scheduler frequency invariance went wobbly, disabling!"
 
-	on setting CPU offline
+	task_work_run
 
-	queue_stop_cpus_work() queues requested multi_cpu_stop() to run on all requested cpu_online_mask.
 
-	multi_cpu_stop() disables interrupts
+	notify_cpu_starting
+		rcutree_report_cpu_starting
 
-	on setting a CPU online
-	cache_ap_online() indirectly invokes cache_rendezvous_handler() through stop_machine_from_inactive_cpu()
-	on linux-5 see mtrr_rendezvous_handler
+	vfs_rmdir
+		kernfs_iop_rmdir
+			cgroup_rmdir
+				cgroup_destroy_locked
+					kill_css
+	
+	cgroup_base_files
+		cgroup_subtree_control_write
+			cgroup_finalize_control
+				cgroup_apply_control_disable
+					kill_css
 
-	cache_aps_init calls stop_machine with cache_rendezvous_handler and cpu_online_mask.
+	kill_css
+		percpu_ref_kill_and_confirm
+		&css_killed_ref_fn
+			offline_css
+				cpuset_css_offline
+					update_prstate ->
+			css_put
 
-	[ 3543.525412] Fail to get numa node for CPU:63 bus:0 dev:0 fn:1
-	[ 3543.525508] Fail to get numa node for CPU:63 bus:1 dev:30 fn:1
+       ktimers/7-94      [007] dN.11 110543.408319: ipi_send_cpu: cpu=7 callsite=irq_work_queue_on+0xe1/0xf0 callback=rcu_preempt_deferred_qs_handler+0x0/0x20	
 
+	include/linux/context_tracking_irq.h
+
+	__trace_stack
+		ct_irq_enter_irqson
+			ct_irq_enter
+				ct_nmi_enter
+					rcu_watching Startirq
+		__ftrace_trace_stack
+		ct_irq_exit_irqson
+			ct_irq_exit
+				ct_nmi_exit
+					rcu_watching Endirq
+
+	rcu_read_unlock_special
+		@rcu_preempt_deferred_qs_handler
+		init_irq_work
+		irq_work_queue_on
 
 	cpuset_write_resmask housekeeping_exlude_isolcpus cpu_up
-	irq_create_affinity_masks
-	blk_mq_update_nr_hw_queues
-	fec
-	housekeeping_update
 
-	BLOCK_SOFTIRQ
-
-host 			411us
-normal	rtla timerlat	50ms
-rt	rtla timerlat	5649us
-	offline 	3420us
-
-
-tp
-	725us
-
-
-(sleep 5; echo 0 > /sys/devices/system/cpu/cpu3/online) & rtla timerlat top -c 1
-
-echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/devices/system/cpu/cpu3/online) & rtla timerlat hist -b1000 -E 10 -c 1 -a 3000
+	vim format paragpaph: gqip
 
 == Intro
 
@@ -76,7 +67,7 @@ echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/d
 
 [cols="1,1,1,1,1,1"]
 |===
-| <<human_interface>>
+| <<human-interface>>
 | <<system>>
 | <<multitasking>>
 | <<memory>>
@@ -84,30 +75,48 @@ echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/d
 | <<networking>>
 
 |
-<<_debug>> +
-<<_video>>
+|
+|
+|
+|
+|
+
+|
+<<debug>> +
+<<video>>
 |
 <<_smp>> +
-<<_cpumask>> +
-<<_cpuhp>> +
+<<cpumask>> +
+<<cpuhp>> +
 |
 <<_real_time_preemption,RT>>
 |
-<<_processes>> +
-<<_interrupts>>
+<<processes>> +
+<<interrupts>>
 |
-<<_storage_busses>> +
-<<_nvme>>
+<<storage_busses>> +
+<<nvme>>
 |
-<<_sockets>> +
-<<_ip>> +
-<<_eth>>
+<<sockets>> +
+<<ip>> +
+<<eth>>
 
 |===
 
 === TODO
 
+	sysctl kernel.sched_schedstats=1
+	rtla hwnoise -H 2 -c 4,132 -d 1h --quiet -s 200 -t osnoise_trace.txt -p 1000000 -r1000000 -e sched -e timer -e irq_vectors -e irq -e nmi -e ipi -e power:cpu_frequency -e msr
 
+	cryptomgr_init
+		...
+			cryptomgr_schedule_test
+				cryptomgr_test
+					alg_test
+						alg_test_cipher
+							test_cipher
+								crypto_cipher_setkey
+						alg_find_test
 
 	timer_cancel
 
@@ -123,10 +132,6 @@ echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/d
 			inet_twsk_kill
 
 	tcp_keepalive_timer
-
-	trace_softirq_raise
-		softirq_raise
-		DEFINE_EVENT ->
 
 	debug_deactivate
 
@@ -191,6 +196,26 @@ echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/d
 			tick_program_event ...
 		tick-sched.o
 			tick_get_tick_sched
+			referrers tick_dep_set_.: tick_dep_set_cpu
+				__perf_event_account_interrupt
+					tick_dep_set_cpu
+						tick_nohz_dep_set_cpu
+				rcu_torture_reader
+					tick_dep_set_task
+				rcu_torture_fwd_prog_cr
+					tick_dep_set_task
+				__rcu_irq_enter_check_tick
+					tick_dep_set_cpu
+				rcu_do_batch
+					tick_dep_set_task
+				synchronize_rcu_expedited_wait
+					tick_dep_set_cpu
+				arm_timer
+					tick_dep_set_task
+					tick_dep_set_signal ->
+				set_process_cpu_timer
+					tick_dep_set_signal ->
+
 	CONFIG_NO_HZ_COMMON
 		TICK_ONESHOT
 	CONFIG_NO_HZ_IDLE Idle dynticks system (tickless idle)
@@ -227,6 +252,9 @@ echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/d
 			rwbase_rt
 		kernel/locking/rwbase_rt.c
 
+
+		rtmutex
+
 		include/linux/rtmutex.h
 			rt_mutex_init
 			rt_mutex_lock
@@ -234,24 +262,74 @@ echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/d
 				rt_mutex_base
 					raw_spinlock_t
 		kernel/locking/rtmutex_common.h
+		kernel/locking/rtmutex_api.c
+			rt_mutex_base_init
+
+			rt_mutex_lock
+				__rt_mutex_lock_common
+					mutex_acquire_nest
+					__rt_mutex_lock
 		kernel/locking/rtmutex.c
 			__rt_mutex_lock
 				rt_mutex_try_acquire
 					rt_mutex_cmpxchg_acquire
+						owner
+                                                try_cmpxchg_acquire
+                                                        raw_try_cmpxchg_acquire
+                                                                cmpxchgl
 				rt_mutex_slowlock
 					__rt_mutex_slowlock_locked
 						__rt_mutex_slowlock
+							try_to_take_rt_mutex
+								rt_mutex_owner
+								rt_mutex_set_owner
+                                                                        xchg_acquire
+                                                                                xchg
 			__rt_mutex_unlock
+				rt_mutex_slowunlock
 			...
-		kernel/locking/rtmutex_api.c
-			rt_mutex_base_init
-
 
 		include/linux/spinlock_types.h
 			spinlock_t
 				rt_mutex_base
 					raw_spinlock_t
 
+		include/linux/spinlock_rt.h
+		spin_lock
+			rt_spin_lock
+				spin_acquire ->
+				__rt_spin_lock
+					rtlock_lock
+						rt_mutex_cmpxchg_acquire
+						rtlock_slowlock
+							rtlock_slowlock_locked
+								try_to_take_rt_mutex ->
+								schedule_rtlock
+									schedule_loop(SM_RTLOCK_WAIT);
+								raw_spin_lock_irq
+									_raw_spin_lock_irq
+		spin_unlock
+			rt_spin_unlock
+				spin_release
+				migrate_enable
+				rcu_read_unlock ->
+				rt_mutex_cmpxchg_release
+					try_cmpxchg_release
+						raw_try_cmpxchg_release
+				rt_mutex_slowunlock
+                                        rt_mutex_has_waiters
+                                        unlock_rt_mutex_safe
+                                                rt_mutex_cmpxchg_release
+	                                mark_wakeup_next_waiter
+						rt_mutex_top_waiter
+						lock->owner = (void *) RT_MUTEX_HAS_WAITERS;
+						rt_mutex_wake_q_add
+							rt_mutex_wake_q_add_task
+                                        rt_mutex_wake_up_q
+                                                wake_up_q
+
+
+	rtla osnoise hist -d 5m -c 8 -Pf:$p
 		include/linux/sched/mm.h
 			mmdrop_sched
 		&realtime_attr.attr
@@ -285,7 +363,7 @@ echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/d
 				preempt_enable
 		preempt_model_rt
 		irq_exit_rcu
-		a_irq_exit_rcu
+		__irq_exit_rcu
 			wake_timersd
 		if (!IS_ENABLED(CONFIG_PREEMPT_RT)) {
 			cpu_relax();
@@ -327,45 +405,6 @@ echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/d
 
 	echo timerlat > current_tracer
 
-	late_initcall
-	init_osnoise_tracer
-		register_tracer
-		osnoise_tracer
-			osnoise_tracer_stop
-				osnoise_workload_stop
-					osnoise_unhook_events ^
-		timerlat_tracer
-			timerlat_tracer_start
-				osnoise_workload_start ^
-				__osnoise_tracer_start
-					start_per_cpu_kthreads
-						start_kthread
-							osnoise_main
-							timerlat_main
-								hrtimer_init(&tlat->timer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS_PINNED_HARD);
-								hrtimer_cb_get_time
-									get_time
-								s.timer_latency = diff
-								trace_timerlat_sample
-									osnoise_instances
-									__trace_timerlat_sample
-										trace_buffer_lock_reserve
-											__trace_buffer_lock_reserve
-												ring_buffer_lock_reserve
-													rb_reserve_next_event
-								timerlat_irq < __run_hrtimer
-									stop_tracing
-									time_get
-										trace_clock_local
-											sched_clock
-									tlat->count++
-									s.timer_latency = diff
-									trace_timerlat_sample
-								wait_next_period
-									hrtimer_start
-									schedule
-
-	grep -E '[0-9]{5} ns' trace
 
 	brew mock-config --tag rhel-8.6.0-z-build --arch x86_64 -o ~/main/rhel-8.6.0.cfg
 		-> config_opts['basedir'] = '/home/juril/mock'
@@ -376,9 +415,6 @@ echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/d
 
 	ls ~/main/mock/rhel-8.6.0-z-build-repo_*/root/builddir/build/RPMS/
 
-	rcu_nocb_setup
-		"rcu_nocbs"
-
 == System
 
 === SMP
@@ -387,16 +423,17 @@ echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/d
 		trace_call_function_entry(CALL_FUNCTION_VECTOR);
 			"call_function_entry: vector=252"
 
-	cores	SMT
-04	1
-12	16	32
-14      18
-18	48	96
-23	64	128
-24	288	512
+	cpu_dev_init
+		cpu_root_attrs
 
 
 ==== isolation
+
+	/sys/devices/system/cpu/isolated:
+		print_cpus_isolated
+			< cpu_root_attrs
+			housekeeping_cpumask(HK_TYPE_DOMAIN))
+
 
 	kernel/sched/build_utility.c:104:#
 
@@ -438,14 +475,25 @@ echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/d
 					+__irq_can_set_affinity
 					irq_set_affinity
 					-irq_set_affinity_locked ->
+		+kthreads_update_affinity
+			set_cpus_allowed_ptr kthreadd_task
+			kthreads_online_cpu->
 
 	find_lowest_rq
 		cpumask_any_distribute
 			distribute_cpu_mask_prev
 		cpumask_any_and_distribute
+			< bpf_cpumask_any_and_distribute find_later_rq pick_idle_cpu_in_node scx_bpf_pick_any_cpu_node find_lowest_rq kick_pool
 			distribute_cpu_mask_prev
+			cpumask_next_and_wrap
+				find_next_and_bit_wrap
+					find_next_and_bit
+						_find_next_and_bit
+							FIND_NEXT_BIT
 
-	sed 's/ /\n/g;s/=/=\n\t/g' /proc/cmdline
+
+	sed 's/ /\n/g;s/=/\t/g' /proc/cmdline|column -t
+	sed $'s/ /\\n/g;s/=/\e[20G/g' /proc/cmdline
 
 		memcg_stat_show
 			__mem_cgroup_flush_stats+75
@@ -474,12 +522,16 @@ echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/d
 
 	__bpf_kfunc
 
-==== CPUHP
+==== CPUHP...
+
+cpuhp online interferes oslat delay 3540 us RT; std 1300/5000
+hwnoise - pass
 
 
 echo 1 > $events/cpuhp/enable;
 ... grep 'cpuhp_.*enter'
 
+cpuhp_hp_states
 
 cpu offline:
 
@@ -530,6 +582,8 @@ cpu offline:
 		mce_cpu_dead
 		x86_pmu_dead_cpu
 		CPUHP_PERF_PREPARE = 2 perf_event_exit_cpu
+
+cpuhp_hp_states
 
 cpu online:
 	cpu 0:
@@ -615,6 +669,7 @@ cpu online:
 	cpuhp_up_callbacks
 		cpuhp_invoke_callback
 			smpboot_create_threads
+				__smpboot_create_thread
 			perf_event_init_cpu
 			x86_pmu_prepare_cpu
 			page_alloc_cpu_online
@@ -625,7 +680,7 @@ cpu online:
 			relay_prepare_cpu
 			rcutree_prepare_cpu
 				rcu_node
-				rcu_spawn_rnp_kthreads
+				//rcu_spawn_rnp_kthreads
 					rcu_spawn_one_boost_kthread
 						"rcub"
 						@rcu_boost_kthread
@@ -640,10 +695,7 @@ cpu online:
 								cpumask_next
 								grplo
 								grphi
-							kthread_affine_preferred
-								kthreads_hotplug
-								preferred_affinity
-								kthread_fetch_affinity ->
+							kthread_affine_preferred ->
 			topology_add_dev
 			trace_rb_cpu_prepare
 			timers_prepare_cpu
@@ -675,7 +727,8 @@ cpu online:
 				__hardware_enable_nolock
 			smpboot_unpark_threads
 				smpboot_unpark_thread
-					kthread_unpark
+					selfparking
+					kthread_unpark ->
 			irq_affinity_online_cpu
 			...
 
@@ -690,6 +743,9 @@ cpu online:
 			perf_event_exit_cpu
 			blk_mq_hctx_notify_offline ->
 			smpboot_park_threads
+				smpboot_park_thread
+					selfparking
+					kthread_park
 			sched_cpu_wait_empty
 				balance_hotplug_wait
 			kvm_offline_cpu
@@ -732,6 +788,7 @@ cpu online:
 									start_flush_work
 										rcu_read_lock
 										raw_spin_lock_irq
+										raw_spin_unlock_irq
 									wait_for_completion
 							destroy_work_on_stack
 					__cpu_down_maps_locked
@@ -762,41 +819,25 @@ cpu online:
 					__num_online_cpus -> num_online_cpus
 				numa_remove_cpu
 					node_to_cpumask_map
-			fixup_irqs
-				irq_migrate_all_off_this_cpu
-					for_each_active_irq
-						irq_get_next_irq
-							irq_find_at_or_after
-								sparse_irqs
-					irq_domain_deactivate_irq
-					raw_spin_lock(&desc->lock);
-					migrate_one_irq
-						irq_datairq_data
-						irq_chip
-						irqd_irq_masked
-						irq_mask: mask_ioapic_irq  pci_irq_mask_msix < pci_msix_template
-						irq_desc_get_irq_data
-							irq_data
-						irq_force_complete_move ->
-						irq_fixup_move_pending
-						irq_desc_get_pending_mask
-							pending_mask
-						irq_data_get_affinity_mask ->
-						irq_do_set_affinity ->
+			fixup_irqs ->
 
-							housekeeping_cpumask(HK_TYPE_MANAGED_IRQ);
-							irq_common_data.affinity
-						irq_needs_fixup
-						chip->irq_mask
-						irqd_affinity_is_managed
-						irqd_set_managed_shutdown
-							IRQD_MANAGED_SHUTDOWN
-						irq_shutdown_and_deactivate ->
 
 	hotplug
 		device_online
 		device_offline
 		/sys/devices/system/cpu/hotplug/states
+	hotplug disturbance
+		
+		cd /sys/devices/system/cpu/; i=20; echo 0 > cpu$i/online; sleep 1; echo 1 > cpu$i/online; sleep 1;
+		oslat -c 11  -D 10
+
+		rtla hwnoise 0
+		rtla osnoise 2700
+		oslat 2700
+		rtla timerlat hist -c 10 2500
+		cyclictest 1800
+
+	rtla osnoise hist -d 5m -c 8 -Pf:$p
 
 	ret_from_fork_asm
 	ret_from_fork
@@ -804,6 +845,13 @@ cpu online:
 			smpboot_thread_fn
 				smpboot_thread_data
 					smp_hotplug_thread
+				cpu_stopper_thread  ->
+				setup
+				park
+				unpark
+				thread_fn
+
+	...
 				cpu_stopper_thread < cpu_stop_threads
 					- runs all the time
 					preempt_count_inc ..
@@ -836,6 +884,7 @@ cpu online:
 							thread_ack
 					rcu_momentary_eqs
 					cpu_stop_signal_done
+
 	CONFIG_HOTPLUG_CPU
 			unregister_cpu
 			arch_cpu_probe
@@ -950,9 +999,13 @@ cpu online:
 					timers_prepare_cpu ->
 					timers_dead_cpu ->
 			rcutree_dead_cpu
+				tick_dep_clear(TICK_DEP_BIT_RCU);
 			rcutree_dying_cpu
 			rcutree_offline_cpu
+				tick_dep_set(TICK_DEP_BIT_RCU);
 			rcu_lockdep_current_cpu_online
+				rcu_rdp_cpu_online
+					rcu_rnp_online_cpus
 			torture_num_online_cpus
 			tick_broadcast_offline
 
@@ -962,14 +1015,7 @@ cpu online:
 						wait_for_ap_thread
 							done_up
 							done_down
-						kthread_unpark
-							KTHREAD_IS_PER_CPU
-							__kthread_bind
-								cpumask_of
-									get_cpu_mask
-										cpu_bit_bitmap
-										to_cpumask
-								__kthread_bind_mask ->
+						kthread_unpark ->
 
 					cpuhp_kick_ap
 						__cpuhp_kick_ap
@@ -980,6 +1026,7 @@ cpu online:
 				sched_cpu_activate
 					cpuset_cpu_active
 					- cpuset_update_active_cpus
+					- - partition_sched_domains ->
 					- - cpuset_handle_hotplug
 						lockdep_assert_cpus_held (cpu_hotplug_lock)
 						mutex_lock(&cpuset_mutex)
@@ -990,7 +1037,8 @@ cpu online:
 								cpuset_update_tasks_cpumask ->
 								cpuset_update_tasks_nodemask
 									cpuset_change_task_nodemask
-
+					- cpuset_reset_sched_domains 
+					- - partition_sched_domains ->
 				sched_cpu_deactivate
 					set_cpu_active
 
@@ -1005,13 +1053,7 @@ cpu online:
 					raw_spin_lock_nested
 					x tick_cancel_sched_timer
 						sched_timer
-						hrtimer_cancel
-							hrtimer_try_to_cancel
-								hrtimer_clock_base
-								hrtimer_active
-								hrtimer_callback_running
-								remove_hrtimer
-							hrtimer_cancel_wait_running
+						hrtimer_cancel ->
 					migrate_hrtimer_list
 						timerqueue_node
 						timerqueue_getnext
@@ -1070,9 +1112,9 @@ stop_machine* usages
 
 	do_optimize_kprobes
 
+	include/linux/ftrace.h
 	arch/arm/kernel/ftrace.c
 		arch_ftrace_update_code	__ftrace_modify_code
-
 	arch/arm/kernel/patch.c
 		patch_text	patch_text_stop_machine
 
@@ -1082,6 +1124,22 @@ stop_machine* usages
 		early_fixmap_init
 	arch/arm/probes/kprobes/core.c
 		kprobes_remove_breakpoint __kprobes_remove_breakpoint
+		kprobes_remove_breakpoint __kprobes_remove_breakpoint
+
+
+	Srivatsa S. Bhat:
+		_cpu_down:
+			__stop_machine -> stop_one_cpu
+		+
+			include/linux/percpu-rwlock.h
+			lib/percpu-rwlock.c
+				percpu_rwlock
+		hotplug_pcpu_rwlock
+		get_online_cpus_atomic
+			percpu_read_lock_irqsafe(&hotplug_pcpu_rwlock);
+		put_online_cpus_atomic
+			percpu_read_unlock_irqsafe(&hotplug_pcpu_rwlock);
+		
 
 === cpumask
 	mm/percpu.c
@@ -1243,18 +1301,6 @@ stop_machine* usages
 				cred->group_info
 			sys_setgroups		kernel/groups.c
 
-		kernel/itimer.c
-			sys_getitimer
-				do_getitimer
-					itimer_get_remtime
-						ktime_to_timeval
-							ktime_t  ▻ timeval
-					get_cpu_itimer
-						thread_group_cputimer
-			sys_setitimer
-				do_setitimer
-					hrtimer_start
-					set_cpu_itimer
 
 		kernel/kexec.c
 			sys_kexec_load
@@ -1270,6 +1316,10 @@ stop_machine* usages
 			sys_delete_module  ▻
 			sys_init_module  ▻
 
+		include/linux/perf_event.h
+			perf_pmu_register
+			perf_event_read_value
+
 		kernel/perf_event.c
 			sys_perf_event_open perf_event_open
 				perf_event_attr
@@ -1280,25 +1330,6 @@ stop_machine* usages
 			perf_event_init <- sched_init
 			init_hw_perf_events	x86/kernel/cpu/perf_event.c
 				intel_pmu_init
-
-		kernel/posix-timers.c
-			sys_clock_getres
-				CLOCK_DISPATCH
-					posix_clocks
-					common_clock_getres
-			sys_clock_gettime
-				CLOCK_DISPATCH
-			sys_clock_nanosleep
-				hrtimer_nanosleep ->
-			sys_clock_settime
-			sys_timer_create
-				k_itimer
-				alloc_posix_timer
-			sys_timer_delete
-			sys_timer_getoverrun
-			sys_timer_gettime
-			sys_timer_settime
-
 		kernel/printk.c
 			sys_syslog  ▻
 
@@ -1394,6 +1425,178 @@ stop_machine* usages
 		tracer_alloc_buffers
 		tracer_init_debugfs
 
+===== RCU
+
+	update_process_times
+		rcu_sched_clock_irq
+			trace_rcu_utilization(TPS("Start scheduler-tick"));
+			invoke_rcu_core
+				use_softirq
+				raise_softirq(RCU_SOFTIRQ
+				invoke_rcu_core_kthread RT
+					rcu_data
+					rcu_cpu_kthread_status
+					rcu_cpu_kthread_task
+					rcu_wake_cond
+						wake_up_process
+			rcu_note_voluntary_context_switch
+			trace_rcu_utilization(TPS("End scheduler-tick"));
+
+
+include/linux/rcupdate.h
+
+	call_rcu
+	kfree_rcu
+	rcu_dereference_protected
+	list_for_each_entry_rcu
+	struct rcu_head
+
+	writer:
+		rcu_assign_pointer
+			smp_store_release
+				WRITE_ONCE(*p, v)
+		synchronize_rcu
+	reader:
+		rcu_read_lock
+			__rcu_read_lock
+				preempt_disable
+			__acquire(RCU); sparse annotation
+			rcu_lock_map
+			cu_lock_acquire CONFIG_DEBUG_LOCK_ALLOC
+				lock_acquire
+		rcu_dereference
+			rcu_dereference_check
+				__rcu_dereference_check
+					rcu_check_sparse
+		rcu_read_unlock
+			rcu_lock_release CONFIG_DEBUG_LOCK_ALLOC
+
+
+kernel/rcu/tiny.c
+
+	rcu_process_callbacks
+		rcu_ctrlblk
+		rcu_reclaim_tiny
+			rcu_head
+			func
+
+include/linux/rcutree.h
+
+kernel/rcu/tree.h
+
+	rcu_node
+
+
+Noise
+	security_inode_free
+		call_rcu
+		inode_free_by_rcu
+
+	release_probes
+		rcu_free_old_probes
+
+rcuc/8-103     [008] b...2 17162.478731: rcu_invoke_callback: rcu_preempt rhp=00000000775cdca1 func=rcu_free_old_probes
+
+
+kernel/rcu/tree.c
+
+	rcutree_enqueue
+		rcu_callback
+		inode_free_by_rcu
+
+rtla-3287    [008] d....   331.872003: rcu_callback: rcu_preempt rhp=000000003ecbd778 func=inode_free_by_rcu 17
+		rhp: Pointer to the RCU head
+
+
+        rcu_accelerate_cbs
+		rcu_segcb_stats
+
+rtla-3287    [008] d....   331.872003: rcu_segcb_stats: SegCBQueued seglen: (DONE=0, WAIT=0, NEXT_READY=0, NEXT=17) gp_seq: (DONE=0, WAIT=20628, NEXT_READY=20628, NEXT=0)
+
+
+	rcu_scheduler_starting
+
+	call_rcu
+		__call_rcu_common
+			call_rcu_nocb
+				rcutree_enqueue
+					cblist
+			call_rcu_core
+				rcutree_enqueue
+
+	synchronize_rcu
+		synchronize_rcu_normal
+
+	rcu_thread_affine_rnp
+		for_each_leaf_node_possible_cpu
+		zalloc_cpumask_var
+		kthread_affine_preferred ->
+
+	CONFIG_HOTPLUG_CPU
+		takedown_cpu
+			rcutree_migrate_callbacks
+				rcu_rdp_is_offloaded
+				cblist
+				rcu_advance_cbs
+				rcu_segcblist_merge
+		rcutree_dead_cpu
+
+	rcu_get_n_cbs_cpu
+		cblist
+
+	rcu_spawn_gp_kthread
+		rcu_spawn_core_kthreads
+			smpboot_register_percpu_thread
+			rcu_cpu_thread_spec
+				rcu_cpu_kthread "rcuc"
+					rcu_core
+						cblist
+						rcu_do_batch
+							cblist
+							func()
+							trace_rcu_invoke_callback
+						do_nocb_deferred_wakeup
+
+	TREE_RCU
+
+
+	RCU_NOCB_CPU
+
+
+
+kernel/rcu/tree_nocb.h
+
+	rcu_nocb_setup
+		rcu_nocb_mask
+		"rcu_nocbs"
+
+	CONFIG_RCU_NOCB_CPU
+
+		rcu_init_nohz
+			tick_nohz_full_mask
+			rcu_organize_nocb_kthreads
+			rcu_nocb_mask
+		rcu_torture_init
+			rcu_nocb_toggle
+				rcu_nocb_cpu_offload
+					rcu_rdp_is_offloaded
+						rcu_segcblist_is_offloaded
+							rcu_segcblist_test_flags
+							SEGCBLIST_LOCKING
+					rcu_nocb_mask
+					work_on_cpu
+					&rcu_nocb_rdp_offload
+						rcu_nocb_queue_toggle_rdp
+							nocb_toggling_rdp
+						?rdp_offload_toggle
+				rcu_nocb_cpu_deoffload
+					rcu_rdp_is_offloaded
+					rcu_nocb_rdp_deoffload
+						?rdp_offload_toggle
+							?rcu_segcblist_offload
+		rcu_nocb_cb_kthread
+
+
 ==== cgroup
 
 	cgroup_path_ns
@@ -1408,6 +1611,8 @@ stop_machine* usages
 	css_set
 	css_get / css_put
 
+===== cpuset
+
 	rebuild_sched_domains
 		cpus_read_lock
 		rebuild_sched_domains_cpuslocked
@@ -1415,10 +1620,41 @@ stop_machine* usages
 			rebuild_sched_domains_locked
 				lockdep_assert_cpus_held
 				lockdep_assert_held(&cpuset_mutex);
+				generate_sched_domains
+					alloc_sched_domains
+					top_cpuset.effective_cpus
+					HK_TYPE_DOMAIN
+					update_domain_attr_tree
+						is_sched_load_balance
+						update_domain_attr
+				partition_sched_domains
+					partition_sched_domains_locked
+						arch_update_cpu_topology
+						asym_cpu_capacity_scan
+							asym_cpu_capacity_update_data
+						alloc_sched_domains
+				    		housekeeping_cpumask(HK_TYPE_DOMAIN));
+						build_sched_domains
+							build_sched_domain
+								sched_domain_span
+									to_cpumask
+								set_domain_attribute
+							cpu_attach_domain ->
+						doms_cur
 			mutex_unlock(&cpuset_mutex);
 		cpus_read_unlock
 
-===== cpuset
+
+	
+
+	cpuset_hotplug_workfn
+		rebuild_sched_domains
+
+	update_partition_exclusive
+		CS_CPU_EXCLUSIVE
+
+	cpu_exclusive is_cpu_exclusive CS_CPU_EXCLUSIVE
+	sched_load_balance is_sched_load_balance
 
 include/linux/cpuset.h
 
@@ -1467,6 +1703,14 @@ Explanantion comment about cpuset_mutex (after top_cpuset):
 						spin_unlock_irq
 							raw_spin_unlock_irq
 								_raw_spin_unlock_irq
+									__raw_spin_unlock_irq
+                                                                                do_raw_spin_unlock
+                                                                                        queued_spin_unlock
+												pv_queued_spin_unlock
+												smp_store_release
+													WRITE_ONCE
+                                                                                local_irq_enable
+                                                                                preempt_enable
 
 	cgroup_account_cputime
 		__cgroup_account_cputime
@@ -1523,9 +1767,11 @@ Explanantion comment about cpuset_mutex (after top_cpuset):
 
 		kernel/cgroup/rstat.c
 		cgroup_rstat_flush_locked
-			cgroup_rstat_updated_list longman
+			cgroup_rstat_updated_list longman, manager James Mills
 				cgroup_rstat_cpu_lock
 				raw_spin_lock_irqsave(cpu_lock, flags);
+                                        _raw_spin_lock_irqsave
+                                        do_raw_spin_lock
 
 				cgroup_rstat_push_children
 					cgroup_rstat_cpu
@@ -1552,6 +1798,7 @@ Explanantion comment about cpuset_mutex (after top_cpuset):
 		apply_constraint
 			pm_qos_read_value
 			set_latency_tolerance
+				?acpi_lpss_set_ltr
 
 	Max Latencies: 08124
 
@@ -1749,8 +1996,8 @@ Explanantion comment about cpuset_mutex (after top_cpuset):
 					asm_do_IRQ
 						handle_IRQ
 							generic_handle_irq
-								generic_handle_irq_desc
 									irq_to_desc
+								generic_handle_irq_desc
 									desc->handle_irq
 
 		???
@@ -2108,6 +2355,25 @@ Explanantion comment about cpuset_mutex (after top_cpuset):
 			TESTHI
 		TEST_FLAG
 
+
+: {{The Linux Kernel/id|regmap_update_bits}}
+: {{The Linux Kernel/id|regmap_write}}
+: {{The Linux Kernel/id|regmap_read}}
+: {{The Linux Kernel/id|regmap_reg_range}}
+: {{The Linux Kernel/id|regmap_bulk_read}}
+: {{The Linux Kernel/id|devm_regmap_init_i2c}}
+: {{The Linux Kernel/id|regmap_set_bits}}
+: {{The Linux Kernel/id|regmap_field_write}}
+: {{The Linux Kernel/id|regmap_bulk_write}}
+: {{The Linux Kernel/id|regmap_clear_bits}}
+: {{The Linux Kernel/id|regmap_write_bits}}
+: {{The Linux Kernel/id|regmap_config}}
+: {{The Linux Kernel/id|struct clk_regmap_gate_data}}
+: {{The Linux Kernel/id|struct regmap_range}}
+: {{The Linux Kernel/id|regmap_read_poll_timeout}}
+: {{The Linux Kernel/id|devm_regmap_init_mmio}}
+
+
 		# 3K cases in 1.5K files:
 		grep -r --include '*.[ch]' -Pzo ".* & (.*)\) [!=]=[ \n].*\1.*\n"
 
@@ -2326,12 +2592,141 @@ Linux Driver Model
 
 ==== boot
 
+	starts
+		efi32_stub_entry arch/x86/boot/compressed/efi_mixed.S
+		efi32_pe_entry
+
+	arch/x86/boot/compressed/vmlinux.lds.S
+		@startup_64
+		@startup_32
+
+	arch/x86/boot/compressed/head_64.S
+		startup_64
+
+	arch/x86/kernel/vmlinux.lds.S
+		@startup_64
+		@startup_32
+	arch/x86/kernel/head_64.S
+		startup_64
+			initial_code
+				secondary_startup_64_no_verify
+			__startup_64
+	arch/x86/kernel/head_32.S
+		startup_32
+
+
+	arch/x86/boot/compressed/efi_mixed.S
+		efi32_pe_entry
+			efi32_entry
+		efi32_stub_entry if CONFIG_EFI_HANDOVER_PROTOCOL
+			efi32_entry
+				startup_32 arch/x86/kernel/head_32.S
+					startup_64_mixed_mode arch/x86/boot/compressed/efi_mixed.S
+						efi_stub_entry ->
+							efi_pe_entry drivers/firmware/efi/libstub/x86-stub.c
+					startup_64 arch/x86/boot/compressed/head_64.S
+						
+
+
+*                                                             +--------------+
+*  +------------------+     +------------+            +------>| efi_pe_entry |
+*  | efi32_pe_entry   |---->|            |            |       +-----------+--+
+*  +------------------+     |            |     +------+----------------+  |
+*                           | startup_32 |---->| startup_64_mixed_mode |  |
+*  +------------------+     |            |     +------+----------------+  |
+*  | efi32_stub_entry |---->|            |            |                   |
+*  +------------------+     +------------+            |                   |
+*                                                     V                   |
+*                           +------------+     +----------------+         |
+*                           | startup_64 |<----| efi_stub_entry |<--------+
+*                           +------------+     +----------------+
+
+	EFI
+
+	drivers/firmware/efi/libstub/efistub.h
+
+	arch/arm/boot/compressed/efi-header.S
+		optional_header
+			efi_pe_entry
+
+	common_startup_64 arch/x86/kernel/head_64.S
+		secondary_startup_64
+			initial_code = x86_64_start_kernel
+			x86_64_start_kernel ->
+
+		initial_code -> start_secondary
+
+drivers/firmware/efi/libstub/x86-stub.c
+	efi_pe_entry
+	efi64_stub_entry arch/x86/boot/compressed/efi_mixed.S
+	efi_handover_entry
+		efi_stub_entry drivers/firmware/efi/libstub/x85-stub.c
+			efi_decompress_kernel
+				efi_info
+					efi_printk
+						efi_puts
+							efi_char16_puts
+								efi_system_table
+								efi_call_proto
+			efi_load_initrd
+			efi_retrieve_eventlog
+			setup_graphics
+				setup_uga
+			setup_efi_pci
+				EFI_PCI_IO_PROTOCOL_GUID
+				efi_bs_call
+				handle_protocol
+			setup_unaccepted_memory
+			sev_enable AMD SEV (Secure Encrypted Virtualization)
+				CONFIG_AMD_MEM_ENCRYPT ?
+			efi_5level_switch
+				native_load_gdt
+				la57_toggle
+					trampoline_32bit_src
+			exit_boot
+				allocate_e820 E820 is the BIOS-provided memory map
+					efi_get_memory_map
+					alloc_e820ext
+					efi_bs_call
+				@exit_boot_func
+					efi_loader_signature
+					efi_set_u64_split
+				efi_exit_boot_services
+					efi_get_memory_map
+					efi_bs_call
+				setup_e820
+					add_e820ext
+			enter_kernel
+				kernel_addr
+
+	do_boot_cpu
+
+
+
+	-> secondary_startup_64_no_verify
+		start_secondary
+			cpu_startup_entry
+				do_idle ->
+					cpuidle_idle_call
+						cpuidle_enter
+							cpuidle_enter_state
+							poll_idle
+								asm_sysvec_apic_timer_interrupt ->
+			set_cpu_online
+
+
+
+	check IDT
+		idt_table
+		store_idt
+
 
 init/main.c
 
 	kernel_init
 		kernel_init_freeable
 			cache_aps_init
+				calls stop_machine with cache_rendezvous_handler and cpu_online_mask.
 				stop_machine kernel/stop_machine.c
 					cpus_read_lock
 					stop_machine_cpuslocked
@@ -2358,6 +2753,7 @@ init/main.c
 		for_each_possible_cpu(cpu) {
 		cpu_stop_threads
 			&cpu_stopper_thread
+		smpboot_register_percpu_thread
 
 
 
@@ -2378,11 +2774,21 @@ init/main.c
 			build/arch/sh/kernel/head.S:75
 			./arch/arm/mach-lpc22xx/head.S
 				_stext build/vmlinux 88002000
-				start_kernel  ▻ build/arch/sh/kernel/head.S :75
+				start_kernel  ▻ arch/sh/kernel/head.S :75
 
 	secondary_startup_64_no_verify
 	- x86_64_start_kernel
+		cr4_init_shadow
+			https://en.wikipedia.org/wiki/Control_register#CR4
+		idt_setup_early_handler
+			idt_descr
+				idt_table
+			early_idt_handler_array
+			set_intr_gate
+			load_idt
+				native_load_idt
 	-- x86_64_start_reservations
+		x86_early_init_platform_quirks
 		start_kernel init/main.c
 			boot_cpu_init
 				set_cpu_active
@@ -2394,6 +2800,10 @@ init/main.c
 					cpumask_clear_cpu
 					__cpu_present_mask cpu_present_mask
 			setup_arch	lkm2
+				init_hypervisor_platform
+				tsc_early_init
+					tsc_enable_sched_clock
+						get_loops_per_jiffy
 				arch/x86/kernel/setup.c
 				sh_mv_setup
 				enable_early_printk
@@ -2421,6 +2831,10 @@ init/main.c
 						default_machine_specific_memory_setup  ▻
 				arm_memblock_init
 					initrd_start = __phys_to_virt(phys_initrd_start);
+				wallclock_init
+					x86_wallclock_init
+						x86_platform.get_wallclock = get_rtc_noop;
+						x86_platform.set_wallclock = set_rtc_noop;
 
 			page_alloc_init
 			parse_early_param
@@ -2713,10 +3127,14 @@ init/main.c
 		touch_nmi_watchdog
 			arch_touch_nmi_watchdog
 			touch_softlockup_watchdog
-	watchdog_sysctl_init
-		CONFIG_LOCKUP_DETECTOR
-		nmi_watchdog
-			echo 1 > /proc/sys/kernel/nmi_watchdog
+
+		lockup_detector_check
+			watchdog_sysctl_init
+				watchdog_sysctls
+					proc_watchdog_cpumask
+				CONFIG_LOCKUP_DETECTOR
+				nmi_watchdog
+					echo 1 > /proc/sys/kernel/nmi_watchdog
 
 == Multitasking
 
@@ -2729,9 +3147,73 @@ init/main.c
 
 {
 
+=== kthreads
+
+
+Affining kthreads follow either of four existing different patterns:
+
+1) Per-CPU kthreads must stay affine to a single CPU and never execute
+   relevant code on any other CPU. This is currently handled by smpboot
+   code which takes care of CPU-hotplug operations.
+	kthread_create_on_cpu
+	<
+   	smpboot_register_percpu_thread hotplug_threads smpboot_park_thread
+   <
+   	wti_init idle_inject_init cpuhp_threads_init irq_work_init_threads
+   	rcu_spawn_core_kthreads spawn_ksoftirqd> cpu_stop_init> net_dev_init
+
+
+2) Kthreads that _have_ to be affine to a specific set of CPUs and can't
+   run anywhere else. The affinity is set through kthread_bind_mask()
+   and the subsystem takes care by itself to handle CPU-hotplug operations.
+
+	kthread_bind_mask
+	< do_map_benchmark sugov_kthread_create create_worker init_rescuer
+
+
+3) Kthreads that prefer to be affine to a specific NUMA node. That
+   preferred affinity is applied by default when an actual node ID is
+   passed on kthread creation, provided the kthread is not per-CPU and
+   no call to kthread_bind_mask() has been issued before the first
+   wake-up.
+
+	kthread_affine_node
+
+	kthread_create_on_cpu
+	< 
+   	suspend_tests bnx2fc_cpu_online bnx2i_cpu_online qedi_cpu_online
+   	__smpboot_create_thread pktgen_create_thread page_frag_test_init
+
+	kthread_create_on_node
+	<
+   	mtip_block_initialize svc_get_sh_memory __cpu_map_entry_alloc do_map_benchmark
+	create_worker kcompactd_run kswapd_run svc_start_kthreads
+
+
+4) Similar to the previous point but kthreads have a preferred affinity
+   different than a node. It is set manually like any other task and
+   CPU-hotplug is supposed to be handled by the relevant subsystem so
+   that the task is properly reaffined whenever a given CPU from the
+   preferred affinity comes up. Also care must be taken so that the
+   preferred affinity doesn't cross housekeeping cpumask boundaries.
+
+   kthread_affine_preferred
+
+
+
+
+	devtmpfs_init	
+		kthread_run(devtmpfsd, &err, "kdevtmpfs");
+	oom_init
+		oom_reaper_th = kthread_run(oom_reaper, NULL, "oom_reaper");
+			&oom_reaper
+		
+
 	kthreads_init
 		cpuhp_setup_state
-		&kthreads_online_cpu
+		&kthreads_online_cpu 
+			<- cpuhp_invoke_callback
+			kthreads_hotplug_lock
 			kthreads_hotplug
 			!kthread_is_per_cpu
 			kthread_fetch_affinity
@@ -2741,10 +3223,17 @@ init/main.c
 				cpumask_and(cpumask, pref, housekeeping_cpumask(HK_TYPE_KTHREAD));
 			set_cpus_allowed_ptr ->
 
+	kthread_affine_preferred
+		kthreads_hotplug_lock
+		kthreads_hotplug
+		preferred_affinity
+		kthread_fetch_affinity ->
+
+
 	kthreadd
 		create_kthread
 			kernel_thread
-			kthread
+			@kthread
 				ass pointer
 				set_cpus_allowed_ptr(current, housekeeping_cpumask(HK_TYPE_KTHREAD));
 				kthread_affine_node
@@ -2752,11 +3241,14 @@ init/main.c
 					housekeeping_affine
 						housekeeping
 						set_cpus_allowed_ptr
+					kthreads_hotplug_lock
 					kthreads_hotplug
 					kthread_fetch_affinity ->
 
 	kthread_run_on_cpu
-		< test_ringbuffer
+		<
+			test_ringbuffer
+			kallsyms_test_init
 		kthread_create_on_cpu
 			cpu_to_node(cpu)
 			kthread_create_on_node ->
@@ -2778,6 +3270,8 @@ init/main.c
 			KTHREAD_SHOULD_STOP
 		kthread_stop
 			to_kthread
+				PF_KTHREAD
+				worker_private
 		kthread_delayed_work
 			DEFINE_KTHREAD_DELAYED_WORK
 				KTHREAD_DELAYED_WORK_INIT
@@ -2836,12 +3330,66 @@ init/main.c
 					kthread_create_worker_on_node
 						__kthread_create_worker_on_node
 							&kthread_worker_fn
+								trace_sched_kthread_work_execute_start
+								work->func(work);
+								trace_sched_kthread_work_execute_end
 							__kthread_create_on_node ->
 
+		kthread_park
+			KTHREAD_SHOULD_PARK
+			TASK_PARKED
+			wait_task_inactive
 
-		current_thread_info
+		kthread_unpark
+			KTHREAD_IS_PER_CPU
+			__kthread_bind
+				cpumask_of
+					get_cpu_mask
+						cpu_bit_bitmap
+						to_cpumask
+				__kthread_bind_mask ->
 
-		x exit_kthread
+	kthread_bind_mask
+		TASK_UNINTERRUPTIBLE
+		__kthread_bind_mask
+			wait_task_inactive
+			raw_spin_lock_irqsave
+			do_set_cpus_allowed	consider using set_cpus_allowed_ptr() instead
+				affinity_context
+				.user_mask = NULL
+				__do_set_cpus_allowed ->
+			PF_NO_SETAFFINITY
+
+
+=== sched
+
+
+	resched_curr	
+
+	cond_resched
+
+		#include <linux/sched.h>
+		jiffies
+
+	sched_load_balance
+	isolcpus=domain
+		HK_FLAG_DOMAIN HK_TYPE_DOMAIN ->
+
+	Requirements to control kernel isolation/nohz_full at runtime
+		schedule_user not used
+			exception_enter
+			schedule
+			exception_exit
+		preempt_schedule_notrace
+	Start using bpftrace/eBPF for latency and load tests.
+	frederic
+		housekeeping_cpumask_set
+		housekeeping_cpumask_clear
+			housekeeping_cpumask_update
+				rcu_nocb_cpumask_update
+					cpumask_or
+					cpumask_andnot
+
 
 	Scheduler
 
@@ -2890,19 +3438,22 @@ init/main.c
 
 		setup_IO_APIC Advanced Programmable Interrupt Controller
 			setup_IO_APIC_irqs
-				ioapic_register_intr
-					alloc_intr_gate
-					set_intr_gate(vector, interrupt[irq]);
-						_set_gate
+				...
+					set_intr_gate(vector, interrupt[irq]); ->
+						...
 							pack_gate
-							write_idt_entry
-							idt_table
 
 		init_IRQ	/arch/x86/kernel/irqinit.c
 			x86_init.irqs.intr_init
-		native_init_IRQ l/arch/i386/kernel/i8259.c lkm2
-			set_intr_gate	lkm2
-			set_intr_gate(vector, interrupt[irq]);
+		native_init_IRQ lkm2
+			idt_setup_apic_and_irq_gates
+				set_intr_gate	lkm2
+				set_intr_gate(vector, interrupt[irq]);
+					init_idt_data
+					idt_table
+					idt_setup_from_table ->
+						idt_init_desc ->
+						write_idt_entry ->
 		interrupt source/arch/i386/kernel/entry.S
 		irq_entries_start (arch/i386/kernel/entry.S)
 			common_interrupt:
@@ -2921,10 +3472,15 @@ init/main.c
 					smp_init
 						idle_threads_init ->
 						cpuhp_threads_init
+							cpuhp_threads
+							cpuhp_init_state
+								cpuhp_state
+							smpboot_register_percpu_thread ->
 					do_basic_setup  ▻
 					x ? init_post
 			run_init_process  ▻
 			kernel_thread(kthreadd
+			kthreadd_task
 			cpu_startup_entry
 					do_idle ->
 						tick_nohz_idle_enter
@@ -2940,14 +3496,16 @@ init/main.c
 						!need_resched
 						cpu_is_offline
 							cpu_online_mask
-						tick_nohz_idle_stop_tick ->
 						cpuhp_report_idle_dead
+							rcutree_report_cpu_dead
 							play_dead
 						arch_cpu_idle_dead
 						arch_cpu_idle_enter
 						tick_nohz_idle_restart_tick
 						cpu_idle_poll
+							cpu_relax
 						cpuidle_idle_call ->
+							tick_nohz_idle_stop_tick ->
 							tick_nohz_tick_stopped
 						arch_cpu_idle_exit
 						tick_nohz_idle_exit
@@ -3003,6 +3561,10 @@ init/main.c
 
 	tick_nohz_idle_stop_tick
 		can_stop_idle_tick
+			report_idle_softirq
+				local_softirq_pending
+					local_softirq_pending_ref
+						softirq_pending
 
 		__tick_nohz_idle_stop_tick
 			ts->timer_expires
@@ -3030,7 +3592,18 @@ init/main.c
 	UMP:
 		__set_cpus_allowed_ptr
 			set_cpus_allowed_ptr
-	Syncronizations
+
+=== Locking
+
+
+	Synchronizations
+		5. Kernel Synchronization
+		      Kernel Control Paths
+		      When Synchronization Is Not Necessary
+		      Synchronization Primitives
+		      Synchronizing Accesses to Kernel Data Structures
+		      Examples of Race Condition Prevention
+
 		preempt_disable -> RT -> migrate_disable
 
 		migrate_disable_switch
@@ -3070,16 +3643,7 @@ init/main.c
 					migrate_disable ->
 					spin_lock(this_cpu_ptr((__lock)))
 						rt_spin_lock
-							__rt_spin_lock
-								rtlock_lock
-									rtlock_slowlock
-										rtlock_slowlock_locked
-											try_to_take_rt_mutex
-												rt_mutex_set_owner
-											schedule_rtlock
-												schedule_loop(SM_RTLOCK_WAIT);
-											raw_spin_lock_irq
-												_raw_spin_lock_irq
+							__rt_spin_lock ->
 		local_lock_irqsave
 			__local_lock_irqsave
 				!rt:
@@ -3102,6 +3666,7 @@ init/main.c
 					local_irq_disable
 						raw_local_irq_disable
 							arch_local_irq_disable ->
+						trace_hardirqs_off
 		local_unlock_irqrestore
 			!rt:
 			__local_unlock_irqrestore
@@ -3141,24 +3706,6 @@ init/main.c
 		local_unlock_irq
 			__local_unlock_irq
 
-		5. Kernel Synchronization
-		      Kernel Control Paths
-		      When Synchronization Is Not Necessary
-		      Synchronization Primitives
-		      Synchronizing Accesses to Kernel Data Structures
-		      Examples of Race Condition Prevention
-
-		BKL
-		lock_kernel	lkm2
-			https://elixir.bootlin.com/linux/v2.6.32/ident/lock_kernel
-			_lock_kernel
-				__lock_kernel
-					do_raw_spin_lock(&kernel_flag);
-							include/linux/cache.h
-								arch/x86/include/asm/cache.h
-							static  __cacheline_aligned_in_smp DEFINE_RAW_SPINLOCK(kernel_flag);
-							kernel_flag	lkm2
-								near __reacquire_kernel_lock
 		atomic_t
 		atomic_dec_and_test
 			atomic_dec_return (generic)
@@ -3187,7 +3734,12 @@ init/main.c
 				if done > 0, done--
 			complete
 				done++
+
+==== Mutex
+
 		mutex	__LINUX_MUTEX_H	include/linux/mutex.h
+
+
 			atomic_t		count;
 			spinlock_t		wait_lock;
 			struct list_head	wait_list;
@@ -3195,25 +3747,31 @@ init/main.c
 			No timeout for mutex!
 			mutex_lock
 				 might_sleep();
-				__mutex_fastpath_lock(&lock->count, __mutex_lock_slowpath);
+				__mutex_trylock_fast
+					atomic_long_try_cmpxchg_acquire
+						raw_atomic_long_try_cmpxchg_acquire
+							raw_atomic_try_cmpxchg_acquire
+				x __mutex_fastpath_lock(&lock->count, __mutex_lock_slowpath);
 					__mutex_lock_slowpath
-						__mutex_lock_common ->
+						__mutex_lock
+							__mutex_lock_common ->
 				mutex_set_owner(lock);
 			mutex_lock_interruptible
 				__mutex_fastpath_lock_retval
 				__mutex_lock_interruptible_slowpath
 					__mutex_lock_common
-						kernel/locking/mutex.c
-						wait_lock
-						__mutex_trylock
-
-						kernel/locking/rtmutex_api.c
-							mutex_acquire_nest
-								lock_acquire_exclusive
-							__rt_mutex_lock
-							lock_acquired
-								CONFIG_LOCK_STAT
-								__lock_acquired
+						RT
+							kernel/locking/rtmutex_api.c
+								mutex_acquire_nest
+									lock_acquire_exclusive
+								__rt_mutex_lock ->
+								lock_acquired
+									CONFIG_LOCK_STAT
+									__lock_acquired
+						!RT
+							kernel/locking/mutex.c
+							wait_lock
+							__mutex_trylock
 			mutex_lock_killable
 				__mutex_lock_killable_slowpath
 					return __mutex_lock(lock, TASK_KILLABLE, 0, NULL, _RET_IP_);
@@ -3228,6 +3786,8 @@ init/main.c
 				lockdep_map
 				lock_is_held
 					lock_is_held_type
+
+==== Semaphore
 		semaphore	source/include/linux/semaphore.h
 			spinlock_t		lock;
 			unsigned int		count;
@@ -3270,6 +3830,176 @@ init/main.c
 		rw_semaphore
 		up down * writer reader
 
+==== spinlocks
+
+		no wait list
+		only one locker
+		busy loop  ▻ it can be used in interrupt context (where sleeping is not an option)
+
+		include/linux/spinlock.h
+
+		spinlock_t
+			raw_spinlock
+			spin_lock	lkm2
+				raw_spin_lock
+					_raw_spin_lock
+						__raw_spin_lock
+							preempt_disable();
+							spin_acquire ->
+							LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
+				----
+					preempt_disable ->
+					spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
+						lock_acquire
+							__lock_acquire
+								atomic_inc
+									arch_atomic_inc
+									atomic_add_return  ▻
+										arch_atomic_add_return
+											xadd
+								lockdep_print_held_locks
+					_raw_spin_lock(lock);
+						__raw_spin_trylock
+							xchgb
+			spin_lock_irq()
+			spin_unlock_irq()
+
+			spin_lock_irqsave lkm2
+				raw_spin_lock_irqsave
+					_raw_spin_lock_irqsave
+						SMP __raw_spin_lock_irqsave
+							local_irq_save
+							preempt_disable
+							spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
+								lock_acquire
+							LOCK_CONTENDED
+							do_raw_spin_lock_flags
+								arch_spin_lock_flags
+									arch_spin_lock
+										__ticket_spin_lock
+								...
+
+						UP	__LOCK_IRQSAVE
+							local_irq_save(flags); __LOCK
+				x _spin_lock_irqsave
+					local_irq_save
+					preempt_disable  ▻
+					spin_acquire  ▻
+					_raw_spin_lock_flags
+						__raw_spin_lock_flags
+							local_irq_save
+			spin_unlock_irqrestore lkm2
+				raw_spin_unlock_irqrestore
+					_raw_spin_unlock_irqrestore
+						__raw_spin_unlock_irqrestore
+			spin_unlock
+				raw_spin_unlock
+					_raw_spin_unlock
+						__raw_spin_unlock
+							spin_release(&lock->dep_map, 1, _RET_IP_);
+								~ lock_release
+							do_raw_spin_unlock(lock);
+								arch_spin_unlock
+									__ticket_spin_unlock
+										incb
+								~ __release
+									__context__
+							preempt_enable();
+
+		include/linux/wait.h
+			DECLARE_WAITQUEUE
+				wait_queue_entry
+				__WAITQUEUE_INITIALIZER
+					default_wake_function
+			add_wait_queue
+			wait_queue_head_t
+				__wait_queue_head
+					lock
+					struct list_head task_list;
+				DECLARE_WAIT_QUEUE_HEAD
+				interruptible_sleep_on decates, uses wait_event_interruptible
+					sleep_on_common(q, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+						init_waitqueue_entry(&wait, current);
+							__add_wait_queue
+						timeout = schedule_timeout(timeout);
+				wake_up_interruptible  ▻
+					__wake_up(x, TASK_INTERRUPTIBLE, 1, NULL)
+						->
+
+		add_wait_queue
+			__add_wait_queue
+				list_add(&new->task_list, &head->task_list);
+		remove_wait_queue
+			__remove_wait_queue
+
+			wake_up_interruptible ldt
+			wait_event	lkm2
+				__wait_event
+					prepare_to_wait  ▻
+					schedule  ▻
+			wait_event_interruptible	ldt
+				__wait_event_interruptible
+					___wait_event
+						prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);
+						prepare_to_wait
+							spin_lock_irqsave  ▻
+							__add_wait_queue  ▻
+							set_current_state
+							spin_unlock_irqrestore
+						signal_pending
+							test_tsk_thread_flag TIF_SIGPENDING
+								test_ti_thread_flag task_thread_info thread_info
+									test_bit flags
+					schedule ->
+			wait_event_interruptible_timeout
+				__wait_event_interruptible_timeout
+					prepare_to_wait  ▻
+					signal_pending  ▻
+					schedule_timeout
+
+			DEFINE_WAIT init_wait autoremove_wake_function
+			init_waitqueue_head
+					__init_waitqueue_head
+						lockdep_set_class_and_name
+						INIT_LIST_HEAD
+			wake_up
+				__wake_up
+					spin_lock_irqsave  ▻
+					__wake_up_common_lock
+					__wake_up_common
+						default_wake_function
+							try_to_wake_up
+								task_rq_lock
+									task_rq
+								activate_task -> lkm2
+									__activate_task
+								resched_task
+					spin_unlock_irqrestore  ▻
+
+		fork()
+		_exit()
+		linux/kernel/fork.c
+
+
+==== topology
+
+	include/linux/sched/topology.h
+	sched_domain_topology_level
+		set_sched_topology
+		sd_data
+			sched_domain
+				sched_group
+
+	drivers/base/arch_topology.c
+
+	update_topology_flags_workfn
+		rebuild_sched_domains ->
+	
+	kernel/sched/topology.c
+		rebuild_sched_domains_energy
+			rebuild_sched_domains ->
+
+
 === Synchronizations
 
 === Time
@@ -3290,22 +4020,218 @@ init/main.c
 							stop_machine
 							change_clocksource
 							tick_clock_notify
-
 === Timers
+
+==== Posix Timers
+		include/linux/posix-timers.h
+		include/linux/posix-timers_types.h
+			signal_struct
+				<- task_struct
+				posix_cputimers
+					posix_cputimer_base
+
+		kernel/posix-timers.c
+			sys_clock_getres
+				CLOCK_DISPATCH
+					posix_clocks
+					common_clock_getres
+			sys_clock_gettime
+				CLOCK_DISPATCH
+			sys_clock_nanosleep
+				hrtimer_nanosleep ->
+			sys_clock_settime
+			sys_timer_create
+				do_timer_create
+					k_itimer
+					alloc_posix_timer
+						k_itimer
+						posix_timers_cache
+			sys_timer_delete
+			sys_timer_getoverrun
+			sys_timer_gettime
+			sys_timer_settime
+
+		kernel/time/posix-timers.c
+			common_timer_create
+
+		kernel/time/posix-cpu-timers.c
+
+			set_process_cpu_timer
+				tick_dep_set_signal(tsk, TICK_DEP_BIT_POSIX_TIMER);
+
+			run_posix_cpu_timers					
+				< update_process_times
+				posix_cpu_timers_work_scheduled
+					__run_posix_cpu_timers
+						task_work_add
+						posix_cputimers_work
+
+		clock_process
+			process_cpu_timer_create
+				posix_cpu_timer_create
+		posix_cpu_nsleep		
+		do_cpu_nanosleep
+			posix_cpu_timer_create
+				clock_posix_cpu
+					posix_cpu_nsleep
+						do_cpu_nanosleep
+							posix_cpu_timer_set	
+								arm_timer
+									tick_dep_set_signal(p, TICK_DEP_BIT_POSIX_TIMER);
+										tick_nohz_dep_set_signal
+
+		kernel/time/itimer.c
+			sys_getitimer
+				itimerspec64
+					struct timespec64 it_interval;
+					struct timespec64 it_value;
+				do_getitimer
+					itimer_get_remtime
+						ktime_to_timeval
+							ktime_t  ▻ timeval
+					get_cpu_itimer
+						thread_group_cputimer
+			sys_setitimer
+				do_setitimer
+					hrtimer_start
+					set_cpu_itimer
+						set_process_cpu_timer
 
 ==== hrtimer
 
 	include/linux/hrtimer.h
+		hrtimer_setup
+			__hrtimer_setup
+				__hrtimer_init ->
+				timer->function
+		hrtimer_start
+			hrtimer_start_range_ns ->
+		hrtimer_restart
+			hrtimer_start_expires
+				hrtimer_start_range_ns ->
+		hrtimer_cancel
+			hrtimer_try_to_cancel
+				hrtimer_clock_base
+				hrtimer_active
+				hrtimer_callback_running
+				remove_hrtimer
+			hrtimer_cancel_wait_running
+		hrtimer_init
+			debug_init
+				debug_hrtimer_init
+					hrtimer_debug_descr
+					debug_object_init
+			__hrtimer_init
+				hrtimer_clockid_to_base
+				timerqueue_init
+					RB_CLEAR_NODE
+		hrtimer_sleeper
+			hrtimer timer
+			task_struct *task;
+		hrtimer_active
+			!HRTIMER_STATE_INACTIVE
+		hrtimer_mode
+		hrtimer_forward_now
+			timer->base->get_time() hrtimer_bases
+				ktime_get ->
+
+			hrtimer_forward
+				hrtimer_get_expires
+					timer->node.expires
+				ktime_sub
+				hrtimer_add_expires_ns
+					timer->node.expires =
+					timer->_softexpires =
+				hrtimer_get_expires_tv64
+				hrtimer_add_expires
+					ktime_add_safe
+						ktime_add_unsafe
 		hrtimer struct
 			timerqueue_node
 			_softexpires
 			-> hrtimer_clock_base
 		hrtimer_cpu_base
+			hrtimer_clock_base
 
 		hrtimer_set_expires
 			timer->node.expires = time;
 			timer->_softexpires = time;
 
+		hrtimers_init
+			HRTIMER_SOFTIRQ
+			open_softirq
+			hrtimer_run_softirq
+		debug_activate
+			trace_hrtimer_start
+
+		hrtimer_start_range_ns
+			lock_hrtimer_base(timer, &flags);
+				raw_spin_lock_irqsave(&base->cpu_base->lock, *flags);
+			__hrtimer_start_range_ns
+				HRTIMER_MODE_PINNED
+				switch_hrtimer_base
+					get_target_base
+						timers_migration_enabled
+						get_nohz_timer_target
+							bpftrace -e 'kretprobe:get_nohz_timer_target {print(retval);}'
+							idle_cpu
+
+							housekeeping_cpu(cpu, HK_TYPE_TIMER))
+							housekeeping_any_cpu ->
+				enqueue_hrtimer
+					timerqueue_add
+						rb_add_cached
+			hrtimer_reprogram
+				hrtimer_bases
+				__hrtimer_reprogram
+					tick_program_event
+						clock_event_device
+						clockevents_program_event
+							clockevents_program_min_delta
+								clockevents_increase_min_delta
+			unlock_hrtimer_base(timer, &flags);
+				raw_spin_unlock_irqrestore(&timer->base->cpu_base->lock, *flags);
+
+		tick_sched_timer is a timer for NOHZ mode(check)
+			tick_sched_do_timer
+				tick_do_update_jiffies64
+				ts->last_tick_jiffies = READ_ONCE(jiffies);
+			tick_sched_handle
+				update_process_times
+					run_local_timers
+						hrtimer_run_queues ->
+							hrtimer_switch_to_hres ->
+								tick_setup_sched_timer
+									&tick_init_jiffy_update
+							__hrtimer_run_queues ->
+					rcu_sched_clock_irq ->
+					5 raise_timer_softirq
+			!tick_stopped
+			hrtimer_forward ->
+
+		CONFIG_HIGH_RES_TIMERS
+			__hrtimer_peek_ahead_timers
+				hrtimer_interrupt ->
+			hrtimer_switch_to_hres
+
+		timer_list ->
+
+		/proc/timer_list
+		timer_list_show
+			print_cpu
+				tick_get_tick_sched
+				hrtimer_bases
+					hrtimer_cpu_base
+						hrtimer
+							-> hrtimer_clock_base
+						hrtimer_clock_base
+							get_time
+							-> hrtimer
+				print_base
+					print_active_timers
+						timerqueue_getnext
+						timerqueue_iterate_next
+						print_timer
 	kernel/hrtimer.c
 		sys_nanosleep  ▻
 
@@ -3316,6 +4242,7 @@ init/main.c
 
 	__hrtimer_run_queues
 		__run_hrtimer
+			timer->function
 			trace_hrtimer_expire_entry "hrtimer_expire_entry"
 			->tick_setup_sched_timer
 			->hrtimer_wakeup
@@ -3393,6 +4320,8 @@ linux/kernel/timer.c
 					detach_timer
 					fn = timer->function;
 					call_timer_fn
+						trace_timer_expire_entry
+						trace_timer_expire_exit timer_expire_exit
 		__mod_timer
 			running_timer
 			internal_add_timer
@@ -3599,11 +4528,16 @@ linux/kernel/timer.c
 					msecs_to_jiffies
 					schedule_timeout_uninterruptible
 						schedule_timeout
+							timer_setup_on_stack
+								__init_timer_on_stack
+									init_timer_on_stack_key
+										do_init_timer
+											timer->function
+							&process_timeout
+								wake_up_process  ▻
 							timer_list
 							setup_timer
 								init_timer
-								process_timeout
-									wake_up_process  ▻
 							__mod_timer  ▻
 								internal_add_timer
 									list_add_tail
@@ -3612,8 +4546,8 @@ linux/kernel/timer.c
 		do_IRQ
 			irq_exit
 
-		apic_timer_interrupt
-			smp_apic_timer_interrupt
+		x apic_timer_interrupt
+			x smp_apic_timer_interrupt
 				irq_exit
 					invoke_softirq
 					do_softirq
@@ -3632,30 +4566,6 @@ linux/kernel/timer.c
 		smp_call_function_single_interrupt
 			irq_exit ->
 
-		common_startup_64 arch/x86/kernel/head_64.S
-
-			initial_code -> start_secondary
-
-	do_boot_cpu
-
-	-> secondary_startup_64_no_verify
-		start_secondary
-			cpu_startup_entry
-				do_idle ->
-					cpuidle_idle_call
-						cpuidle_enter
-							cpuidle_enter_state
-							poll_idle
-								asm_sysvec_apic_timer_interrupt ->
-			set_cpu_online
-
-	idt_setup_apic_and_irq_gates
-		apic_idts
-			reschedule_interrupt
-			call_function_interrupt
-			call_function_single_interrupt
-			INTG(LOCAL_TIMER_VECTOR,		asm_sysvec_apic_timer_interrupt),
-
 	./arch/x86/include/asm/idtentry.h
 		DECLARE_IDTENTRY_SYSVEC(LOCAL_TIMER_VECTOR,		sysvec_apic_timer_interrupt);
 
@@ -3670,32 +4580,7 @@ linux/kernel/timer.c
 						trace_##name
 							TP_ARGS
 						register_trace_##name
-	arch/x86/include/asm/trace/irq_vectors.h
-		DECLARE_EVENT_CLASS(x86_irq_vector,
-			"vector="
-		DEFINE_IRQ_VECTOR_EVENT(irq_work);
-		DEFINE_IRQ_VECTOR_EVENT(local_timer);
-			##_entry
-			##_exit
-			DEFINE_EVENT_FN
-				DECLARE_TRACE ->
-			trace_local_timer_entry
-			trace_local_timer_exit
 
-	arch/x86/kernel/apic/apic.c
-		sysvec_apic_timer_interrupt
-			trace_local_timer_entry(LOCAL_TIMER_VECTOR);
-				"local_timer_entry: vector=236"
-				trace_intel_irq_entry
-					osnoise_trace_irq_entry	 ->
-						set_int_safe_time(osn_var, &osn_var->irq.delta_start);
-			local_apic_timer_interrupt();
-			trace_local_timer_exit(LOCAL_TIMER_VECTOR);
-				trace_intel_irq_exit
-					osnoise_trace_irq_exit
-						trace_irq_noise
-						"duration" -> timer_irq_duration
-						get_int_safe_duration
 
 	fec issue
 
@@ -3725,7 +4610,7 @@ linux/kernel/timer.c
 		irqentry_enter
 			lockdep_hardirqs_off
 			rcu_irq_enter
-			trace_hardirqs_off_finish
+			trace_hardirqs_off_finish ->
 
 		rcu_irq_exit
 			rcu_nmi_exit
@@ -3744,19 +4629,19 @@ linux/kernel/timer.c
 					func
 
 
+	x do_IRQ irq_work_interrupt reschedule_interrupt smp_apic_timer_interrupt
 
-		DEFINE_IDTENTRY_SYSVEC(sysvec_apic_timer_interrupt)
-			trace_local_timer_entry
-			local_apic_timer_interrupt(
-			trace_local_timer_exit
-			set_irq_regs
-
-	do_IRQ
-	irq_work_interrupt
-	x reschedule_interrupt
-	x smp_apic_timer_interrupt
 	native_smp_send_reschedule
 	apicinterrupt RESCHEDULE_VECTOR			reschedule_interrupt		smp_reschedule_interrupt
+		sysvec_reschedule_ipi
+			5 ack_APIC_irq
+			inc_irq_stat(irq_resched_count)
+			scheduler_ipi
+				preempt_fold_need_resched
+					tif_need_resched_now
+						test_thread_flag(TIF_NEED_RESCHED)
+					set_preempt_need_resched ->
+
 		irq_enter
 			rcu_irq_enter
 				lockdep_assert_irqs_disabled
@@ -3802,9 +4687,6 @@ linux/kernel/timer.c
 		#include <linux/param.h>
 		HZ
 
-		#include <linux/sched.h>
-		jiffies
-
 		TIMER_IRQ
 
 	... start_secondary
@@ -3830,26 +4712,10 @@ linux/kernel/timer.c
 				x do_timer_interrupt_hook
 					global_clock_event->event_handler(global_clock_event
 
-						tick_handle_periodic
-							tick_periodic
-								do_timer
-								update_process_times
+						tick_handle_periodic ->
 				xx do_timer_interrupt
 					mark_offset_tsc
-					do_timer
-						jiffies_64 ++
-						jiffies++;
-							update_times
-								update_wall_time
-									timekeeping_advance
-										timekeeping_adjust
-										timekeeping_update
-									clock_was_set_delayed
-						calc_global_load
-							calc_load_fold_idle
-							calc_load_tasks
-							avenrun
-							calc_load
+					do_timer ->
 		#include <linux/time.h>
 		void do_gettimeofday(struct timeval *tv);
 		void get_fast_time(struct timeval *tv);
@@ -3878,7 +4744,7 @@ linux/kernel/timer.c
 		      CPU's Time Sharing
 		      Updating the Time and Date
 		      Updating System Statistics
-		      Software Timers
+		      SoftwareTTimers
 		      System Calls Related to Timing Measurements
 		timer_interrupt  ▻
 			xx do_timer_interrupt
@@ -3956,155 +4822,12 @@ linux/kernel/timer.c
 		cancel_delayed_work
 }
 
-==== spinlocks
-		no wait list
-		only one locker
-		busy loop  ▻ it can be used in interrupt context (where sleeping is not an option)
-
-		include/linux/spinlock.h
-
-		spinlock_t
-			raw_spinlock
-			spin_lock	lkm2
-				raw_spin_lock
-					_raw_spin_lock
-						__raw_spin_lock
-							preempt_disable();
-							spin_acquire ->
-							LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
-				----
-					preempt_disable ->
-					spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
-						lock_acquire
-							__lock_acquire
-								atomic_inc
-									arch_atomic_inc
-									atomic_add_return  ▻
-										arch_atomic_add_return
-											xadd
-								lockdep_print_held_locks
-					_raw_spin_lock(lock);
-						__raw_spin_trylock
-							xchgb
-			spin_lock_irq()
-			spin_unlock_irq()
-
-			spin_lock_irqsave lkm2
-				raw_spin_lock_irqsave
-					_raw_spin_lock_irqsave
-						SMP	__raw_spin_lock_irqsave
-							local_irq_save
-							preempt_disable
-							spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
-								lock_acquire
-							LOCK_CONTENDED
-							do_raw_spin_lock_flags
-								arch_spin_lock_flags
-									arch_spin_lock
-										__ticket_spin_lock
-								...
-
-						UP	__LOCK_IRQSAVE
-							local_irq_save(flags); __LOCK
-				x _spin_lock_irqsave
-					local_irq_save
-					preempt_disable  ▻
-					spin_acquire  ▻
-					_raw_spin_lock_flags
-						__raw_spin_lock_flags
-							local_irq_save
-			spin_unlock_irqrestore lkm2
-				raw_spin_unlock_irqrestore
-					_raw_spin_unlock_irqrestore
-			spin_unlock
-				raw_spin_unlock
-					_raw_spin_unlock
-						__raw_spin_unlock
-							spin_release(&lock->dep_map, 1, _RET_IP_);
-								~ lock_release
-							do_raw_spin_unlock(lock);
-								arch_spin_unlock
-									__ticket_spin_unlock
-										incb
-								~ __release
-									__context__
-							preempt_enable();
-
-		include/linux/wait.h
-			DECLARE_WAITQUEUE
-				wait_queue_entry
-				__WAITQUEUE_INITIALIZER
-					default_wake_function
-			add_wait_queue
-			wait_queue_head_t
-				__wait_queue_head
-					lock
-					struct list_head task_list;
-				DECLARE_WAIT_QUEUE_HEAD
-				interruptible_sleep_on decates, uses wait_event_interruptible
-					sleep_on_common(q, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
-						init_waitqueue_entry(&wait, current);
-							__add_wait_queue
-						timeout = schedule_timeout(timeout);
-				wake_up_interruptible  ▻
-					__wake_up(x, TASK_INTERRUPTIBLE, 1, NULL)
-						->
-
-		add_wait_queue
-			__add_wait_queue
-				list_add(&new->task_list, &head->task_list);
-		remove_wait_queue
-			__remove_wait_queue
-
-			wake_up_interruptible ldt
-			wait_event	lkm2
-				__wait_event
-					prepare_to_wait  ▻
-					schedule  ▻
-			wait_event_interruptible	ldt
-				__wait_event_interruptible
-					___wait_event
-						prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);
-						prepare_to_wait
-							spin_lock_irqsave  ▻
-							__add_wait_queue  ▻
-							set_current_state
-							spin_unlock_irqrestore
-						signal_pending
-							test_tsk_thread_flag TIF_SIGPENDING
-								test_ti_thread_flag task_thread_info thread_info
-									test_bit flags
-					schedule ->
-			wait_event_interruptible_timeout
-				__wait_event_interruptible_timeout
-					prepare_to_wait  ▻
-					signal_pending  ▻
-					schedule_timeout
-
-			DEFINE_WAIT init_wait autoremove_wake_function
-			init_waitqueue_head
-					__init_waitqueue_head
-						lockdep_set_class_and_name
-						INIT_LIST_HEAD
-			wake_up
-				__wake_up
-					spin_lock_irqsave  ▻
-					__wake_up_common_lock
-					__wake_up_common
-						default_wake_function
-							try_to_wake_up
-								task_rq_lock
-									task_rq
-								activate_task -> lkm2
-									__activate_task
-								resched_task
-					spin_unlock_irqrestore  ▻
-
-		fork()
-		_exit()
-		linux/kernel/fork.c
-
 === CPU
+
+	idle_setup
+		"idle=poll" disables C-states
+			IDLE_POLL
+				cpu_idle_poll_ctrl
 
 
 		==> ./oo/conversion/cpu_mng/task/connected_to.txt <==
@@ -4266,7 +4989,8 @@ linux/kernel/timer.c
 		preempt_disable
 		this_cpu_ptr
 
-	out_cpu_var
+	put_cpu_var
+		preempt_enable
 
 	get_cpu_ptr
 		get_cpu_ptr() disables preemption and therefore migration
@@ -4311,6 +5035,12 @@ linux/kernel/timer.c
 	is_migration_disabled
 
 ==== affinity
+	see also smp_affinity_enable
+		irq_update_affinity_hint
+			__irq_apply_affinity_hint
+
+
+
 
 		map_queues_v2_hw
 			blk_mq_queue_map
@@ -4329,13 +5059,31 @@ linux/kernel/timer.c
 			irq_get_effective_affinity_mask
 				irq_data_get_effective_affinity_mask
 
-		irq_thread_check_affinity
-			irq_data_get_effective_affinity_mask
+		irq_thread_check_affinity ->
 
 		"rq_affinity"
 			queue_rq_affinity_store
 
 		pci_alloc_irq_vectors_affinity->
+
+tools/testing/selftests/cgroup/test_cpuset_prs.sh
+
+	run_state_test
+		set_ctrl_state_noerr
+		set_ctrl_state
+			write_cpu_online
+				/sys/devices/system/cpu/cpu${CPU}/online 
+	test_isolated
+		test_partition
+			cpuset.cpus.partition
+		test_effective_cpus
+			cpuset.cpus.effective
+	test_inotify
+		wait_inotify
+		set_ctrl_state
+		check_cgroup_states
+		online_cpus
+			write_cpu_online
 
 kernel/cgroup/cpuset.c
 
@@ -4462,6 +5210,109 @@ kernel/cgroup/cpuset.c
 
 === Interrupts
 
+			fixup_irqs
+				irq_migrate_all_off_this_cpu
+					for_each_active_irq
+						irq_get_next_irq
+							irq_find_at_or_after
+								sparse_irqs
+					irq_domain_deactivate_irq
+					raw_spin_lock(&desc->lock);
+					migrate_one_irq
+						irq_datairq_data
+						irq_chip
+						irqd_irq_masked
+						irq_mask: mask_ioapic_irq  pci_irq_mask_msix < pci_msix_template
+						irq_desc_get_irq_data
+							irq_data
+						irq_force_complete_move ->
+						irq_fixup_move_pending
+						irq_desc_get_pending_mask
+							pending_mask
+						irq_data_get_affinity_mask ->
+						irq_do_set_affinity ->
+
+							housekeeping_cpumask(HK_TYPE_MANAGED_IRQ);
+							irq_common_data.affinity
+						irq_needs_fixup
+						chip->irq_mask
+						irqd_affinity_is_managed
+						irqd_set_managed_shutdown
+							IRQD_MANAGED_SHUTDOWN
+						irq_shutdown_and_deactivate ->
+
+	arch/x86/include/asm/trace/irq_vectors.h
+		DECLARE_EVENT_CLASS(x86_irq_vector,
+			"vector="
+		DEFINE_IRQ_VECTOR_EVENT(irq_work);
+		DEFINE_IRQ_VECTOR_EVENT(local_timer);
+			##_entry
+			##_exit
+			DEFINE_EVENT_FN
+				DECLARE_TRACE ->
+			trace_local_timer_entry
+			trace_local_timer_exit
+
+	arch/x86/include/asm/idtentry.h
+	arch/x86/kernel/apic/apic.c
+		sysvec_apic_timer_interrupt
+			"local_timer"
+			DEFINE_IDTENTRY_SYSVEC
+			trace_local_timer_entry(LOCAL_TIMER_VECTOR);
+				"local_timer_entry: vector=236"
+				trace_intel_irq_entry
+					osnoise_trace_irq_entry	 ->
+			local_apic_timer_interrupt
+			trace_local_timer_exit(LOCAL_TIMER_VECTOR);
+				trace_intel_irq_exit
+					osnoise_trace_irq_exit ->
+			set_irq_regs
+
+
+	handle_nested_irq
+		thread_fn
+		wake_threads_waitq
+
+	IRQ_WORK_INIT*
+		nohz_full_kick_func task_work_set_notify_irq rcu_iw_handler late_wakeup_func
+		call_rcu_tasks_iw_wakeup wake_up_klogd_work_func irq_sim_handle_irq
+		perf_pending_disable irq_work_wake
+
+	early_idt_handler_array
+	
+
+	__irq_set_handler
+		__irq_do_set_handler
+
+	irq_work_init_threads
+		irqwork_threads "irq_work/%u"
+			run_irq_workd
+				irq_work_run_list
+					irq_work_single
+						work->func
+							wake_up_klogd_work_func->
+						rcuwait_wake_up
+							rcu_dereference
+		smpboot_register_percpu_thread''
+
+	
+	idt_setup_traps
+		idt_setup_from_table
+
+	idt_setup_apic_and_irq_gates
+		idt_setup_from_table
+			idt_init_desc
+				offset_high, offset_low = addr
+			vector
+			write_idt_entry
+				native_write_idt_entry
+					idt[entry] = gate
+		apic_idts
+			reschedule_interrupt
+			call_function_interrupt
+			call_function_single_interrupt
+			INTG(LOCAL_TIMER_VECTOR,		asm_sysvec_apic_timer_interrupt),
+
 
 		irq_action
 		irqaction
@@ -4487,12 +5338,17 @@ kernel/cgroup/cpuset.c
 						&irq_thread
 							irq_wait_for_interrupt
 								irq_thread_check_affinity
+									irq_data_get_effective_affinity_mask
+									set_cpus_allowed_ptr
 								test_and_clear_bit
 								IRQTF_RUNTHREAD,
 							irq_thread_fn
+								thread_fn
 						get_task_struct
 					desc->action = irqaction
 					irq_desc
+					wake_up_and_wait_for_irq_thread_ready
+						wake_up_process
 					register_irq_proc
 						/proc/irq/
 					register_handler_proc
@@ -5028,6 +5884,7 @@ kernel/cgroup/cpuset.c
 								pci_match_id
 									pci_match_one_device
 							pci_call_probe
+								wq_domain_mask
 								local_pci_probe
 									probe()
 										 skeleton_probe
@@ -5427,6 +6284,7 @@ kernel/cgroup/cpuset.c
 							IRQD_SETAFFINITY_PENDING
 						irq_copy_pending
 							pending_mask
+			raw_spin_unlock_irqrestore
 
 	hisi_sas_v2_interrupt_preinit
 		devm_platform_get_irqs_affinity
@@ -5505,6 +6363,7 @@ kernel/cgroup/cpuset.c
 	DECLARE_DELAYED_WORK
 	DECLARE_DEFERRABLE_WORK
 	__queue_delayed_work
+		housekeeping_any_cpu
 		delayed_work_timer_fn
 			__queue_work ->
 		add_timer_global
@@ -5530,13 +6389,25 @@ kernel/cgroup/cpuset.c
 		trace_irq_handler_exit
 			"irq_handler_exit"
 
+
+	trace_irq_handler_exit
+		<-
+		handle_fasteoi_nmi
+		handle_percpu_devid_irq
+		handle_percpu_devid_fasteoi_nmi
+		__handle_irq_event_percpu
+
+
 	trace_softirq_entry
 	"softirq_entry"
 	trace_softirq_exit
 	"softirq_exit"
 
 	trace_softirq_raise
-	"softirq_raise"
+		"softirq_raise"
+		softirq_raise
+		DEFINE_EVENT ->
+
 
 	can_stop_full_tick
 	check_tick_dependency
@@ -5548,6 +6419,7 @@ kernel/cgroup/cpuset.c
 				__tick_nohz_full_update_tick
 					can_stop_full_tick
 						check_tick_dependency
+							TICK_DEP_MASK_POSIX_TIMER
 							trace_tick_stop
 							"tick_stop"
 					tick_nohz_stop_sched_tick
@@ -5608,6 +6480,54 @@ kernel/cgroup/cpuset.c
 			d->common->msi_desc;
 
 ==== irq_ipi
+
+	IPI deferral
+		text_poke_sync
+			on_each_cpu
+				on_each_cpu_cond_mask
+			&do_sync_core
+				sync_core
+					serialize
+		vunmap
+			?
+				vm_area_unmap_pages
+					vunmap_range
+						flush_tlb_kernel_range
+							kernel_tlb_flush_all
+								on_each_cpu
+								&do_flush_tlb_all
+		trace_ipi_send_cpu
+		trace_ipi_send_cpumask
+		trace_csd_queue_cpu
+		sched_switch
+		ipi_send_cpumask
+		sched_clock_stable
+		trace_csd_function_entry
+		trace_csd_function_exit
+		filter by cpumask
+			trace-cmd record -e 'sched_switch' -f "CPU & CPUS{$ISOLATED_CPUS}" \
+				 -e 'sched_wakeup' -f "target_cpu & CPUS{$ISOLATED_CPUS}" \
+				 -e 'ipi_send_cpu' -f "cpu & CPUS{$ISOLATED_CPUS}" \
+				 -e 'ipi_send_cpumask' -f "cpumask & CPUS{$ISOLATED_CPUS}" \
+				 hackbench
+		ct_kernel_enter
+			ct_kernel_enter_state kernel/context_tracking.c
+		update_mds_branch_idle
+			mds_idle_clear Microarchitectural Data Sampling vulnerabilities
+
+		__sched_clock_stable
+		mark_tsc_unstable
+			clear_sched_clock_stable
+				__clear_sched_clock_stable
+					&__sched_clock_work
+						__sched_clock_stable
+			disable_sched_clock_irqtime
+		CONFIG_VMAP_STACK
+			arm, arm64
+				handle_bad_stack
+					panic_bad_stack
+				init_irq_stacks
+			handle_stack_overflow
 
 	update_curr ->
 		trace_sched_stat_runtime
@@ -5742,6 +6662,7 @@ kernel/cgroup/cpuset.c
 			acquire_ip
 		lock_acquire ->
 	tick_nohz_highres_handler
+	tick_sched_timer" for 9.4, but "tick_nohz_highres_handler" for 9.5+, and "tick_nohz_handler"
 
 	timerfd_tmrproc
 
@@ -5777,30 +6698,6 @@ kernel/cgroup/cpuset.c
 
 	HK_TYPE_TIMER ->
 
-	include/linux/sched/topology.h
-	sched_domain_topology_level
-		set_sched_topology
-		sd_data
-			sched_domain
-				sched_group
-	sched_load_balance
-	isolcpus=domain
-		HK_FLAG_DOMAIN HK_TYPE_DOMAIN ->
-
-	Requirements to control kernel isolation/nohz_full at runtime
-		schedule_user not used
-			exception_enter
-			schedule
-			exception_exit
-		preempt_schedule_notrace
-	Start using bpftrace/eBPF for latency and load tests.
-	frederic
-		housekeeping_cpumask_set
-		housekeeping_cpumask_clear
-			housekeeping_cpumask_update
-				rcu_nocb_cpumask_update
-					cpumask_or
-					cpumask_andnot
 	waiman longman
 		pool_workqueue
 			+plugged
@@ -5825,7 +6722,6 @@ kernel/cgroup/cpuset.c
 		pwq_release_workfn
 			+thaw_pwq
 		rcu_nocb_cpumask_update frederic
-			rcu_nocb_cpu_offload ->
 			rcu_nocb_cpu_deoffload ->
 		rcu_nocb_enabled
 		update_isolation_cpumasks w2 <- update_unbound_workqueue_cpumask
@@ -5850,27 +6746,6 @@ kernel/cgroup/cpuset.c
 		dfl_files
 			+cpuset_write_isolfull
 				pdate_isolation_cpumasks
-
-	CONFIG_RCU_NOCB_CPU
-
-		rcu_init_nohz
-		rcu_torture_init
-			rcu_nocb_toggle
-				rcu_nocb_cpu_offload
-					rcu_rdp_is_offloaded
-						rcu_segcblist_is_offloaded
-							rcu_segcblist_test_flags
-							SEGCBLIST_LOCKING
-					rcu_nocb_mask
-					work_on_cpu(cpu, rcu_nocb_rdp_offload, rdp);
-				rcu_nocb_cpu_deoffload
-					rcu_nocb_rdp_deoffload
-						rdp_offload_toggle
-							rcu_segcblist_offload
-		rcu_nocb_rdp_offload
-			rdp_offload_toggle
-		rcu_nocb_cb_kthread
-
 
 	irq_affinity_online_cpu
 		irq_lock_sparse ->
@@ -5933,9 +6808,6 @@ kernel/cgroup/cpuset.c
 					takedown_cpu CPUHP_TEARDOWN_CPU
 						cpuhp_state
 						kthread_park
-							KTHREAD_SHOULD_PARK
-							TASK_PARKED
-							wait_task_inactive
 						stop_machine_cpuslocked ->
 						&take_cpu_down
 							CPUHP_AP_OFFLINE
@@ -5959,6 +6831,7 @@ kernel/cgroup/cpuset.c
 								kthread_park
 						arch_cpuhp_cleanup_dead_cpu
 						tick_cleanup_dead_cpu
+						rcutree_migrate_callbacks
 		get_nohz_timer_target
 			<
 				switch_hrtimer_base > get_target_base
@@ -5976,7 +6849,9 @@ kernel/cgroup/cpuset.c
 					raw_spin_lock_irq
 						_raw_spin_lock_irq
 							__raw_spin_lock_irq
-								do_raw_spin_lock ->
+                                                                local_irq_disable
+                                                                preempt_disable
+                                                                do_raw_spin_lock ->
 					raw_spin_lock_nested
 					timer_bases
 					migrate_timer_list
@@ -6016,33 +6891,87 @@ kernel/cgroup/cpuset.c
 
 	HK_TYPE_KTHREAD is used by:
 		unbound - NUMA_NO_NODE
-		create_kthread
+	create_kthread
 		kthreadd ->
 			set_cpus_allowed_ptr(tsk, housekeeping_cpumask(HK_TYPE_KTHREAD));
 		sysctl_est_cpulist
 			housekeeping_cpumask(HK_TYPE_KTHREAD);
 		ipvs_proc_est_cpumask_get
 			mask = (struct cpumask *)housekeeping_cpumask(HK_TYPE_KTHREAD);
-	HK_TYPE_RCU
-		rcu_boost_kthread_setaffinity
-		rcu_bind_gp_kthread
-		rcu_tasks_kthread
-	HK_TYPE_MISC,
-		create_core_data
+	housekeeping_cpumask
+		used by:
+		task_cpu_fallback_mask
+			housekeeping_cpumask(HK_TYPE_TICK)
+		print_cpus_isolated
+		try_to_generate_entropy
+		drivers/hv/
+			init_vp_index
+			vmbus_channel_set_cpu
+		pci_call_probe
+		sysctl_est_cpulist
+		sysctl_est_cpulist
+		generate_sched_domains ->
+		cpuset_init
+		cpu_down_maps_locked
+		hk_should_isolate
+		irq_do_set_affinity
+		kthread_fetch_affinity
+		kthreadd
+		swake_up_one_online
+		get_nohz_timer_target
+		sched_init_smp
+		scx_ops_enable
 		find_new_ilb
-	HK_TYPE_SCHED
+		asym_cpu_capacity_scan
+		sched_init_domains
+		partition_sched_domains_locked ->
+		get_target_base
+		hrtimers_cpu_dying
+		lockup_detector_init
+		workqueue_init_early
+		rps_cpumask_housekeeping
+		ipvs_proc_est_cpumask_get
+
+	HK_TYPE_KERNEL_NOISE
+		used by:
+		get_nohz_timer_target
+		sched_tick
+		sched_tick_start
+		sched_tick_stop
+		find_new_ilb
+
+		HK_TYPE_RCU
+			rcu_boost_kthread_setaffinity
+			rcu_bind_gp_kthread
+			rcu_tasks_kthread
+		HK_TYPE_MISC
+			create_core_data
+			find_new_ilb
+				nohz.idle_cpus_mask
+				ILB - Idle Load Balancing
+		HK_TYPE_TICK
+			cpu_is_isolated ->
+				used by:
+				blk_mq_map_swqueue
+				drain_all_stock
+				vmstat_shepherd
+				fs/buffer.c:
+					bh_lru_install
+					lookup_bh_lru
+
+			sched_tick <- scheduler_tick
+			sched_tick_start
+				tick_work
+				TICK_SCHED_REMOTE_RUNNING
+				& sched_tick_remote
+					curr->sched_class->task_tick
+						task_tick_fair ->
+						task_tick_rt ->
+			sched_tick_stop
+				TICK_SCHED_REMOTE_OFFLINING
+	x HK_TYPE_SCHED
 		nohz_balance_enter_idle
 		nohz_newidle_balance
-	HK_TYPE_TICK
-		cpu_is_isolated ->
-		scheduler_tick
-		sched_tick_start
-			.. sched_tick_remote
-				curr->sched_class->task_tick
-					task_tick_fair ->
-					task_tick_rt ->
-		sched_tick_stop
-			TICK_SCHED_REMOTE_OFFLINING
 	HK_TYPE_DOMAIN,
 		print_cpus_offline
 			grep '' /sys/devices/system/cpu/{offline,online,possible,present}
@@ -6051,10 +6980,9 @@ kernel/cgroup/cpuset.c
 			cpu_possible_mask & !housekeeping_cpumask(HK_TYPE_DOMAIN)
 		pci_call_probe
 		cpu_is_isolated ->
-		generate_sched_domains
-			HK_TYPE_DOMAIN
-			alloc_sched_domains
+		generate_sched_domains ->
 		prstate_housekeeping_conflict
+			boot_hk_cpus
 		cpu_down_maps_locked
 		sched_init_smp
 			cpu_active_mask
@@ -6063,7 +6991,7 @@ kernel/cgroup/cpuset.c
 				asym_cpu_capacity_scan
 				alloc_sched_domains
 			set_cpus_allowed_ptr(current, housekeeping_cpumask(HK_TYPE_DOMAIN))
-		partition_sched_domains_locked
+		partition_sched_domains_locked ->
 		rps_cpumask_housekeeping
 	HK_TYPE_WQ
 		Q: /sys/devices/virtual/workqueue/cpumask
@@ -6108,16 +7036,25 @@ kernel/cgroup/cpuset.c
 		- - mutex_lock(&cpuset_mutex);
 		- - update_prstate
 			update_partition_exclusive
+				CS_CPU_EXCLUSIVE
 			partition_root_state
 			remote_partition_enable remote_partition_disable
 				spin_lock_irq(&callback_lock);
 				partition_xcpus_add ->
 				update_unbound_workqueue_cpumask ->
+				top_cpuset
+				update_tasks_cpumask
+					css_task_iter_next
+					subpartitions_cpus
+					set_cpus_allowed_ptr
+				update_sibling_cpumasks
+					update_cpumasks_hier
 			update_parent_effective_cpumask ->
 			update_unbound_workqueue_cpumask ->
 			spin_lock_irq(&callback_lock);
 			partition_xcpus_newstate ->
 			update_isolation_cpumasks ->
+			rebuild_sched_domains_locked
 		wq_unbound_cpumask_store
 			workqueue_set_unbound_cpumask
 				wq_requested_unbound_cpumask
@@ -6128,6 +7065,7 @@ kernel/cgroup/cpuset.c
 				wq_update_pod
 				rebind_workers
 					kthread_set_per_cpu
+				unbound_wq_update_pwq ->
 			workqueue_offline_cpu
 				unbind_workers
 					unbind_worker
@@ -6173,9 +7111,21 @@ kernel/cgroup/cpuset.c
 							el1h_64_irq
 								...
 									hrtimer_wakeup
+
+==== Softirqs
+
+	show_softirqs
+		NR_SOFTIRQS
+		kstat_softirqs_cpu
+
+	see rcutree.use_softirq=
+
+
 == NMI
 
 	request_nmi
+		__setup_irq
+		irq_nmi_setup
 
 	arch/x86/include/asm/nmi.h
 
@@ -6189,6 +7139,8 @@ kernel/cgroup/cpuset.c
 	include/linux/hardirq.h
 
 	arch/x86/kernel/nmi.c
+		register_nmi_handler
+			__register_nmi_handler
 		exc_nmi
 			irqentry_nmi_enter
 				__nmi_enter
@@ -6196,7 +7148,22 @@ kernel/cgroup/cpuset.c
 					nmi_handle
 						nmiaction
 						handler
+						trace_nmi_handler - nmi_handler
+						nmi_check_duration
 			irqentry_nmi_exit
+
+init_hw_perf_events
+nmi_handler: perf_event_nmi_handler() delta_ns: 8750 handled: 1
+	perf_sample_event_took
+
+register_nmi_cpu_backtrace_handler
+nmi_handler: nmi_cpu_backtrace_handler() delta_ns: 569 handled: 0
+	nmi_cpu_backtrace
+
+ghes_nmi_add
+nmi_handler: ghes_notify_nmi() delta_ns: 8745 handled: 0
+	atomic_add_unless
+
 
 	arch/x86/kernel/traps.c
 		exc_double_fault
@@ -6222,6 +7189,49 @@ kernel/cgroup/cpuset.c
 
 ==== dynticks (nohz)
 
+	referrers tick_nohz_full_cpu
+		mon_event_read
+		cpumask_any_housekeeping
+		tick_dep_set_cpu
+		tick_dep_clear_cpu
+		tick_nohz_user_enter_prepare
+		check_holdout_task
+		show_stalled_task_trace
+		__rcu_irq_enter_check_tick
+		rcu_disable_urgency_upon_qs
+		rcu_watching_snap_recheck
+		rcu_nohz_full_cpu
+		wake_up_full_nohz_cpu
+		sched_fair_update_stop_tick
+		sched_update_tick_dependency
+		irq_enter_rcu
+		tick_irq_exit
+		tick_setup_device
+		tick_nohz_full_kick
+		tick_nohz_full_kick_cpu
+		__tick_nohz_task_switch
+		tick_nohz_full_update_tick
+		tick_nohz_idle_update_tick
+		trigger_dyntick_cpu
+		__get_next_timer_interrupt
+		timer_clear_idle
+
+	/sys/devices/system/cpu/nohz_full
+		print_cpus_nohz_full
+			< cpu_root_attrs
+			tick_nohz_full_mask
+
+	unused
+		tick_nohz_full_add_cpus_to
+			cpumask_or
+
+	tick_nohz_dep_set
+		tick_nohz_dep_set_all
+			tick_nohz_full_kick_all
+				tick_nohz_full_mask
+				tick_nohz_full_kick_cpu ->
+		
+
 	dynticks
 		wake_up_nohz_cpu
 			wake_up_full_nohz_cpu
@@ -6245,11 +7255,14 @@ kernel/cgroup/cpuset.c
 				CPUHP_AP_ONLINE_DYN,
 				&tick_nohz_cpu_down
 					tick_nohz_cpu_hotpluggable
-	rcu_user_enter
-	rcu_user_exit
+	x
+		rcu_user_enter
+		rcu_user_exit
 	rcu_nohz_full_cpu
 	sched_can_stop_tick
-	sched_tick_offload_init
+	housekeeping_init
+		sched_tick_offload_init
+			tick_work_cpu
 
 	__setup
 	"nohz_full" sets housekeeping to negative argument
@@ -6273,8 +7286,6 @@ kernel/cgroup/cpuset.c
 				cpumask_copy
 				tick_nohz_full_mask
 				tick_nohz_full_running = true;
-	print_cpus_nohz_full
-		tick_nohz_full_mask
 	show_state_filter
 		sched_show_task
 		sysrq_sched_debug_show kernel/sched/debug.c
@@ -6284,6 +7295,8 @@ kernel/cgroup/cpuset.c
 	4 apic_timer_interrupt➝
 		smp_apic_timer_interrupt➝
 			hrtimer_interrupt CONFIG_HIGH_RES_TIMERS
+				max_hang_time 
+					grep -E 'cpu:|max_hang_time' /proc/timer_list
 				now = hrtimer_update_base(cpu_base);
 				ktime_before
 				__hrtimer_run_queues➝
@@ -6291,6 +7304,8 @@ kernel/cgroup/cpuset.c
 					HRTIMER_SOFTIRQ
 					raise_ktimers_thread
 						__this_cpu_or(pending_timer_softirq, 1 << nr);
+				tick_program_event
+
 
 	static inline void hrtimer_set_expires_range
 		timer->_softexpires = time;
@@ -6309,11 +7324,26 @@ kernel/cgroup/cpuset.c
 
 	sysvec_apic_timer_interrupt
 		local_apic_timer_interrupt
-			event_handler -> tick_handle_periodic
-				tick_periodic
-					update_process_times
-						run_local_timers
-							hrtimer_run_queues ->
+			event_handler
+				-> tick_handle_periodic
+					tick_periodic
+						do_timer ->
+							jiffies_64 ++
+							jiffies++;
+								x update_times
+									update_wall_time
+										timekeeping_advance
+											timekeeping_adjust
+											timekeeping_update
+										clock_was_set_delayed
+							calc_global_load
+								calc_load_tasks
+								avenrun
+								calc_load
+						update_process_times
+							run_local_timers
+								hrtimer_run_queues ->
+							sched_tick
 
 	hrtimer_run_queues
 		tick_switch_to_oneshot
@@ -6322,12 +7352,34 @@ kernel/cgroup/cpuset.c
 		tick_check_oneshot_change
 			tick_nohz_lowres_handler
 				tick_nohz_handler
-					tick_sched_do_timer
+					sched_timer
+					tick_sched_do_timer ->
 					tick_sched_handle ->
-					hrtimer_forward
+					hrtimer_forward ->
 				tick_program_event
 			tick_nohz_switch_to_nohz
+				sched_timer
+				hrtimer_init
+				tick_init_jiffy_update
+					jiffies_seq
+					write_seqcount_begin
+						seqprop_ptr
+							__seqprop
+								__seqprop_case
+							seqcount
+						do_write_seqcount_begin
+							do_write_seqcount_begin_nested
+								do_raw_write_seqcount_begin
+									sequence++
+								seqcount_acquire
+					last_jiffies_update
+					write_seqcount_end
+						do_write_seqcount_end
+							do_raw_write_seqcount_end
+								sequence++
 				tick_setup_sched_timer
+					hrtimer_setup ->
+					sched_timer
 					tick_nohz_handler
 		!hrtimer_is_hres_enabled
 		hrtimer_switch_to_hres
@@ -6337,15 +7389,17 @@ kernel/cgroup/cpuset.c
 				tick_nohz_handler
 				sched_skew_tick
 				&tick_nohz_highres_handler
-					tick_sched_do_timer
-						tick_do_update_jiffies64
+					tick_sched_do_timer ->
 					tick_sched_handle ->
-					hrtimer_forward
-				tick_sched_timer ->
+					hrtimer_forward ->
+				@tick_sched_timer ->
+				tick_program_event
 				tick_nohz_activate
 					tick_sched_flag_set(ts, TS_FLAG_NOHZ);
 					timers_update_nohz
 						schedule_work(&timer_update_work);
+
+	tick_dep_mask
 
 	hrtimer_run_softirq hrtimer_interrupt hrtimer_run_queues
 	> __hrtimer_run_queues
@@ -6369,9 +7423,10 @@ kernel/cgroup/cpuset.c
 				update_cfs_group ->
 				resched_curr_lazy
 					resched_curr
+						set_tsk_need_resched ->
 						set_preempt_need_resched
 							PREEMPT_NEED_RESCHED
-						smp_send_reschedule
+						smp_send_reschedule ->
 					set_tsk_need_resched_lazy
 						set_tsk_thread_flag(tsk,TIF_NEED_RESCHED_LAZY);
 				check_preempt_tick
@@ -6379,21 +7434,26 @@ kernel/cgroup/cpuset.c
 			update_overutilized_status
 
 		spawn_ksoftirqd
-			timer_threads
+			timer_thread "ktimers/%u"
 				timersd
-				run_timersd ->
+				6 run_ktimerd
+				run_timerd ->
+				5 run_timersd ->
+					local_pending_timers
 			smpboot_register_percpu_thread
+				hotplug_threads
 				smp_hotplug_thread
-				smpboot_register_percpu_thread_cpumask
-					__smpboot_create_thread
-						kthread_create_on_cpu
-						kthread_set_per_cpu
-						&smpboot_thread_fn ->
+				__smpboot_create_thread
+					smp_hotplug_thread.store
+					kthread_create_on_cpu
+					kthread_set_per_cpu
+					&smpboot_thread_fn ->
 
 	test_preempt_need_resched
+		PREEMPT_NEED_RESCHED
 
 	spawn_ksoftirqd
-		softirq_threads
+		softirq_threads "ksoftirqd/%u"
 			run_ksoftirqd NRT
 				__do_softirq ->
 
@@ -6405,7 +7465,8 @@ kernel/cgroup/cpuset.c
 				kthread_should_park
 					__kthread_should_park
 
-				run_timersd RT
+				6 run_ktimerd
+				run_timerd RT
 					__do_softirq
 						hrtimer_run_softirq ->
 						__hrtimer_run_queues
@@ -6413,6 +7474,10 @@ kernel/cgroup/cpuset.c
 							timerqueue_getnext
 							__run_hrtimer
 								-> sched_cfs_period_timer
+				kthread_parkme
+					__kthread_parkme
+						set_special_state(TASK_PARKED);
+				smp_hotplug_thread.thread_fn
 	 < __run_hrtimer
 	? set_kthread_struct
 
@@ -6758,17 +7823,35 @@ kernel/cgroup/cpuset.c
 
 ==== Scheduler
 
+	task_tick_core
 
+===== CFS
+
+	init_sched_fair_class
+	nohz_balance_enter_idle
+		on_null_domain
+			sched_domain ->
+			!rcu_dereference_sched
+		idle_cpus_mask
+	nohz_run_idle_balance
+		_nohz_idle_balance
+			idle_cpus_mask
 
 
 
 	smpboot_thread_fn
 		run_ksoftirqd
 			handle_softirqs
+				trace_softirq_entry
+				h->action
+				trace_softirq_exit
 				sched_balance_domains
 					sched_balance_rq
 
 	select_task_rq
+		select_fallback_rq
+			cpuset_cpus_allowed_fallback
+			do_set_cpus_allowed
 
 		sched_energy_enabled
 		find_idlest_cpu
@@ -6806,7 +7889,7 @@ kernel/cgroup/cpuset.c
 					finish_lock_switch
 						raw_spin_rq_unlock_irq(rq);
 			raw_spin_rq_unlock_irq
-		set_tsk_need_resched
+	set_tsk_need_resched
 			set_tsk_thread_flag
 				task_thread_info
 				set_ti_thread_flag
@@ -6831,6 +7914,14 @@ kernel/cgroup/cpuset.c
 				__cond_resched
 					should_resched
 					preempt_schedule_common
+						preempt_latency_start
+							get_lock_parent_ip
+								in_lock_functions
+									__lock_text_start
+									__lock_text_end
+							trace_preempt_off ->
+						preempt_latency_stop 
+							trace_preempt_on ->
 						need_resched
 							tif_need_resched ->
 
@@ -6880,21 +7971,7 @@ kernel/cgroup/cpuset.c
 				period_timer
 				sched_cfs_period_timer < __run_hrtimer
 					cfs_bandwidth
-					hrtimer_forward_now
-						timer->base->get_time() hrtimer_bases
-							ktime_get ->
-
-						hrtimer_forward
-							hrtimer_get_expires
-								timer->node.expires
-							ktime_sub
-							hrtimer_add_expires_ns
-								timer->node.expires =
-								timer->_softexpires =
-							hrtimer_get_expires_tv64
-							hrtimer_add_expires
-								ktime_add_safe
-									ktime_add_unsafe
+					hrtimer_forward_now->
 					do_sched_cfs_period_timer
 						throttled = !list_empty(&cfs_b->throttled_cfs_rq)
 						cfs_b->nr_periods += overrun
@@ -7045,6 +8122,9 @@ kernel/cgroup/cpuset.c
 
 	workqueue
 
+
+	PF_KTHREAD
+
 	kernel_init_freeable
 		workqueue_init
 			worker_pool
@@ -7101,6 +8181,9 @@ kernel/cgroup/cpuset.c
 			kthread
 				worker_thread
 					process_one_work
+						trace_workqueue_execute_start
+						worker->current_func
+						trace_workqueue_execute_end
 
 		kthread_create
 			returns task_struct
@@ -7195,10 +8278,15 @@ kernel/cgroup/cpuset.c
 			kcmp_unlock
 
 	hwlat_sample -> hwlat_entry
-	wlat_tracer
+	hwlat_tracer
 		hwlat_tracer_init
+		hwlat_tracer_start
 
 	init_tracer_tracefs
+		trace_time_stamp_mode_fops
+			tracing_time_stamp_mode_open
+				tracing_time_stamp_mode_show
+					ring_buffer_time_stamp_abs
 		"tracing_on"
 			rb_simple_fops
 				rb_simple_write
@@ -7259,6 +8347,11 @@ kernel/cgroup/cpuset.c
 							SCA_MIGRATE_...
 								cpus_ptr
 							cpumask_copy(&p->cpus_mask, ctx->new_mask);
+					dequeue_task ->
+
+					->set_cpus_allowed
+						set_cpus_allowed_common ->
+						set_cpus_allowed_dl
 				cpumask_any_and_distribute
 			update_rq_clock
 				clock_update_flags
@@ -7273,21 +8366,6 @@ kernel/cgroup/cpuset.c
 				move_queued_task
 
 
-	kthread_bind_mask
-		TASK_UNINTERRUPTIBLE
-		__kthread_bind_mask
-			wait_task_inactive
-			raw_spin_lock_irqsave
-			do_set_cpus_allowed	consider using set_cpus_allowed_ptr() instead
-				affinity_context
-				.user_mask = NULL
-				__do_set_cpus_allowed
-					dequeue_task ->
-
-					->set_cpus_allowed
-						set_cpus_allowed_common ->
-						set_cpus_allowed_dl
-			PF_NO_SETAFFINITY
 	do_taskset
 	sched_setaffinity
 		affinity_context
@@ -7721,6 +8799,12 @@ rcu_read_lock){....}-{1:3}, at: debug_show_all_locks+0x3d/0x175
 https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 
 {
+
+	rt_sched_class
+		balance_rt
+			pull_rt_task
+				push_cpu_stop
+
 	kernel/sched/rt.c
 		enqueue_task_rt
 			update_stats_wait_start_rt
@@ -7731,6 +8815,7 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 				__update_stats_wait_end
 
 	rt-tests
+		cut -f2 -d: cyclictest.log | sort | uniq -c | sort -n
 		cyclictest
 			timerthread
 				timer_settime
@@ -7749,12 +8834,14 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 								memdup_user_nul
 								bitmap_parse
 			init_hwlat_tracer
+				register_tracer
 				...
 				hwlat_tracer
 				hwlat_tracer_start
+					hwlat_data
 					start_per_cpu_kthreads
 						start_cpu_kthread
-							kthread_create_on_cpu
+							kthread_run_on_cpu ->
 							kthread_fn ->
 					start_single_kthread
 										cpu_online_mask
@@ -7766,10 +8853,13 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 
 							save_cpumask
 							get_sample
+								tracing_thresh
+								time_get ->
 								sample -> duration -> inner
 								outer_sample -> outer_duration
 								trace_hwlat_sample
 									__buffer_unlock_commit
+								max_latency
 
 							init_events
 								trace_hwlat_event
@@ -7795,14 +8885,60 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 
 	rtla
 
+	late_initcall
+	init_osnoise_tracer
+		print_osnoise_headers
+		register_tracer
+		osnoise_tracer
+			osnoise_tracer_stop
+				osnoise_workload_stop
+					osnoise_unhook_events ^
+		timerlat_tracer
+			timerlat_tracer_start
+				osnoise_workload_start ^
+				__osnoise_tracer_start
+					start_per_cpu_kthreads
+						start_kthread
+							osnoise_main
+							timerlat_main
+								hrtimer_init(&tlat->timer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS_PINNED_HARD);
+								hrtimer_cb_get_time
+									get_time
+								s.timer_latency = diff
+								trace_timerlat_sample
+									osnoise_instances
+									__trace_timerlat_sample
+										trace_buffer_lock_reserve
+											__trace_buffer_lock_reserve
+												ring_buffer_lock_reserve
+													rb_reserve_next_event
+								timerlat_irq < __run_hrtimer
+									stop_tracing
+									time_get ->
+									tlat->count++
+									s.timer_latency = diff
+									trace_timerlat_sample
+								wait_next_period
+									hrtimer_start
+									schedule
+
+	grep -E '[0-9]{5} ns' trace
 	start_kthread
 		osnoise_main
+			osnoise_tracer
 			grep '' /sys/kernel/debug/tracing/instances/osnoise_*/options/*
 			echo 1 > instances/osnoise_trace/options/stacktrace
 			run_osnoise
+				this_cpu_osn_var
+					per_cpu_osnoise_var
+				osnoise_options
+				osnoise_data
+				OSN_IRQ_DISABLE
 				int_count = set_int_safe_time
 				set_int_safe_time
 					time_get
+						trace_clock_local
+							sched_clock
 					int_counter
 				interference = int_count - last_int_count;
 				hw_count++ if (!interference)
@@ -7814,6 +8950,14 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 
 				trace_sample_threshold "sample_threshold"
 				osnoise_stop_tracing
+				record_osnoise_sample
+					trace_osnoise_sample
+						hw_count
+					__record_osnoise_sample
+						trace_buffer_unlock_commit_nostack
+			osnoise_sleep(false);
+				ktime_add_us
+				schedule_hrtimeout
 
 			trace_osnoise_sample(&s);
 				__trace_osnoise_sample
@@ -7832,8 +8976,16 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 
 		hwnoise_main
 			osnoise_top_main
+				trace_instance_start
+				osnoise_top_parse_args
+					stop_us
+					trace_output
+				osnoise_top_apply_config
+					osnoise_set_stop_us
 				osnoise_init_top
 					&osnoise_top_handler
+						hw_count
+						nmi_count
 				osnoise_top_apply_config
 					if (params->mode == MODE_HWNOISE) {
 						retval = osnoise_set_irq_disable(tool->context, 1);
@@ -7843,7 +8995,16 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 				&collect_registered_events
 				trace_is_off
 					!tracefs_trace_is_on
-		osnoise_main
+				save_trace_to_file
+				osnoise_destroy_tool
+					trace_instance_destroy
+						destroy_instance
+							tracefs_instance_destroy
+							tracefs_instance_free
+	main rtla
+	- rtla_usage
+	- run_command
+		osnoise_main (um)
 			osnoise_top_main
 			osnoise_hist_main
 				osnoise_hist_apply_config
@@ -7853,6 +9014,10 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 						stop_tracing
 				osnoise_init_trace_hist
 					"sample_threshold"
+				tracefs_iterate_raw_events
+				&collect_registered_events
+				osnoise_trace_is_off
+					tracefs_trace_is_on
 				osnoise_print_stats
 					osnoise_top_header
 					osnoise_top_print
@@ -7872,16 +9037,40 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 			update_max(&cpu_data->max_noise, &val);
 			update_max(&cpu_data->max_sample, &val);
 
-	hook_irq_events
-		register_trace_irq_handler_entry
-		->trace_irqentry_callback
-			osnoise_trace_irq_entry ->
-		register_trace_irq_handler_exit
-		->trace_irqexit_callback
-	osnoise_tracer_start
+	__print_ns_without_secs
+
+kernel/trace/trace_osnoise.c
+	osnoise_tracer
+	osnoise_tracer_init
+	-osnoise_tracer_start
 		osnoise_workload_start
 			osnoise_hook_events
+				hook_thread_events
+					register_trace_sched_switch
+						__DECLARE_TRACE_COMMON
+							sched_switch
+					&trace_sched_switch_callback
+						thread_entry
+							delta_start
+						thread_exit
+							delta_start
+					register_migration_monitor
+								trace_thread_noise "thread_noise"
 				hook_irq_events
+					register_trace_irq_handler_entry
+						trace_irq_handler_entry
+							handler_entry
+					->trace_irqentry_callback
+						osnoise_trace_irq_entry
+							set_int_safe_time(osn_var, &osn_var->irq.delta_start);
+					register_trace_irq_handler_exit
+						&trace_irqexit_callback
+							osnoise_trace_irq_exit
+								trace_irq_noise
+									__get_str
+										__get_dynamic_array
+								"duration" -> timer_irq_duration
+								get_int_safe_duration
 					osnoise_arch_register
 						register_trace_irq_work_entry(trace_intel_irq_entry, NULL);
 						"irq_work"
@@ -7948,86 +9137,6 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 				timekeeper
 					clocksource
 
-	hrtimers
-		hrtimers_init
-			HRTIMER_SOFTIRQ
-			open_softirq
-			hrtimer_run_softirq
-		hrtimer_init
-			debug_init
-				debug_hrtimer_init
-					hrtimer_debug_descr
-					debug_object_init
-			__hrtimer_init
-				hrtimer_clockid_to_base
-				timerqueue_init
-					RB_CLEAR_NODE
-		debug_activate
-			trace_hrtimer_start
-
-		hrtimer_start
-			hrtimer_start_range_ns ->
-
-		hrtimer_restart
-		hrtimer_start_expires
-			hrtimer_start_range_ns
-				lock_hrtimer_base(timer, &flags);
-					raw_spin_lock_irqsave(&base->cpu_base->lock, *flags);
-				__hrtimer_start_range_ns
-					HRTIMER_MODE_PINNED
-					switch_hrtimer_base
-						get_target_base
-							timers_migration_enabled
-							get_nohz_timer_target
-								bpftrace -e 'kretprobe:get_nohz_timer_target {print(retval);}'
-								idle_cpu
-
-								housekeeping_cpu(cpu, HK_TYPE_TIMER))
-								housekeeping_any_cpu ->
-					enqueue_hrtimer
-						timerqueue_add
-							rb_add_cached
-				hrtimer_reprogram
-					hrtimer_bases
-					__hrtimer_reprogram
-						tick_program_event
-							clock_event_device
-							clockevents_program_event
-								clockevents_program_min_delta
-				unlock_hrtimer_base(timer, &flags);
-					raw_spin_unlock_irqrestore(&timer->base->cpu_base->lock, *flags);
-
-		tick_sched_timer
-			tick_sched_handle
-				update_process_times
-					run_local_timers
-						hrtimer_run_queues ->
-							hrtimer_switch_to_hres ->
-								tick_setup_sched_timer
-					x raise_timer_softirq
-		CONFIG_HIGH_RES_TIMERS
-			__hrtimer_peek_ahead_timers
-				hrtimer_interrupt ->
-			hrtimer_switch_to_hres
-
-		timer_list ->
-
-		/proc/timer_list
-		timer_list_show
-			print_cpu
-				tick_get_tick_sched
-				hrtimer_bases
-					hrtimer_cpu_base
-						hrtimer
-							-> hrtimer_clock_base
-						hrtimer_clock_base
-							get_time
-							-> hrtimer
-				print_base
-					print_active_timers
-						timerqueue_getnext
-						timerqueue_iterate_next
-						print_timer
 
 	CONFIG_PREEMPT_VOLUNTARY
 		might_sleep	300+ uses
@@ -8098,7 +9207,7 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 				devres_alloc
 				request_threaded_irq  ▻
 
-	smp_apic_timer_interrupt
+	x smp_apic_timer_interrupt
 		local_apic_timer_interrupt
 
 	rt:
@@ -8426,6 +9535,13 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 		__raw_spin_lock
 
 		do_raw_spin_lock
+                        arch_spin_lock
+				queued_spin_lock
+					atomic_try_cmpxchg_acquire
+						raw_atomic_try_cmpxchg_acquire
+							arch_atomic_try_cmpxchg
+					queued_spin_lock_slowpath
+						set_locked
 			debug_spin_lock_before
 				SPIN_BUG_ON
 					spin_bug
@@ -9313,7 +10429,8 @@ block/blk-mq-debugfs.c
 		    common_interrupt
 		    	call_irq_handler
 				handle_irq
-					generic_handle_irq_desc
+					generic_handle_irq_desc ->
+
 			x __common_interrupt
 			...
 				handle_edge_irq
@@ -11546,6 +12663,8 @@ __udp_gso_segment
 						dup_mmap
 					dup_task_struct task_struct
 					copy_thread arch/i386/kernel/process.c
+					set_kthread_struct
+						p->worker_private = kthread;
 
 		file
 		file_operations	ldt
@@ -12033,7 +13152,7 @@ __udp_gso_segment
 	x early_trap_init	lkm2
 		set_intr_gate(14, &page_fault);
 		x page_fault  arch/i386/kernel/entry.S:631: lkm2
-			do_page_fault  current .. mm_structlt	lkm2
+			x do_page_fault  current .. mm_structlt	lkm2
 				mm_struct mm = tsk->mm;  current .. mm_struct
 				?? notify_die notifier_call_chain
 				vma = find_vma mm_struct  ▻ vm_area_struct
@@ -13150,7 +14269,127 @@ __udp_gso_segment
 			__pgprot(pgprot_val(prot) | cachemode2protval(_PAGE_CACHE_MODE_WC));
 
 
-=== debug
+=== Debug
+
+
+include/linux/ftrace.h
+
+	cd /sys/kernel/tracing/
+	set_event				# set event filter (*:* means all events)
+	tracing_cpumask		# cpus 2-127 (exclude housekeeping 0-1)
+	current_tracer	# choose the function_graph tracer
+	max_graph_depth				# how many levels are shown (0 means all)
+	options/latency-format		# show latency information
+	options/funcgraph-abstime		# display timestamp from boot at each line
+	options/funcgraph-tail		# show function end instead of just "}" 
+	options/funcgraph-proc		# show process' command line at each line
+	tracing_on					# start writing to the trace ring buffer
+
+
+
+kernel/trace/trace_irqsoff.c
+
+	CONFIG_PREEMPT_TRACER=y
+		trace_preempt_off
+				tracer_preempt_off
+					start_critical_timing
+		trace_preempt_on
+			tracer_preempt_on
+				preempt_trace
+				stop_critical_timing
+					__trace_function ->
+					check_critical_timing ->
+
+	include/linux/tracepoint.h
+	include/trace/define_trace.h
+	include/trace/trace_events.h
+		TRACE_EVENT
+			DECLARE_TRACE*
+
+include/linux/ftrace.h
+kernel/trace/trace_preemptirq.c
+
+	CONFIG_TRACE_PREEMPT_TOGGLE
+	trace_preempt_on
+	trace_preempt_off
+
+include/trace/events/preemptirq.h
+
+	#define TRACE_SYSTEM preemptirq
+	CONFIG_TRACE_IRQFLAGS
+	trace_irq_enable
+	trace_irq_disable
+	CONFIG_TRACE_PREEMPT_TOGGLE
+	trace_preempt_enable
+	trace_preempt_disable
+
+kernel/trace/trace_irqsoff.c
+
+	init_irqsoff_tracer
+		irqsoff_tracer
+			irqsoff_tracer_init
+				__irqsoff_tracer_init
+					set_tracer_flag
+					ftrace_init_array_ops
+					start_irqsoff_tracer
+						register_irqsoff_function
+							register_ftrace_graph
+							register_ftrace_function
+								prepare_direct_functions_for_ipmodify
+								register_ftrace_function_nolock
+		preemptoff_tracer
+			preemptoff_tracer_init
+				__irqsoff_tracer_init ->
+		preemptirqsoff_tracer
+			preemptirqsoff_tracer_init
+				__irqsoff_tracer_init ->
+			irqsoff_tracer_start
+	./tools/tracing/latency/latency-collector.c
+	CONFIG_IRQSOFF_TRACER=y
+		tracing_max_lat_fops
+			tracing_max_lat_write
+				max_latency
+			d_max_latency
+				echo 0 > /sys/kernel/tracing/tracing_max_latency
+		trace_hardirqs_off_finish
+			tracer_hardirqs_off
+				start_critical_timings
+					start_critical_timing
+						ftrace_now
+							buffer_ftrace_now
+								ring_buffer_time_stamp
+									rb_time_stamp
+										trace_clock_local ->
+						__trace_function
+							trace_graph_function
+								__trace_graph_function
+									__trace_graph_entry
+										__graph_entry
+											ring_buffer_event_data
+									__trace_graph_return
+										ring_buffer_event_data
+							trace_function
+								ring_buffer_event_data
+									rb_event_data
+		trace_hardirqs_on
+			tracer_hardirqs_on
+				stop_critical_timings
+					stop_critical_timing
+						__trace_function ->
+						__trace_stack ->
+						check_critical_timing
+							ftrace_now
+							report_latency
+								tracing_thresh
+								max_latency
+							__trace_function ->
+	default_idle_call, cpu_idle_poll
+		start_critical_timings
+	DEFINE_EVENT
+	DECLARE_TRACE*
+	__DECLARE_TRACE*
+	__DECLARE_TRACE_COMMON
+		register_trace_##name
 
 	vi /etc/default/grub; update-grub; reboot
 
@@ -13374,8 +14613,25 @@ __udp_gso_segment
 			_printk_deferred
 				vprintk_deferred
 					vprintk_emit
+						vprintk_store
 						printk_store perf
 							vsnprintf
+
+
+	
+	irq_work/7-91      [007] .....  3489.531424: noise: irq_work_single wake_up_klogd_work_func duration 50 us
+
+	vprintk_emit
+		wake_up_klogd
+			__wake_up_klogd
+				wake_up_klogd_work
+					wake_up_klogd_work_func
+						<- irq_work_single
+						printk_pending
+						wake_up_interruptible(&log_wait);
+							__wake_up_common
+
+
 	printk
 		/proc/sys/kernel/printk
 			debug_kernel
@@ -13443,8 +14699,10 @@ __udp_gso_segment
 						nmi_cpu_start
 							op_amd_start
 							ppro_start
+								rdmsr
 								rdmsrl
-									rdmsr
+									native_read_msr
+										__rdmsr
 								wrmsrl
 									wrmsr
 				nmi_timer_init
@@ -13776,8 +15034,6 @@ git describe --contains  --match 'v*' 5a80bd075f3b
 		nf_register_hooks  ▻
 	mmap_mem
 
-	sys_timer_create
-
 	TIME time
 	sys_gettimeofday
 		do_gettimeofday
@@ -13904,6 +15160,8 @@ git describe --contains  --match 'v*' 5a80bd075f3b
 				rcu_utilization
 			rcu_qs
 			rcu_tasks_qs(current, preempt);
+			rcu_preempt_ctxt_queue
+			trace_rcu_utilization(TPS("End context switch"));
 
 	gic_irq_domain_alloc
 		gic_irq_domain_map
@@ -15080,4 +16338,83 @@ git describe --contains  --match 'v*' 5a80bd075f3b
 CKI Continuous Kernel Integration
 
 
+	rcu_spawn_cpu_nocb_kthread
+		kthread_run
+		rcu_nocb_gp_kthread
+			nocb_gp_wait
+
+host 			411us
+normal	rtla timerlat	50ms
+rt	rtla timerlat	5649us
+	offline 	3420us
+
+
+tp
+	725us
+
+
+(sleep 5; echo 0 > /sys/devices/system/cpu/cpu3/online) & rtla timerlat top -c 1
+
+echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/devices/system/cpu/cpu3/online) & rtla timerlat hist -b1000 -E 10 -c 1 -a 3000|
+
+
+patchpal/
+	gui/
+		src/patchpal/main.rs
+			start
+		DiffModel
+			run_ai
+		command_ai
+			run_ai
+				call_ai_rpc
+					patchpal.usersys.redhat.com:9000
+			parse_result
+	backend/
+		train/
+			metrics.py
+				main
+					postprocess_results
+					save_results_postprocessed
+					save_metrics_to_file
+					plot_and_save_distribution
+					all_roc_plots
+                    all_distribution_plots
+		inference/
+			server.py
+				InferHandler
+			test_server.py
+				InferClient
+		train
+			train.py
+				main
+					WrappedTokenizer
+					WrappedModel
+		main
+			parse_args
+			WrappedTokenizer
+			AutoTokenizer
+			WrappedModel
+				train
+				Trainer
+				TrainingArguments
+				save_model
+
+
+Functions 
+osnoise_hist_main(), osnoise_top_main(), timerlat_hist_main() and timerlat_top_main() are very long and
+have duplicated code.
+
+Consiolidate duplicated lines into save_trace_to_file().
+
+perf probe --add call_timer_fn
+perf record -g -e probe:call_timer_fn -aR sleep 1
+perf report
+
+perf record --overwrite -a -e cycles --switch-output=signal
+perf script -i perf.data...
+
+gcc msr-tools/rdmsr.c -o /usr/local/bin/rdmsr
+
+
+check owner 
 
