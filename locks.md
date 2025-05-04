@@ -1,5 +1,46 @@
 ```mermaid
 %%{
+  init: {
+    'theme': 'base',
+    'themeVariables': {
+        'primaryColor': '#eeee',
+        'primaryBorderColor': '#ffff',
+      'fontSize':'50px'
+    }
+  }
+}%%
+graph TB
+
+mutex["mutex lock/unlock"]
+mutex --> mutex_lock & mutex_unlock
+
+subgraph "<a href='https://elixir.bootlin.com/linux/latest/source/kernel/locking/rtmutex_api.c'>kernel/locking/rtmutex_api.c</a>"
+mutex_lock
+mutex_unlock
+end
+
+subgraph "<a href='https://elixir.bootlin.com/linux/latest/source/kernel/locking/rtmutex.c'>kernel/locking/rtmutex.c</a>"
+mutex_lock --> __mutex_lock_common
+mutex_unlock --> __rt_mutex_unlock
+
+__mutex_lock_common --> __rt_mutex_lock
+__rt_mutex_lock -->|1| rt_mutex_try_acquire --> rt_mutex_cmpxchg_acquire --> owner
+__rt_mutex_lock -->|2| rt_mutex_slowlock
+--> __rt_mutex_slowlock_locked --> __rt_mutex_slowlock --> try_to_take_rt_mutex
+try_to_take_rt_mutex -->|1| rt_mutex_owner --> owner
+try_to_take_rt_mutex -->|2| rt_mutex_set_owner --> owner
+
+__rt_mutex_unlock -->|1| rt_mutex_cmpxchg_release --> owner
+__rt_mutex_unlock -->|2| rt_mutex_slowunlock
+
+rt_mutex_slowunlock -->|1| unlock_rt_mutex_safe --> rt_mutex_cmpxchg_release
+rt_mutex_slowunlock -->|2| mark_wakeup_next_waiter --> owner
+
+end
+```
+
+```mermaid
+%%{
 	init: {
 		'theme': 'base',
 		'themeVariables': {
