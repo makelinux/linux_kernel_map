@@ -1,3 +1,6 @@
+## Internals of Real-Time Specific Locks
+
+### Mutext lock and unlock
 ```mermaid
 %%{
   init: {
@@ -39,6 +42,7 @@ rt_mutex_slowunlock -->|2| mark_wakeup_next_waiter --> owner
 end
 ```
 
+### Local lock lock and unlock
 ```mermaid
 %%{
 	init: {
@@ -96,6 +100,7 @@ rt_spin_unlock --> rcu_read_unlock
 
 ```
 
+### raw_spin_lock_irq save/restore
 ```mermaid
 %%{
 	init: {
@@ -127,6 +132,7 @@ do_raw_spin_unlock --> queued_spin_unlock --> smp_store_release
 do_raw_spin_lock --> queued_spin_lock --> set_locked
 ```
 
+### raw_spin lock/unlock irq
 ```mermaid
 %%{
 	init: {
@@ -151,4 +157,4 @@ raw_spin_unlock_irq --> _raw_spin_unlock_irq --> __raw_spin_unlock_irq
 __raw_spin_unlock_irq -->|1| do_raw_spin_unlock
 __raw_spin_unlock_irq -->|2| local_irq_enable
 __raw_spin_unlock_irq -->|2| preempt_enable
-
+```
