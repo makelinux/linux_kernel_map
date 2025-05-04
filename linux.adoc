@@ -65,7 +65,7 @@ keywords:
 
 === Table TOC
 
-[cols="1,1,1,1,1,1"]
+[cols="6*",options="header,footer,autowidth"]
 |===
 | <<human-interface>>
 | <<system>>
@@ -75,32 +75,40 @@ keywords:
 | <<networking>>
 
 |
-|
-|
-|
-|
-|
-
-|
 <<debug>> +
 <<video>>
 |
-<<_smp>> +
+<<smp>> +
 <<cpumask>> +
 <<cpuhp>> +
+<<hw-interfaces,HW>> +
+
 |
-<<_real_time_preemption,RT>>
+<<real-time-preemption,RT>>
 |
 <<processes>> +
 <<interrupts>>
 |
-<<storage_busses>> +
+<<storage-busses>> +
 <<nvme>>
 |
 <<sockets>> +
 <<ip>> +
 <<eth>>
 
+|
+|
+|
+|
+|
+|
+
+|
+|
+|
+|
+|
+|
 |===
 
 === TODO
@@ -7121,7 +7129,7 @@ kernel/cgroup/cpuset.c
 	see rcutree.use_softirq=
 
 
-== NMI
+==== NMI
 
 	request_nmi
 		__setup_irq
