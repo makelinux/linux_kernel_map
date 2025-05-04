@@ -55,23 +55,44 @@ local["local lock/unlock"]
 local -->|DEFINE_PER_CPU| local_lock_t
 local --> local_lock & local_unlock
 local_lock_t --> spinlock_t
-
+subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/include/linux/local_lock.h>include/linux/local_lock.h</a>"
+local_lock
+local_unlock
+end
+subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/include/linux/local_lock_internal.h>include/linux/local_lock_internal.h</a>"
+local_lock_t
+__local_lock
+__local_unlock
+end
+subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/include/linux/spinlock_rt.h>include/linux/spinlock_rt.h</a>"
+spin_lock
+spin_unlock
+end
+subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/kernel/locking/spinlock_rt.c>kernel/locking/spinlock_rt.c</a>"
+rt_spin_lock --> __rt_spin_lock --> rtlock_lock
+rt_spin_unlock 
+end
 local_lock --> __local_lock -->|1| migrate_disable
-__local_lock -->|2| spin_lock --> rt_spin_lock --> __rt_spin_lock
--->rtlock_lock
--->|1| try_to_take_rt_mutex
+__local_lock -->|2| spin_lock --> rt_spin_lock
+rtlock_lock -->|1| try_to_take_rt_mutex
 
-rtlock_lock --> rt_mutex_cmpxchg_acquire --> try_cmpxchg_acquire --> cmpxchgl
-rtlock_lock --> rtlock_slowlock--> rtlock_slowlock_locked
+subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/kernel/kernel/locking/rtmutex.c>kernel/kernel/locking/rtmutex.c</a>"
+rtlock_lock --> rtlock_slowlock --> rtlock_slowlock_locked
+--> try_to_take_rt_mutex --> rt_mutex_set_owner
+rtlock_lock --> rt_mutex_cmpxchg_acquire
+rt_mutex_cmpxchg_release
+rt_mutex_slowunlock --> mark_wakeup_next_waiter
+end
+rt_mutex_cmpxchg_acquire --> try_cmpxchg_acquire --> cmpxchgl
 
-rtlock_slowlock_locked -->try_to_take_rt_mutex
--->rt_mutex_set_owner -->xchg_acquire==>xchg
+rt_mutex_set_owner -->xchg_acquire -->xchg
 
 local_unlock --> __local_unlock -->|1| spin_unlock
 __local_unlock -->|2| migrate_enable
-spin_unlock --> rt_spin_unlock
+spin_unlock ---> rt_spin_unlock
 --> migrate_enable & rt_mutex_cmpxchg_release & rt_mutex_slowunlock
-rt_mutex_slowunlock -->mark_wakeup_next_waiter
+
+rt_spin_unlock --> rcu_read_unlock
 
 ```
 
