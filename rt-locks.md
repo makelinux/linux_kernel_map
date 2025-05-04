@@ -69,8 +69,9 @@ __local_lock
 __local_unlock
 end
 subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/include/linux/spinlock_rt.h>include/linux/spinlock_rt.h</a>"
-spin_lock
+spin_lock_irqsave --> spin_lock
 spin_unlock
+spin_unlock_irqrestore --> rt_spin_unlock
 end
 subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/kernel/locking/spinlock_rt.c>kernel/locking/spinlock_rt.c</a>"
 rt_spin_lock --> __rt_spin_lock --> rtlock_lock
