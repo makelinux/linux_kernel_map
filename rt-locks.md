@@ -100,8 +100,8 @@ rt_spin_lock --> __rt_spin_lock --> rtlock_lock
 %% spin_unlock_irqrestore --> rt_spin_unlock
 rt_spin_unlock
 end
-local_lock --> __local_lock -->|1| migrate_disable
-__local_lock --->|2| spin_lock --> rt_spin_lock
+local_lock --> __local_lock --->|1| migrate_disable
+__local_lock -->|2| spin_lock --> rt_spin_lock
 rtlock_lock -->|1| try_to_take_rt_mutex
 
 subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/kernel/kernel/locking/rtmutex.c>kernel/kernel/locking/rtmutex.c</a>"
