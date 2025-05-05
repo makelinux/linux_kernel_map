@@ -19,11 +19,12 @@ graph TB
 mutex0["mutex lock/unlock"]
 mutex0 --> mutex & mutex_lock & mutex_unlock
 
-mutex --> rt_mutex_base
-subgraph "<a href='https://elixir.bootlin.com/linux/latest/source/include/linux/rtmutex.h>include/linux/rtmutex.h</a>"
+subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/include/linux/rtmutex.h>include/linux/rtmutex.h</a>"
+rt_mutex_base["struct rt_mutex_base"] --> owner
 end
-owner
-rt_mutex_base-->owner
+subgraph "<a href=https://elixir.bootlin.com/linux/v6.14.5/source/include/linux/mutex_types.h>include/linux/mutex_types.h</a>"
+mutex["struct mutex"] --> rt_mutex_base
+end
 
 subgraph "<a href='https://elixir.bootlin.com/linux/latest/source/kernel/locking/rtmutex_api.c'>kernel/locking/rtmutex_api.c</a>"
 mutex_lock
@@ -66,8 +67,7 @@ owner
 	}
 }%%
 graph TB
-local["local lock/unlock"]
-local -->|DEFINE_PER_CPU| local_lock_t
+local["local lock/unlock"] -->|DEFINE_PER_CPU| local_lock_t
 local --> local_lock & local_unlock
 local_lock_t --> spinlock_t
 subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/include/linux/local_lock.h>include/linux/local_lock.h</a>"
