@@ -120,9 +120,11 @@ rt_mutex_set_owner --> xchg_acquire -->xchg
 local_unlock --> __local_unlock --->|1| spin_unlock
 __local_unlock -->|2| migrate_enable
 spin_unlock ---> rt_spin_unlock
---> migrate_enable & rt_mutex_cmpxchg_release & rt_mutex_slowunlock
+rt_spin_unlock -->|1| migrate_enable
 rt_mutex_cmpxchg_release --> owner
-rt_spin_unlock --> rcu_read_unlock
+rt_spin_unlock -->|2| rcu_read_unlock
+rt_spin_unlock -->|3| rt_mutex_cmpxchg_release
+rt_spin_unlock -->|4| rt_mutex_slowunlock
 local_lock_t ~~~ spin_lock
 ```
 
