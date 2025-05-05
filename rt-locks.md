@@ -1,21 +1,29 @@
 ## Internals of Real-Time Specific Locks
 
-### Mutext lock and unlock
+### Mutex
 ```mermaid
 %%{
-  init: {
-    'theme': 'base',
-    'themeVariables': {
-        'primaryColor': '#eeee',
-        'primaryBorderColor': '#ffff',
-      'fontSize':'50px'
-    }
-  }
+	init: {
+		'theme': 'base',
+		'themeVariables': {
+			'primaryColor': '#eeee',
+        		'primaryColor': '#fff0',
+        		'primaryBorderColor': '#eeef',
+			'clusterBkg': '#eeef',
+			'fontSize':'50px'
+		}
+	}
 }%%
 graph TB
 
-mutex["mutex lock/unlock"]
-mutex --> mutex_lock & mutex_unlock
+mutex0["mutex lock/unlock"]
+mutex0 --> mutex & mutex_lock & mutex_unlock
+
+mutex --> rt_mutex_base
+subgraph "<a href='https://elixir.bootlin.com/linux/latest/source/include/linux/rtmutex.h>include/linux/rtmutex.h</a>"
+end
+owner
+rt_mutex_base-->owner
 
 subgraph "<a href='https://elixir.bootlin.com/linux/latest/source/kernel/locking/rtmutex_api.c'>kernel/locking/rtmutex_api.c</a>"
 mutex_lock
@@ -40,16 +48,19 @@ rt_mutex_slowunlock -->|1| unlock_rt_mutex_safe --> rt_mutex_cmpxchg_release
 rt_mutex_slowunlock -->|2| mark_wakeup_next_waiter --> owner
 
 end
+owner
+
 ```
 
-### Local lock lock and unlock
+### Local lock and spinlock
 ```mermaid
 %%{
 	init: {
 		'theme': 'base',
 		'themeVariables': {
-        'primaryColor': '#eeee',
-        'primaryBorderColor': '#ffff',
+        		'primaryColor': '#fff0',
+        		'primaryBorderColor': '#eeef',
+			'clusterBkg': '#eeef',
 			'fontSize':'50px'
 		}
 	}
@@ -71,14 +82,14 @@ end
 subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/include/linux/spinlock_rt.h>include/linux/spinlock_rt.h</a>"
 spin_lock_irqsave --> spin_lock
 spin_unlock
-spin_unlock_irqrestore --> rt_spin_unlock
+spin_unlock_irqrestore
 end
 subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/kernel/locking/spinlock_rt.c>kernel/locking/spinlock_rt.c</a>"
 rt_spin_lock --> __rt_spin_lock --> rtlock_lock
-rt_spin_unlock 
+spin_unlock_irqrestore --> rt_spin_unlock
 end
 local_lock --> __local_lock -->|1| migrate_disable
-__local_lock -->|2| spin_lock --> rt_spin_lock
+__local_lock --->|2| spin_lock --> rt_spin_lock
 rtlock_lock -->|1| try_to_take_rt_mutex
 
 subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/kernel/kernel/locking/rtmutex.c>kernel/kernel/locking/rtmutex.c</a>"
@@ -88,11 +99,11 @@ rtlock_lock --> rt_mutex_cmpxchg_acquire
 rt_mutex_cmpxchg_release
 rt_mutex_slowunlock --> mark_wakeup_next_waiter
 end
-rt_mutex_cmpxchg_acquire --> try_cmpxchg_acquire --> cmpxchgl
+rt_mutex_cmpxchg_acquire -----> try_cmpxchg_acquire --> cmpxchgl
 
 rt_mutex_set_owner -->xchg_acquire -->xchg
 
-local_unlock --> __local_unlock -->|1| spin_unlock
+local_unlock --> __local_unlock --->|1| spin_unlock
 __local_unlock -->|2| migrate_enable
 spin_unlock ---> rt_spin_unlock
 --> migrate_enable & rt_mutex_cmpxchg_release & rt_mutex_slowunlock
