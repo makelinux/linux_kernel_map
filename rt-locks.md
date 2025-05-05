@@ -105,9 +105,9 @@ __local_lock -->|2| spin_lock --> rt_spin_lock
 rtlock_lock -->|1| try_to_take_rt_mutex
 
 subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/kernel/kernel/locking/rtmutex.c>kernel/kernel/locking/rtmutex.c</a>"
-rtlock_lock --> rtlock_slowlock --> rtlock_slowlock_locked
+rtlock_lock -->|2| rtlock_slowlock --> rtlock_slowlock_locked
 --> try_to_take_rt_mutex --> rt_mutex_set_owner
-rtlock_lock --> rt_mutex_cmpxchg_acquire
+rtlock_lock -->|1| rt_mutex_cmpxchg_acquire
 rt_mutex_cmpxchg_release
 rt_mutex_slowunlock --> mark_wakeup_next_waiter --> owner
 end
