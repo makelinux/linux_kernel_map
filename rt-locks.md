@@ -90,13 +90,15 @@ __local_lock
 __local_unlock
 end
 subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/include/linux/spinlock_rt.h>include/linux/spinlock_rt.h</a>"
-spin_lock_irqsave --> spin_lock
+%% spin_lock_irqsave --> spin_lock
+spin_lock
 spin_unlock
-spin_unlock_irqrestore
+%% spin_unlock_irqrestore
 end
 subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/kernel/locking/spinlock_rt.c>kernel/locking/spinlock_rt.c</a>"
 rt_spin_lock --> __rt_spin_lock --> rtlock_lock
-spin_unlock_irqrestore --> rt_spin_unlock
+%% spin_unlock_irqrestore --> rt_spin_unlock
+rt_spin_unlock
 end
 local_lock --> __local_lock -->|1| migrate_disable
 __local_lock --->|2| spin_lock --> rt_spin_lock
@@ -119,8 +121,8 @@ local_unlock --> __local_unlock --->|1| spin_unlock
 __local_unlock -->|2| migrate_enable
 spin_unlock ---> rt_spin_unlock
 --> migrate_enable & rt_mutex_cmpxchg_release & rt_mutex_slowunlock
-
+rt_mutex_cmpxchg_release --> owner
 rt_spin_unlock --> rcu_read_unlock
-
+local_lock_t ~~~ spin_lock
 ```
 
