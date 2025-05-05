@@ -69,7 +69,7 @@ owner
 graph TB
 local["local lock/unlock"] -->|DEFINE_PER_CPU| local_lock_t
 local --> local_lock & local_unlock
-local_lock_t --> spinlock_t
+local_lock_t ----> spinlock_t
 subgraph "<a href=https://elixir.bootlin.com/linux/latest/source/include/linux/rtmutex.h>include/linux/rtmutex.h</a>"
 rt_mutex_base["struct rt_mutex_base"] --> owner
 end
@@ -111,7 +111,7 @@ rt_mutex_cmpxchg_acquire --> owner
 rt_mutex_cmpxchg_acquire -----> try_cmpxchg_acquire --> cmpxchgl
 
 rt_mutex_set_owner --> owner
-xchg_acquire -->xchg
+rt_mutex_set_owner --> xchg_acquire -->xchg
 
 local_unlock --> __local_unlock --->|1| spin_unlock
 __local_unlock -->|2| migrate_enable
