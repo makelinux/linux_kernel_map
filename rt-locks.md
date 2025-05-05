@@ -1,5 +1,7 @@
 ## Internals of Real-Time Specific Locks
 
+Draft — feedback and corrections are welcome.
+
 ### Mutex
 ```mermaid
 %%{
