@@ -3,9 +3,14 @@
 :toc-title: Contents
 :toc-class: floating-toc
 
+The initial implementation handles the debug (-D) option, with more
+common options to be migrated in future patches.
+
 = Costa's Linux kernel research scratchpad
 
 keywords:
+
+	CONFIG_ACPI_HOTPLUG_CPU
 
 	
 	scale_freq_tick
@@ -81,8 +86,7 @@ keywords:
 <<smp>> +
 <<cpumask>> +
 <<cpuhp>> +
-<<hw-interfaces,HW>> +
-
+<<hw-interfaces,HW>>
 |
 <<real-time-preemption,RT>>
 |
@@ -112,6 +116,8 @@ keywords:
 |===
 
 === TODO
+
+	kernel:__common_interrupt: 32.57 No irq handler for vector
 
 	sysctl kernel.sched_schedstats=1
 	rtla hwnoise -H 2 -c 4,132 -d 1h --quiet -s 200 -t osnoise_trace.txt -p 1000000 -r1000000 -e sched -e timer -e irq_vectors -e irq -e nmi -e ipi -e power:cpu_frequency -e msr
@@ -204,6 +210,7 @@ keywords:
 			tick_program_event ...
 		tick-sched.o
 			tick_get_tick_sched
+				tick_cpu_sched
 			referrers tick_dep_set_.: tick_dep_set_cpu
 				__perf_event_account_interrupt
 					tick_dep_set_cpu
@@ -238,6 +245,9 @@ keywords:
 	CONFIG_HZ_PERIODIC
 
 	CONFIG_PREEMPT_RT PREEMPT_RT
+
+		include/linux/interrupt.h
+			force_irqthreads
 
 		include/linux/rwlock_rt.h
 			rt_read_lock
@@ -324,9 +334,10 @@ keywords:
 				rt_mutex_cmpxchg_release
 					try_cmpxchg_release
 						raw_try_cmpxchg_release
-				rt_mutex_slowunlock
                                         rt_mutex_has_waiters
                                         unlock_rt_mutex_safe
+						clear_rt_mutex_waiters
+						owner
                                                 rt_mutex_cmpxchg_release
 	                                mark_wakeup_next_waiter
 						rt_mutex_top_waiter
@@ -369,7 +380,7 @@ keywords:
 				preempt_disable
 			preempt_enable_nested
 				preempt_enable
-		preempt_model_rt
+			preempt_model_rt
 		irq_exit_rcu
 		__irq_exit_rcu
 			wake_timersd
@@ -427,12 +438,138 @@ keywords:
 
 === SMP
 
+	include/linux/smp.h kernel/smp.c arch/x86/kernel/smp.c
+
+	include/linux/smp.h
+		smp_send_stop
+			smp_ops.stop_other_cpus
+				native_stop_other_cpus
+					apic_send_IPI_allbutself
+		crash_smp_send_stop
+			smp_ops.crash_stop_other_cpus
+				kdump_nmi_shootdown_cpus
+					nmi_shootdown_cpus
+						apic_send_IPI_allbutself
+	arch/x86/include/asm/smp.h
+		stop_other_cpus and wait
+			smp_ops.stop_other_cpus
+
 	sysvec_call_function
 		trace_call_function_entry(CALL_FUNCTION_VECTOR);
 			"call_function_entry: vector=252"
 
 	cpu_dev_init
 		cpu_root_attrs
+
+	kernel/smp.c
+		smp_call_function
+			<
+				sysrq_showregs_othercpus
+				kernel/scftorture.c
+					scftorture_invoke_one
+					scf_torture_cleanup
+				kick_all_cpus_sync
+				kernel/trace/ftrace.c	
+					update_ftrace_function
+					ftrace_modify_all_code
+				rb_hammer_test
+				tlb_remove_table_sync_one
+				iucv_cleanup_queue
+				arm
+					bL_switcher_trace_trigger
+					broadcast_tlb_a15_erratum
+					__flush_ptrace_access
+			cpu_online_mask
+			smp_call_function_many
+				can wait
+				< 
+					raise_mce
+					__rwmsr_on_cpus
+					arm broadcast_tlb_mm_a15_erratum
+					drv_write
+					scftorture_invoke_one
+					membarrier_global_expedited
+					membarrier_private_expedited
+					clock_was_set
+					kvm_kick_many_cpus
+				smp_call_function_many_cond
+					_RET_IP_
+					trace_csd_queue_cpu
+					send_call_function_single_ipi
+						call_function_single_prep_ipi
+						arch_send_call_function_single_ipi ->
+					send_call_function_ipi_mask
+						arch_send_call_function_ipi_mask
+							kvm_smp_send_call_func_ipi
+							native_send_call_func_ipi
+								__apic_send_IPI_all
+								__apic_send_IPI_mask ->
+					csd_do_func
+						trace_csd_function_entry
+						trace_csd_function_exit
+						include/trace/events/csd.h
+					csd_lock_wait
+						__csd_lock_wait
+							csd_lock_wait_toolong
+						smp_cond_load_acquire
+
+		smp_call_function_single_async
+			<
+				crash_smp_send_stop
+				raise_backtrace
+				tick_broadcast
+				zpci_handle_fallback_irq
+				cpuid_read
+				rdmsr_safe_on_cpu
+				blk_mq_complete_send_ipi
+				ingenic_tcu_cevt_cb
+				cpuidle_coupled_poke
+				liquidio_napi_drv_callback
+				libeth_xsk_wakeup
+				hrtick_start
+				__unthrottle_cfs_rq_async
+				kick_ilb
+				__hrtimer_start_range_ns
+				kick_defer_list_purge
+				net_rps_send_ipi
+			generic_exec_single ->
+
+		smp_call_function_any
+			smp_call_function_single
+				generic_exec_single
+					__smp_call_single_queue
+						call_single_data_t (CSD)
+						trace_cs_queue_cpu_enabled
+						trace_csd_queue_cpu
+						send_call_function_single_ipi ->
+		smp_call_on_cpu
+			smp_call_on_cpu_struct
+			queue_work_on
+			wait_for_completion
+
+	cpu control
+		isolation & housekeeping
+		drain_all_stock
+			!cpu_is_isolated
+			schedule_work_on(cpu, &stock->work);
+		vmstat_shepherd
+			cpus_read_lock
+			!cpu_is_isolated
+			queue_delayed_work_on
+				__queue_delayed_work
+
+		schedule_work_on
+			queue_work_on ->
+		cpu_is_isolated
+			!housekeeping_test_cpu(cpu, HK_TYPE_DOMAIN) ||
+	       		!housekeeping_test_cpu(cpu, HK_TYPE_TICK) ||
+			cpuset_cpu_is_isolated	include/linux/cpuset.h
+				cpumask_test_cpu(cpu, isolated_cpus);
+
+	on_each_cpu
+		cpu_online_mask
+		on_each_cpu_cond_mask
+			smp_call_function_many_cond->
 
 
 ==== isolation
@@ -501,7 +638,7 @@ keywords:
 
 
 	sed 's/ /\n/g;s/=/\t/g' /proc/cmdline|column -t
-	sed $'s/ /\\n/g;s/=/\e[20G/g' /proc/cmdline
+	sed $'s/ /\\n/g;s/=/\e[40G/g' /proc/cmdline
 
 		memcg_stat_show
 			__mem_cgroup_flush_stats+75
@@ -531,6 +668,18 @@ keywords:
 	__bpf_kfunc
 
 ==== CPUHP...
+
+	Call sequence: takedown_cpu, stop_machine_cpuslocked, multi_cpu_stop, local_irq_disable
+
+	Sample challenge:
+		smp_call_function -> smp_call_function_many_cond -> send_call_function_single_ipi, csd_lock_wait would wait forever 
+
+		"smp_function_call, Thomas"
+		send_call_function_ipi_mask
+		on_each_cpu
+
+
+	https://lore.kernel.org/lkml/87frmj73qj.ffs@tglx/
 
 cpuhp online interferes oslat delay 3540 us RT; std 1300/5000
 hwnoise - pass
@@ -867,15 +1016,15 @@ cpu online:
 					local_irq_disable ->
 					hard_irq_disable
 					multi_cpu_stop
-
 						unsigned long flags;
 						local_save_flags
 							raw_local_save_flags
 								arch_local_save_flags
 						local_irq_disable ->
 						hard_irq_disable();
+						fn()
 						on cpu offline:
-						take_cpu_down
+							take_cpu_down
 						on online:
 							cache_rendezvous_handler
 								get_cache_aps_delayed_init
@@ -887,9 +1036,10 @@ cpu online:
 									pat_cpu_init
 						local_irq_restore(flags);
 					ack_state
-						thread_ack
+						MULTI_STOP_PREPARE -> MULTI_STOP_DISABLE_IRQ -> MULTI_STOP_RUN
+						atomic_dec_and_test(thread_ack)
 						set_state +1
-							thread_ack
+							thread_ack = num_threads
 					rcu_momentary_eqs
 					cpu_stop_signal_done
 
@@ -952,10 +1102,7 @@ cpu online:
 			torture_onoff_init->
 			...
 			scftorture_invoke_one
-				smp_call_function
-					< sysrq_showregs_othercpus
-					smp_call_function_many
-						smp_call_function_many_cond
+				smp_call_function ->
 
 	CONFIG_LOCK_TORTURE_TEST
 	lock_torture_init kernel/locking/locktorture.c
@@ -1072,9 +1219,7 @@ cpu online:
 							timerqueue_add
 					__hrtimer_get_next_event
 						__hrtimer_next_event_base
-					smp_call_function_single
-						generic_exec_single
-							__smp_call_single_queue ->
+					smp_call_function_single ->
 			tick_handover_do_timer
 			tick_shutdown
 
@@ -1148,6 +1293,81 @@ stop_machine* usages
 		put_online_cpus_atomic
 			percpu_read_unlock_irqsafe(&hotplug_pcpu_rwlock);
 		
+		change patterns:
+
+		Subject: [PATCH v6 10/46] smp, cpu hotplug: Fix smp_call_function_*() to prevent CPU offline properly
+		-       this_cpu = get_cpu();
+		+       get_online_cpus_atomic();
+		+       this_cpu = smp_processor_id();
+
+		-       put_cpu();
+		+       put_online_cpus_atomic();
+
+		percpu_rwlock:
+			01 Introduce the global reader-writer lock backend
+			02 Introduce per-CPU variables for the reader and the writer
+			03 Provide a way to define and init percpu-rwlocks at compile time
+			04 Implement the core design of Per-CPU Reader-Writer Locks
+			05 Make percpu-rwlocks IRQ-safe, optimally
+			06 Rearrange the read-lock code to fastpath nested percpu readers
+			07 Allow writers to be readers, and add lockdep annotations
+
+		Assorted:
+			08 CPU hotplug: Provide APIs to prevent CPU offline from atomic context
+			09 CPU hotplug: Convert preprocessor macros to static inline functions
+			10 smp, cpu hotplug: Fix smp_call_function_*() to prevent CPU offline properly
+			11 smp, cpu hotplug: Fix on_each_cpu_*() to prevent CPU offline properly
+
+			13 sched/migration: Use raw_spin_lock/unlock since interrupts are already disabled
+			17 clockevents: Use get/put_online_cpus_atomic() in clockevents_notify()
+			22 crypto: pcrypt - Protect access to cpu_online_mask with get/put_online_cpus()
+
+		Use get/put_online_cpus_atomic() to prevent CPU offline:
+			kernel:
+				12 sched/timer
+				14 sched/rt
+				15 tick
+				16 time/clocksource
+				18 softirq
+				19 irq
+			root:
+				20 net
+				21 block
+			drivers:
+				23 infiniband, ehca
+				24 [SCSI] fcoe
+				25 staging, octeon
+			arch:
+				26 x86
+				27 perf/x86
+				28 KVM ... from atomic context
+				29 kvm/vmx
+				30 x86/xen
+				31 alpha/smp
+				32 blackfin/smp
+				33 cris/smp
+				34 hexagon/smp
+				35 ia64
+				36 m32r
+				37 MIPS
+				38 mn10300
+				39 parisc
+				40 powerpc
+				41 sh
+				42 sparc
+				43 tile
+
+		stop_machine:
+			45 CPU hotplug, stop_machine: Decouple CPU hotplug from stop_machine() in Kconfig
+			46 Documentation/cpu-hotplug: Remove references to stop_machine()
+
+		lglock: add read-preference local-global rwlock
+
+		generated by:
+		pcregrep  -M 'Subject. \[.*\n\s' a.txt | sed '/Subject/{ N; s/\n / / }'| sort -u 
+
+
+
 
 === cpumask
 	mm/percpu.c
@@ -1198,44 +1418,6 @@ stop_machine* usages
 					for
 					&
 					return
-
-	kernel/smp.c
-		__smp_call_single_queue
-			call_single_data_t (CSD)
-			trace_csd_queue_cpu_enabled
-			trace_csd_queue_cpu
-			send_call_function_single_ipi
-		smp_call_function_many_cond
-			_RET_IP_
-			trace_csd_queue_cpu
-			send_call_function_single_ipi
-			send_call_function_ipi_mask
-			csd_do_func
-				trace_csd_function_entry
-				trace_csd_function_exit
-				include/trace/events/csd.h
-			csd_lock_wait
-				__csd_lock_wait
-				smp_cond_load_acquire
-
-	cpu control
-		isolation & housekeeping
-		drain_all_stock
-			!cpu_is_isolated
-			schedule_work_on(cpu, &stock->work);
-		vmstat_shepherd
-			cpus_read_lock
-			!cpu_is_isolated
-			queue_delayed_work_on
-				__queue_delayed_work
-
-		schedule_work_on
-			queue_work_on ->
-		cpu_is_isolated
-			!housekeeping_test_cpu(cpu, HK_TYPE_DOMAIN) ||
-	       		!housekeeping_test_cpu(cpu, HK_TYPE_TICK) ||
-			cpuset_cpu_is_isolated	include/linux/cpuset.h
-				cpumask_test_cpu(cpu, isolated_cpus);
 
 === Other system
 
@@ -2731,6 +2913,7 @@ drivers/firmware/efi/libstub/x86-stub.c
 
 init/main.c
 
+
 	kernel_init
 		kernel_init_freeable
 			cache_aps_init
@@ -2738,9 +2921,11 @@ init/main.c
 				stop_machine kernel/stop_machine.c
 					cpus_read_lock
 					stop_machine_cpuslocked
+						.num_threads = num_online_cpus
 						.active_cpus = cpus,
 						cpu_online_mask
 						&multi_cpu_stop
+						set_state(&msdata, MULTI_STOP_PREPARE);
 						stop_cpus
 							mutex_lock(&stop_cpus_mutex);
 							__stop_cpus
@@ -2843,6 +3028,9 @@ init/main.c
 					x86_wallclock_init
 						x86_platform.get_wallclock = get_rtc_noop;
 						x86_platform.set_wallclock = set_rtc_noop;
+				topology_init_possible_cpus
+					set_cpu_possible
+						__cpu_possible_mask
 
 			page_alloc_init
 			parse_early_param
@@ -3409,8 +3597,9 @@ Affining kthreads follow either of four existing different patterns:
 		      System Calls Related to Scheduling
 
 		linux/sched.h
-		schedule kernel/sched.c 200 LOC
-			__schedule ??
+		schedule kernel/sched.c
+			__schedule_loop kernel/sched/core.c
+			__schedule 130 LOC
 				pre_schedule
 				signal_pending_state
 				trace_sched_switch
@@ -3421,7 +3610,7 @@ Affining kthreads follow either of four existing different patterns:
 					switch_to
 						__switch_to
 					finish_task_switch
-				post_schedule
+				x post_schedule
 
 		sys_nice
 			set_user_nice
@@ -3507,6 +3696,11 @@ Affining kthreads follow either of four existing different patterns:
 						cpuhp_report_idle_dead
 							rcutree_report_cpu_dead
 							play_dead
+							smp_call_function_single
+							cpuhp_complete_idle_dead
+								complete_ap_thread
+									done_up
+									done_down
 						arch_cpu_idle_dead
 						arch_cpu_idle_enter
 						tick_nohz_idle_restart_tick
@@ -3515,6 +3709,7 @@ Affining kthreads follow either of four existing different patterns:
 						cpuidle_idle_call ->
 							tick_nohz_idle_stop_tick ->
 							tick_nohz_tick_stopped
+								TS_FLAG_STOPPED
 						arch_cpu_idle_exit
 						tick_nohz_idle_exit
 							ts->inidle = 0;
@@ -3603,6 +3798,13 @@ Affining kthreads follow either of four existing different patterns:
 
 === Locking
 
+include/linux/cleanup.h
+
+	DEFINE_GUARD
+	guard
+	scoped_guard (< do_timer_create)
+
+
 
 	Synchronizations
 		5. Kernel Synchronization
@@ -3639,8 +3841,14 @@ Affining kthreads follow either of four existing different patterns:
 		semaphore
 		wait_queue_t
 
-		local_bh_disable
-		local_bh_enable
+		include/linux/bottom_half.h
+			local_bh_disable
+				SOFTIRQ_DISABLE_OFFSET
+				__local_bh_disable_ip
+					preempt_count_add
+			local_bh_enable
+				SOFTIRQ_DISABLE_OFFSET
+				__local_bh_enable_ip
 
 		local_lock
 			__local_lock
@@ -3652,6 +3860,17 @@ Affining kthreads follow either of four existing different patterns:
 					spin_lock(this_cpu_ptr((__lock)))
 						rt_spin_lock
 							__rt_spin_lock ->
+	sample
+		nft_inner_restore_tun_ctx
+			local_bh_disable
+			local_lock_nested_bh
+
+			local_unlock_nested_bh
+			local_bh_enable();
+==== Local lock
+
+local_irq_save local_irq_restore, frequent 
+
 		local_lock_irqsave
 			__local_lock_irqsave
 				!rt:
@@ -3664,7 +3883,11 @@ Affining kthreads follow either of four existing different patterns:
 								arch_local_irq_disable
 									native_irq_disable
 										cli
+						raw_irqs_disabled_flags
+							arch_irqs_disabled_flags
+								X86_EFLAGS_IF
 					local_lock_acquire
+
 				rt:
 					__local_lock ->
 						migrate_disable
@@ -3684,6 +3907,7 @@ Affining kthreads follow either of four existing different patterns:
 						raw_check_bogus_irq_restore
 							warn_bogus_irq_restore
 						arch_local_irq_restore
+							arch_irqs_disabled_flags
 							arch_local_irq_enable
 								native_irq_enable
 									sti
@@ -3753,7 +3977,9 @@ Affining kthreads follow either of four existing different patterns:
 			struct list_head	wait_list;
 
 			No timeout for mutex!
+
 			mutex_lock
+				!RT  kernel/locking/mutex.c
 				 might_sleep();
 				__mutex_trylock_fast
 					atomic_long_try_cmpxchg_acquire
@@ -3784,6 +4010,9 @@ Affining kthreads follow either of four existing different patterns:
 				__mutex_lock_killable_slowpath
 					return __mutex_lock(lock, TASK_KILLABLE, 0, NULL, _RET_IP_);
 			mutex_unlock
+				RT
+				__rt_mutex_unlock
+				!RT
 				mutex_clear_owner(lock);
 				__mutex_fastpath_unlock(&lock->count, __mutex_unlock_slowpath);
 				__mutex_unlock_slowpath
@@ -3855,6 +4084,8 @@ Affining kthreads follow either of four existing different patterns:
 							preempt_disable();
 							spin_acquire ->
 							LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);
+							???
+								native_queued_spin_lock_slowpath PARAVIRT_SPINLOCKS
 				----
 					preempt_disable ->
 					spin_acquire(&lock->dep_map, 0, 0, _RET_IP_);
@@ -3873,6 +4104,11 @@ Affining kthreads follow either of four existing different patterns:
 			spin_unlock_irq()
 
 			spin_lock_irqsave lkm2
+				RT
+				spin_lock include/linux/spinlock_rt.h
+					rt_spin_lock ->
+
+				!RT
 				raw_spin_lock_irqsave
 					_raw_spin_lock_irqsave
 						SMP __raw_spin_lock_irqsave
@@ -3897,6 +4133,7 @@ Affining kthreads follow either of four existing different patterns:
 						__raw_spin_lock_flags
 							local_irq_save
 			spin_unlock_irqrestore lkm2
+				rt_spin_unlock
 				raw_spin_unlock_irqrestore
 					_raw_spin_unlock_irqrestore
 						__raw_spin_unlock_irqrestore
@@ -4201,19 +4438,8 @@ Affining kthreads follow either of four existing different patterns:
 				raw_spin_unlock_irqrestore(&timer->base->cpu_base->lock, *flags);
 
 		tick_sched_timer is a timer for NOHZ mode(check)
-			tick_sched_do_timer
-				tick_do_update_jiffies64
-				ts->last_tick_jiffies = READ_ONCE(jiffies);
+			tick_sched_do_timer ->
 			tick_sched_handle
-				update_process_times
-					run_local_timers
-						hrtimer_run_queues ->
-							hrtimer_switch_to_hres ->
-								tick_setup_sched_timer
-									&tick_init_jiffy_update
-							__hrtimer_run_queues ->
-					rcu_sched_clock_irq ->
-					5 raise_timer_softirq
 			!tick_stopped
 			hrtimer_forward ->
 
@@ -4340,6 +4566,9 @@ linux/kernel/timer.c
 		==> ./oo/conversion/cpu_mng/task/process/ipc/signals/src <==
 		send_sig()
 		signal()
+
+		SIGINT
+		SIGTSTP
 
 		sys_kill
 			siginfo
@@ -4504,7 +4733,7 @@ linux/kernel/timer.c
 
 		while (jiffies < j) schedule(); # not durable
 
-		sys_nanosleep
+		sys_nanosleep nanosleep
 			hrtimer_nanosleep
 				hrtimer_init_sleeper_on_stack
 				hrtimer_set_expires_range_ns
@@ -4665,6 +4894,7 @@ linux/kernel/timer.c
 					in_interrupt
 						irq_count
 							preempt_count
+							softirq_count
 				invoke_softirq
 				in_hardirq
 					hardirq_count
@@ -6491,7 +6721,7 @@ kernel/cgroup/cpuset.c
 
 	IPI deferral
 		text_poke_sync
-			on_each_cpu
+			on_each_cpu ->
 				on_each_cpu_cond_mask
 			&do_sync_core
 				sync_core
@@ -6500,10 +6730,8 @@ kernel/cgroup/cpuset.c
 			?
 				vm_area_unmap_pages
 					vunmap_range
-						flush_tlb_kernel_range
-							kernel_tlb_flush_all
-								on_each_cpu
-								&do_flush_tlb_all
+						flush_tlb_kernel_range ->
+							? kernel_tlb_flush_all
 		trace_ipi_send_cpu
 		trace_ipi_send_cpumask
 		trace_csd_queue_cpu
@@ -6669,9 +6897,6 @@ kernel/cgroup/cpuset.c
 		held_lock
 			acquire_ip
 		lock_acquire ->
-	tick_nohz_highres_handler
-	tick_sched_timer" for 9.4, but "tick_nohz_highres_handler" for 9.5+, and "tick_nohz_handler"
-
 	timerfd_tmrproc
 
 	get_cpu_device
@@ -6707,6 +6932,42 @@ kernel/cgroup/cpuset.c
 	HK_TYPE_TIMER ->
 
 	waiman longman
+		cpuset-isolation
+			sched/isolation: Enable runtime update of housekeeping cpumasks
+				+housekeeping_exclude_cpumask
+				+cpumask_lock
+			sched/isolation: Call sched_tick_offload_init() if housekeeping_overridden is ever set
+				+sched_tick_offload_inited
+				+sched_tick_offload_init
+			sched/isolation: Use RCU to delay successive housekeeping cpumask updates
+				synchronize_rcu
+				call_rcu(&rcu_gp, rcu_gp_end);
+			cgroup: Add a new CSS_KILLED flag
+			cgroup/cpuset.c: Fix a partition error with CPU hotplug
+				*update_parent_effective_cpumask
+				*cpuset_hotplug_update_tasks
+			cgroup/cpuset: Remove the unnecessary css_get/put() in cpuset_partition_write()
+			cgroup/cpuset: Exclude isolated CPUs from housekeeping CPU masks
+				HOUSEKEEPING_FLAGS
+				update_isolation_cpumasks <- update_unbound_workqueue_cpumask
+					+housekeeping_exclude_cpumask
+			cgroup/cpuset: Use CPU hotplug code to enable proper transition of isolated CPUs
+				*isolcpus_update_mutex
+				+isolcpus_update_state
+				*update_isolation_cpumasks
+					+remove_cpu
+					+cpus_read_lock/cpus_read_unlock
+					+add_cpu
+				...
+					+mutex_lock(&isolcpus_update_mutex)
+					+update_isolation_cpumasks
+					+mutex_unlock(&isolcpus_update_mutex);
+			cgroup/cpuset: Don't call rebuild_sched_domains*() unnecessarily
+			sched/core: Don't check DL BW in sched_cpu_deactivate() if CPU is isolating
+				cpuset_cpu_is_isolating
+				*sched_cpu_deactivate
+
+
 		pool_workqueue
 			+plugged
 		unplug_oldest_pwq
@@ -6780,7 +7041,8 @@ kernel/cgroup/cpuset.c
 		housekeeping_cpumask (const)
 			housekeeping.flags & BIT(type)
 			housekeeping.cpumasks[type];
-			cpu_possible_mask;
+			cpu_possible_mask; 
+				SC_NPROCESSORS_CONF  possible
 		housekeeping_cpu
 			housekeeping_test_cpu(cpu, type);
 				if (housekeeping.flags & BIT(type))
@@ -6969,12 +7231,6 @@ kernel/cgroup/cpuset.c
 
 			sched_tick <- scheduler_tick
 			sched_tick_start
-				tick_work
-				TICK_SCHED_REMOTE_RUNNING
-				& sched_tick_remote
-					curr->sched_class->task_tick
-						task_tick_fair ->
-						task_tick_rt ->
 			sched_tick_stop
 				TICK_SCHED_REMOTE_OFFLINING
 	x HK_TYPE_SCHED
@@ -7119,6 +7375,39 @@ kernel/cgroup/cpuset.c
 							el1h_64_irq
 								...
 									hrtimer_wakeup
+	 seccomp
+	 	do_seccomp
+			 seccomp_set_mode_filter
+			 bpf_prog_create_from_user
+			 bpf_prepare_filter
+			 bpf_prog_select_runtime
+			 bpf_int_jit_compile
+			 bpf_jit_binary_pack_alloc
+			 bpf_prog_pack_alloc
+			 alloc_new_pack
+			 set_memory_ro
+			 change_page_attr_set_clr
+			 _vm_unmap_aliases.part.0
+			 __purge_vmap_area_lazy
+			 	flush_tlb_kernel_range ->
+					on_each_cpu ->
+					&do_flush_tlb_all
+						__flush_tlb_all
+							__flush_tlb_global
+								native_flush_tlb_global
+							flush_tlb_local
+								__flush_tlb_local
+									native_flush_tlb_local
+					get_flush_tlb_info
+					on_each_cpu
+					do_kernel_range_flush
+						flush_tlb_one_kernel
+					put_flush_tlb_info
+			 on_each_cpu_cond_mask
+			 	smp_call_function_many_cond
+			 ipi_send_cpumask
+			 trace_event_raw_event_ipi_send_cpumask
+
 
 ==== Softirqs
 
@@ -7196,6 +7485,29 @@ nmi_handler: ghes_notify_nmi() delta_ns: 8745 handled: 0
 
 
 ==== dynticks (nohz)
+
+CONFIG_NO_HZ_FULL
+	task,signal_struct::tick_dep_mask
+
+	tick_nohz_init ->
+	tick_nohz_handler -> (9.4 tick_sched_timer, 9.5+ tick_nohz_highres_handler)
+
+	tick_nohz_full_running
+
+	sched_tick_start
+		tick_work
+		TICK_SCHED_REMOTE_RUNNING
+		& sched_tick_remote
+			curr->sched_class->task_tick
+				task_tick_fair ->
+				task_tick_rt ->
+
+	other
+		account_freq_event_nohz
+		unaccount_freq_event_nohz
+		__rcu_irq_enter_check_tick
+		sched_can_stop_tick
+		sched_tick_offload_init
 
 	referrers tick_nohz_full_cpu
 		mon_event_read
@@ -7352,6 +7664,9 @@ nmi_handler: ghes_notify_nmi() delta_ns: 8745 handled: 0
 							run_local_timers
 								hrtimer_run_queues ->
 							sched_tick
+								arch_scale_freq_tick
+									rdmsrq
+										native_read_msr ->
 
 	hrtimer_run_queues
 		tick_switch_to_oneshot
@@ -7360,10 +7675,6 @@ nmi_handler: ghes_notify_nmi() delta_ns: 8745 handled: 0
 		tick_check_oneshot_change
 			tick_nohz_lowres_handler
 				tick_nohz_handler
-					sched_timer
-					tick_sched_do_timer ->
-					tick_sched_handle ->
-					hrtimer_forward ->
 				tick_program_event
 			tick_nohz_switch_to_nohz
 				sched_timer
@@ -7385,29 +7696,44 @@ nmi_handler: ghes_notify_nmi() delta_ns: 8745 handled: 0
 						do_write_seqcount_end
 							do_raw_write_seqcount_end
 								sequence++
-				tick_setup_sched_timer
-					hrtimer_setup ->
-					sched_timer
-					tick_nohz_handler
+				tick_setup_sched_timer ->
 		!hrtimer_is_hres_enabled
 		hrtimer_switch_to_hres
 			tick_init_highres
+				tick_switch_to_oneshot(hrtimer_interrupt);
 			tick_setup_sched_timer
-				hrtimer_init(&ts->sched_timer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS_HARD);
-				tick_nohz_handler
+				hrtimer_setup ->
+				sched_timer
+				&tick_nohz_handler -> (9.4 tick_sched_timer, 9.5+ tick_nohz_highres_handler)
 				sched_skew_tick
-				&tick_nohz_highres_handler
-					tick_sched_do_timer ->
-					tick_sched_handle ->
-					hrtimer_forward ->
-				@tick_sched_timer ->
 				tick_program_event
 				tick_nohz_activate
 					tick_sched_flag_set(ts, TS_FLAG_NOHZ);
 					timers_update_nohz
 						schedule_work(&timer_update_work);
 
-	tick_dep_mask
+
+		...
+		9.4:
+			tick_nohz_switch_to_nohz
+				tick_switch_to_oneshot
+				tick_nohz_handler
+		tick_nohz_handler
+			sched_timer
+			tick_sched_do_timer
+				tick_do_update_jiffies64
+				ts->last_tick_jiffies = READ_ONCE(jiffies);
+			tick_sched_handle
+				update_process_times
+					run_local_timers
+						hrtimer_run_queues ->
+							hrtimer_switch_to_hres ->
+								tick_setup_sched_timer
+									&tick_init_jiffy_update
+							__hrtimer_run_queues ->
+					rcu_sched_clock_irq ->
+					5 raise_timer_softirq
+			hrtimer_forward ->
 
 	hrtimer_run_softirq hrtimer_interrupt hrtimer_run_queues
 	> __hrtimer_run_queues
@@ -7418,7 +7744,7 @@ nmi_handler: ghes_notify_nmi() delta_ns: 8745 handled: 0
 
 		local_pending_timers
 			__this_cpu_read(pending_timer_softirq)
-	tick_sched_timer➝
+	tick_sched_timer➝ tick_nohz_handler
 	tick_sched_handle➝
 	update_process_times➝
 	tick_sched_do_timer➝
@@ -7478,7 +7804,7 @@ nmi_handler: ghes_notify_nmi() delta_ns: 8745 handled: 0
 					__do_softirq
 						hrtimer_run_softirq ->
 						__hrtimer_run_queues
-							? tick_sched_timer➝
+							tick_nohz_handler ->
 							timerqueue_getnext
 							__run_hrtimer
 								-> sched_cfs_period_timer
@@ -7706,8 +8032,7 @@ nmi_handler: ghes_notify_nmi() delta_ns: 8745 handled: 0
 								hrtick_timer
 								hrtimer_start ->
 								.. hrtick
-							smp_call_function_single_async
-								generic_exec_single ->
+							smp_call_function_single_async ->
 							hrtick_csd
 
 		.rq_offline < set_rq_offline
@@ -7834,6 +8159,10 @@ nmi_handler: ghes_notify_nmi() delta_ns: 8745 handled: 0
 	task_tick_core
 
 ===== CFS
+
+	DEFINE_SCHED_CLASS(fair) = {
+		check_preempt_wakeup_fair
+			resched_curr_lazy ->
 
 	init_sched_fair_class
 	nohz_balance_enter_idle
@@ -8365,6 +8694,9 @@ nmi_handler: ghes_notify_nmi() delta_ns: 8745 handled: 0
 				clock_update_flags
 				rq->clock += delta
 				sched_clock_cpu ->
+					sched_clock_data
+					sched_clock_remote
+						sched_clock_local
 					sched_clock_stable
 					sched_clock
 
@@ -8573,7 +8905,7 @@ rcu_read_lock){....}-{1:3}, at: debug_show_all_locks+0x3d/0x175
 	FileNotFoundError: [Errno 2] No such file or directory: 'colors.dot'
 
 	gpiod_to_irq
-	nmap -T4 -A -v 192.168.0.100 # -Taggressive Aggressive
+	nmap tT4 -A -v 192.168.0.100 # -Taggressive Aggressive
 	sudo nmap polite
 
 	sys_timerfd_settime
@@ -8822,9 +9154,12 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 			update_stats_wait_end_rt
 				__update_stats_wait_end
 
-	rt-tests
+=====	rt-tests
+
 		cut -f2 -d: cyclictest.log | sort | uniq -c | sort -n
 		cyclictest
+			tracelimit
+			break_thread_value
 			timerthread
 				timer_settime
 				clock_nanosleep
@@ -8891,8 +9226,38 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 									sample_width
 							hwlat_tracer_start->
 
+===== rtla in kernel
 	rtla
+		???
+		timerlat_aa_handler
+		timerlat_aa_stack_handler	
 
+		timerlat_main ->
+			timerlat_hist_ops
+				timerlat_init_hist
+					timerlat_alloc_histogram
+						timerlat_hist_data
+							timerlat_hist_cpu
+								irq_count
+					tep_register_event_handler
+					timerlat_hist_handler
+						timerlat_hist_update
+							update_max
+							max_irq
+			timerlat_top_ops
+				timerlat_enable
+				timerlat_init_top
+					timerlat_alloc_top
+						timerlat_top_data
+							timerlat_top_cpu
+								irq_count
+					tep_register_event_handler
+					timerlat_top_handler
+						timerlat_top_update
+							update_max
+							cur_user
+							cur_thread
+							cur_irq
 	late_initcall
 	init_osnoise_tracer
 		print_osnoise_headers
@@ -8909,6 +9274,11 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 						start_kthread
 							osnoise_main
 							timerlat_main
+								timerlat_top_ops ->
+								timerlat_hist_ops ->
+								run_tool
+									parse_args
+										timerlat_hist_parse_args
 								hrtimer_init(&tlat->timer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS_PINNED_HARD);
 								hrtimer_cb_get_time
 									get_time
@@ -8931,12 +9301,19 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 									schedule
 
 	grep -E '[0-9]{5} ns' trace
+
+	trace_osnoise_funcs
+		trace_osnoise_print
+		trace_osnoise_raw
+	
 	start_kthread
+
 		osnoise_main
 			osnoise_tracer
 			grep '' /sys/kernel/debug/tracing/instances/osnoise_*/options/*
 			echo 1 > instances/osnoise_trace/options/stacktrace
 			run_osnoise
+
 				this_cpu_osn_var
 					per_cpu_osnoise_var
 				osnoise_options
@@ -8958,6 +9335,11 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 
 				trace_sample_threshold "sample_threshold"
 				osnoise_stop_tracing
+					<
+						run_osnoise
+						timerlat_irq
+						timerlat_main
+						timerlat_fd_read
 				record_osnoise_sample
 					trace_osnoise_sample
 						hw_count
@@ -8983,13 +9365,15 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 		tracefs_instance
 
 		hwnoise_main
-			osnoise_top_main
+			run 
+			osnoise_top_ops ->
+				top_main_loop ->
+			threshold
+			x osnoise_top_main
+				...
+				osnoise_params
+					threshold|
 				trace_instance_start
-				osnoise_top_parse_args
-					stop_us
-					trace_output
-				osnoise_top_apply_config
-					osnoise_set_stop_us
 				osnoise_init_top
 					&osnoise_top_handler
 						hw_count
@@ -9009,16 +9393,50 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 						destroy_instance
 							tracefs_instance_destroy
 							tracefs_instance_free
+===== RT user tools, rtla
+
+	for t in osnoise timerlat;do for m in top hist; do sudo ./rtla $t $m -D -d 10s -H 1 -c 2; done; done
+
+
 	main rtla
+		new
+		nr_cpus
+
 	- rtla_usage
 	- run_command
+		timerlat_main ->
 		osnoise_main (um)
+			run_tool
+				parse_args
+					osnoise_hist_parse_args
+						new: 
+							common_init
+							common_parse_args
+			osnoise_top_ops
+				osnoise_top_parse_args
+					stop_us
+					trace_output
+				osnoise_top_apply_config
+					osnoise_apply_config
+						new? osnoise_set_workload
+						threshold
+						osnoise_set_tracing_thresh ->
+						common_apply_config
+							osnoise_set_workload
+								osnoise_options_set_option
+								"OSNOISE_WORKLOAD"
+									k: OSN_WORKLOAD
+										? osnoise_workload_start ->
+											start_per_cpu_kthreads
+					osnoise_set_stop_us
+				top_main_loop
 			osnoise_top_main
 			osnoise_hist_main
 				osnoise_hist_apply_config
+					osnoise_apply_config ->
 					-a stop_us
 					osnoise_set_stop_us
-						"/sys/kernel/tracing/osnoise/stop_tracing_us"
+						"/sys/kernel/tracing/osnoise/stop_tracing_us" -> osnoise_stop_tracing_in
 						stop_tracing
 				osnoise_init_trace_hist
 					"sample_threshold"
@@ -9045,7 +9463,19 @@ https://wiki.linuxfoundation.org/realtime/start[Real-Time Linux]
 			update_max(&cpu_data->max_noise, &val);
 			update_max(&cpu_data->max_sample, &val);
 
+
 	__print_ns_without_secs
+
+	timerlat_hist_main
+		timerlat_hist_bpf_main_loop
+			timerlat_hist_bpf_pull_data
+				timerlat_bpf_get_hist_value
+					get_value
+	del nr_cpus
+
+Consiolidate duplicated lines into save_trace_to_file().
+
+===== kernel trace
 
 kernel/trace/trace_osnoise.c
 	osnoise_tracer
@@ -9099,6 +9529,7 @@ kernel/trace/trace_osnoise.c
 			osnoise_unhook_events
 				unhook_softirq_events ^
 
+===== RT sched
 
 	sched_rt_period_timer
 	Scheduling classes
@@ -9148,6 +9579,9 @@ kernel/trace/trace_osnoise.c
 
 	CONFIG_PREEMPT_VOLUNTARY
 		might_sleep	300+ uses
+			__might_sleep
+				__might_resched
+					rcu_sleep_check
 			+ might_resched
 				_cond_resched
 					_cond_resched
@@ -12825,6 +13259,16 @@ __udp_gso_segment
 
 	tlb	Translation Lookaside Buffer
 
+	arch/x86/mm/tlb.c
+	flush_tlb_mm_range
+		flush_tlb_multi
+			__flush_tlb_multi
+				native_flush_tlb_multi
+					should_flush_tlb
+					flush_tlb_func
+					on_each_cpu_cond_mask
+			
+
 	86_init	lkm2
 		.memory_setup		= default_machine_specific_memory_setup,
 			boot_params.screen_info.ext_mem_k
@@ -13417,6 +13861,25 @@ __udp_gso_segment
 }
 
 == Human interface
+
+	include/linux/security.h
+
+		cat /sys/kernel/security/lockdown
+
+		security_locked_down
+			call_int_hook
+			locked_down
+
+		setup_arch
+			security_lock_kernel_down
+				call_int_hook
+				lock_kernel_down
+
+		lockdown_ops
+			lockdown_write
+				lock_kernel_down
+
+
 
 	v4l2_device_register_subdev
 		v4l2_subdev_fops
@@ -14711,6 +15174,7 @@ kernel/trace/trace_irqsoff.c
 								rdmsrl
 									native_read_msr
 										__rdmsr
+										do_trace_read_msr
 								wrmsrl
 									wrmsr
 				nmi_timer_init
@@ -14735,6 +15199,23 @@ kernel/trace/trace_irqsoff.c
 	10      4       1       7
 
 ==== bpf
+
+include/linux/filter.h
+
+	bpf_jit_enable
+
+	bpf_int_jit_compile
+
+		bpf_jit_binary_lock_ro
+			set_memory_ro
+			set_memory_x
+			set_memory_rox
+				change_page_attr_set_clr
+
+
+	bpf_jit_harden W^X
+		sysctl net.core.bpf_jit_harden
+
 
   # echo 'hist:keys=delta.buckets=100,stack.stacktrace:sort=delta' > events/synthetic/block_lat/trigger
   # cat events/synthetic/block_lat/hist
@@ -15131,6 +15612,7 @@ git describe --contains  --match 'v*' 5a80bd075f3b
 
 
 	set_mtrr
+		stop_machine_cpuslocked
 		stop_machine(mtrr_rendezvous_handler, &data, cpu_online_mask);
 
 
@@ -15177,6 +15659,9 @@ git describe --contains  --match 'v*' 5a80bd075f3b
 				gic_ipi_send_mask
 					gic_send_sgi
 	arch_send_call_function_single_ipi
+		send_call_func_single_ipi
+			native_send_call_func_single_ipi
+				__apic_send_IPI
 		smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC);
 			ipi_raise
 			__ipi_send_mask(ipi_desc[ipinr], target);
@@ -16368,6 +16853,11 @@ echo 1 > /sys/devices/system/cpu/cpu3/online;(sleep 5; echo QQQ; echo 0 > /sys/d
 
 patchpal/
 	gui/
+
+		main
+		
+		PatchpalApplication
+
 		src/patchpal/main.rs
 			start
 		DiffModel
@@ -16378,8 +16868,24 @@ patchpal/
 					patchpal.usersys.redhat.com:9000
 			parse_result
 	backend/
+		./src/patchpal/inference/chatbot.py
+			main
+				WrappedTokenizer
+					infer_chatbot
+		inference/
+			server.py
+				main
+					WrappedTokenizer
+					ThreadingHTTPServer
+					httpd.serve_forever
+					
+                InferHandler
+                    do_POST
+                        infer
+			test_server.py
+				InferClient
 		train/
-			metrics.py
+			src/patchpal/train/metrics.py
 				main
 					postprocess_results
 					save_results_postprocessed
@@ -16387,13 +16893,8 @@ patchpal/
 					plot_and_save_distribution
 					all_roc_plots
                     all_distribution_plots
-		inference/
-			server.py
-				InferHandler
-			test_server.py
-				InferClient
 		train
-			train.py
+			src/patchpal/train/train.py
 				main
 					WrappedTokenizer
 					WrappedModel
@@ -16408,12 +16909,6 @@ patchpal/
 				save_model
 
 
-Functions 
-osnoise_hist_main(), osnoise_top_main(), timerlat_hist_main() and timerlat_top_main() are very long and
-have duplicated code.
-
-Consiolidate duplicated lines into save_trace_to_file().
-
 perf probe --add call_timer_fn
 perf record -g -e probe:call_timer_fn -aR sleep 1
 perf report
@@ -16424,5 +16919,156 @@ perf script -i perf.data...
 gcc msr-tools/rdmsr.c -o /usr/local/bin/rdmsr
 
 
+rdmsrq_safe_on_cpu
+	rdmsr_safe_on_cpu
+msr_fop
+	smsr_read
+		rdmsr_safe_on_cpu
+			INIT_CSD
+			__rdmsr_safe_on_cpu
+				rdmsr_safe
+			smp_call_function_single_async
+			wait_for_completion
+
+
 check owner 
+
+
+sys_uselib
+
+{
+  "12345": {
+    "command": "",
+    "args": [],
+    "env": {},
+    "working_directory": null,
+    "start_on_launch": true
+  }
+}
+
+
+git commit --fixup=$(git rev-list main --grep="kpm_mcp.py with tests")
+
+nohz_balancer_kick
+	kick_ilb
+		find_new_ilb
+		smp_call_function_single_async(ilb_cpu, &cpu_rq(ilb_cpu)->nohz_csd);
+
+ftrace_graph_ret_addr
+arch/x86/kernel/ftrace_64.S
+	return_to_handler
+
+TPMI
+	drivers/platform/x86/intel/tpmi_power_domains.h
+		tpmi_init
+		tpmi_get_punit_core_number
+	drivers/platform/x86/intel/tpmi_power_domains.c
+	drivers/platform/x86/intel/vsec_tpmi.c
+		tpmi_get_resource_count
+		intel_vsec_tpmi_init
+
+
+git remote add $W git://git.kernel.org/pub/scm/linux/kernel/git/trace/linux-$W.git
+git worktree list
+git fetch $W
+git -C ~/linux/main worktree add ../$W $W/for-next
+
+for kdiff3
+	~/cmnd/log-preprocess.py
+	^1,2,3:x
+
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/command '"/home/costa/cmnd/key.sh record"'
+dconf write /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/command '"/home/costa/cmnd/key.sh stop"'
+
+dconf dump /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/
+
+
+p=$(git format-patch -v1 -5 --cover-letter --cover-from-description=subject)
+checkpatch.pl $p
+m=$(get_maintainer.pl --norolestats --separator=, $p)
+git send-email --to="$m" $p
+
+Commit message structure:
+	Current state, a problem, issue or bug
+	Rationale
+	Implementation
+	Impact
+
+since 5.15
+grep schedule_rtlock /proc/kallsyms
+grep -R schedule_rtmutex /proc/kallsyms
+cat /sys/kernel/realtime
+
+input_set_capability
+
+Python trick
+	def key_values(fields):
+	    """ Extract key:value pairs from a list of fields and return them as a dictionary """
+	    return { k: v for f in fields if ':' in f for k, v in [f.split(":", 1)] if k and v }
+
+
+
+timerlat hist -D -c 1-3
+Error parsing the cpu set 1-3
+Invalid -c cpu list
+costa-tp ➜  tracing/rtla > L
+timerlat hist --duration 1  -E 10 -D -c 1,3  -a 100 
+Error parsing the cpu set 1,3
+Invalid -c cpu list
+
+
+MPAM - Arm Memory System Resource Partitioning and Monitoring
+
+
+=(GOOGLEFINANCE(c6) / IFERROR(INDEX(GOOGLEFINANCE(c6, "price", TODAY()-1), 2, 2), IFERROR(INDEX(GOOGLEFINANCE(c6, "price", TODAY()-2), 2, 2), INDEX(GOOGLEFINANCE(c6, "price", TODAY()-3), 2, 2)))) - 1
+
+
+=((GOOGLEFINANCE(c9,"price")*GOOGLEFINANCE(d9)) / (IFERROR(INDEX(GOOGLEFINANCE(c9,"price",TODAY()-7),2,2),INDEX(GOOGLEFINANCE(c9,"price",TODAY()-9),2,2)) * IFERROR(INDEX(GOOGLEFINANCE(d9,"price",TODAY()-7),2,2),INDEX(GOOGLEFINANCE(d9,"price",TODAY()-9),2,2))))-1
+
+
+=((GOOGLEFINANCE(C2,"price")*GOOGLEFINANCE(D2)) / (IFERROR(INDEX(GOOGLEFINANCE(C2,"price",TODAY()-7),2,2),INDEX(GOOGLEFINANCE(C2,"price",TODAY()-9),2,2)) * IFERROR(INDEX(GOOGLEFINANCE(D2,"price",TODAY()-7),2,2),INDEX(GOOGLEFINANCE(D2,"price",TODAY()-9),2,2))))-1
+
+
+
+
+=(googlefinance(b32)/googlefinance(c32) / index(googlefinance(b32, "price", today()-7), 2, 2) * 
+ iferror(
+   index(googlefinance(c32, "price", today()-7), 2, 2), 
+   iferror(
+     index(googlefinance(c32, "price", today()-8), 2, 2), 
+     index(googlefinance(c32, "price", today()-9), 2, 2)
+   )
+ ))-1
+
+
+=(
+  googlefinance(b32) / googlefinance(c32) / 
+  iferror(
+    index(googlefinance(b32, "price", today()-30), 2, 2), 
+    iferror(
+      index(googlefinance(b32, "price", today()-31), 2, 2), 
+      index(googlefinance(b32, "price", today()-32), 2, 2)
+    )
+  ) * iferror(
+    index(googlefinance(c32, "price", today()-30), 2, 2), 
+    iferror(
+      index(googlefinance(c32, "price", today()-31), 2, 2), 
+      index(googlefinance(c32, "price", today()-32), 2, 2)
+    )
+  )
+)-1
+
+
+PPA
+ITA
+XAR
+
+
+https://lore.kernel.org/linux-rt-devel/216light.css
+/*
+ * Underlined links add visual noise which make them hard-to-read.
+ * Use colors to make them stand out, instead.
+ */
+a:link { color:#00f; text-decoration:none }
+
 
