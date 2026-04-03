@@ -2191,7 +2191,7 @@ Explanantion comment about cpuset_mutex (after top_cpuset):
 									desc->handle_irq
 
 		???
-		system_call (arch/i386/kernel/entry.S)
+		x system_call (arch/i386/kernel/entry.S)
 			sys_call_table (arch/i386/kernel/entry.S)
 				sys_open  ▻
 
@@ -2251,6 +2251,10 @@ Explanantion comment about cpuset_mutex (after top_cpuset):
 						__gup_longterm_locked
 				sys_remap_file_pages
 					find_vma
+
+		create_init_stack_vma
+			insert_vm_struct
+				vma_link
 
 		maps_open
 			proc_pid_maps_op
@@ -2936,7 +2940,7 @@ init/main.c
 									for_each_cpu(cpu, cpumask) {
 									cpu_stop_queue_work
 										__cpu_stop_queue_work
-											wake_q_add
+											wake_q_add ->
 										wake_up_q
 						...
 							cpu_stopper_thread ->
@@ -3969,6 +3973,7 @@ local_irq_save local_irq_restore, frequent
 
 ==== Mutex
 
+
 		mutex	__LINUX_MUTEX_H	include/linux/mutex.h
 
 
@@ -3985,10 +3990,10 @@ local_irq_save local_irq_restore, frequent
 					atomic_long_try_cmpxchg_acquire
 						raw_atomic_long_try_cmpxchg_acquire
 							raw_atomic_try_cmpxchg_acquire
+				__mutex_lock_slowpath
+					__mutex_lock
+						__mutex_lock_common ->
 				x __mutex_fastpath_lock(&lock->count, __mutex_lock_slowpath);
-					__mutex_lock_slowpath
-						__mutex_lock
-							__mutex_lock_common ->
 				mutex_set_owner(lock);
 			mutex_lock_interruptible
 				__mutex_fastpath_lock_retval
@@ -4004,8 +4009,13 @@ local_irq_save local_irq_restore, frequent
 									__lock_acquired
 						!RT
 							kernel/locking/mutex.c
+							schedule_preempt_disabled
 							wait_lock
+							ww_mutex_set_context_fastpath
+								wake_up_q
 							__mutex_trylock
+								__mutex_trylock_common
+									atomic_long_try_cmpxchg_acquire ->
 			mutex_lock_killable
 				__mutex_lock_killable_slowpath
 					return __mutex_lock(lock, TASK_KILLABLE, 0, NULL, _RET_IP_);
@@ -4013,11 +4023,19 @@ local_irq_save local_irq_restore, frequent
 				RT
 				__rt_mutex_unlock
 				!RT
-				mutex_clear_owner(lock);
-				__mutex_fastpath_unlock(&lock->count, __mutex_unlock_slowpath);
+				__mutex_unlock_fast
+					atomic_long_try_cmpxchg_release
 				__mutex_unlock_slowpath
-					__mutex_unlock_common_slowpath
+					atomic_long_try_cmpxchg_release
+					wake_q_add
+						__wake_q_add
+							wake_q_node
+							cmpxchg_relaxed
+				x __mutex_fastpath_unlock(&lock->count, __mutex_unlock_slowpath);
+				__mutex_unlock_slowpath
+					x __mutex_unlock_common_slowpath
 						wake_up_process  ▻
+				x mutex_clear_owner(lock);
 
 			lockdep
 				lockdep_map
@@ -4041,15 +4059,18 @@ local_irq_save local_irq_restore, frequent
 			down_killable
 			down_timeout
 			down
+				__sem_acquire
+					sem->count--;
 				x __down_failed
 					__down
 						__down_common
-							signal_pending_state
-								signal_pending
-									return unlikely(test_tsk_thread_flag(p,TIF_SIGPENDING));
-								__fatal_signal_pending
-									task_struct pending.signal
-							schedule_timeout
+							___down_common
+								signal_pending_state
+									signal_pending
+										return unlikely(test_tsk_thread_flag(p,TIF_SIGPENDING));
+									__fatal_signal_pending
+										task_struct pending.signal
+								schedule_timeout
 
 						add_wait_queue_exclusive_locked
 							atomic_add_negative
@@ -4057,10 +4078,13 @@ local_irq_save local_irq_restore, frequent
 						schedule
 			down_trylock
 			up 	lkm2
+				sem->count++;
  				Unlike mutexes, up() may be called from any context and even by tasks which have never called down().
 				x __up_wakeup
 
 				__up
+					wake_q_add ->
+				wake_up_q
 					wake_up_process
 						try_to_wake_up  ▻
 
@@ -4216,8 +4240,9 @@ local_irq_save local_irq_restore, frequent
 							try_to_wake_up
 								task_rq_lock
 									task_rq
-								activate_task -> lkm2
-									__activate_task
+								x 
+									activate_task -> lkm2
+										__activate_task
 								resched_task
 					spin_unlock_irqrestore  ▻
 
@@ -4773,14 +4798,15 @@ linux/kernel/timer.c
 							&process_timeout
 								wake_up_process  ▻
 							timer_list
-							setup_timer
+							timer_setup
+							x setup_timer
 								init_timer
 							__mod_timer  ▻
 								internal_add_timer
 									list_add_tail
 							schedule
 
-		do_IRQ
+		common_interrupt x do_IRQ
 			irq_exit
 
 		x apic_timer_interrupt
@@ -4939,13 +4965,10 @@ linux/kernel/timer.c
 								dev->event_handler
 								tick_handle_periodic ->
 
-		time_init_hook
-			setup_irq
 		irq0
 		IRQF_SHARED
 			hpet_time_init
 				setup_default_timer_irq
-					setup_irq(0, &irq0);
 			timer_interrupt ./arch/../kernel/time.c
 				x do_timer_interrupt_hook
 					global_clock_event->event_handler(global_clock_event
@@ -10745,6 +10768,9 @@ block/blk-mq-debugfs.c
 === storage busses
 
 ==== nvme
+
+
+
 		nvme_init
 			nvme_driver
 				nvme_probe
@@ -10826,8 +10852,13 @@ block/blk-mq-debugfs.c
 				nvme_pci_enable->
 
 	nvme_probe
-		nvme_mq_ops:
-			.map_queues
+		nvme_mq_ops
+			queue_rq -> nvme_queue_rq,
+				submit_bio → blk_mq_submit_bio → blk_mq_dispatch_rq_list → .queue_rq (= nvme_queue_rq)
+
+				nvme_prep_rq
+				nvme_write_sq_db
+			map_queues
 			nvme_pci_map_queues (nvme-pci: allow unmanaged interrupts)
 				map->nr_queues = dev->io_queues[i];
 				blk_mq_queue_map
@@ -11470,7 +11501,7 @@ block/blk-mq-debugfs.c
 					memdup_user
 						copy_from_user
 			copy_mount_options
-				exact_copy_from_user
+				x exact_copy_from_user
 					access_ok
 						__range_ok
 			do_mount
@@ -11721,19 +11752,28 @@ block/blk-mq-debugfs.c
 		sys_sendfile64
 			do_sendfile
 				do_splice_direct	lkm2 fs/splice.c
-					splice_direct_to_actor
-						do_splice_to  ▻
-							splice_read
-								sock_splice_read  ▻ ./net/socket.c
+					n do_splice_direct_actor
+						splice_direct_to_actor
+							n do_splice_read
+								copy_splice_read
+									iov_iter_bvec
+									read_iter
+									pipe_head_buf
+										pipe_buf
+							x do_splice_to  ▻
+								splice_read
+									sock_splice_read  ▻ ./net/socket.c
 					direct_splice_actor
 						do_splice_from
 							splice_write
-								generic_splice_sendpage fs/splice.c
+								x generic_splice_sendpage fs/splice.c
 									actor = pipe_to_sendpage
 										sendpage
-											sock_sendpage  ▻ ./net/socket.c
+											x sock_sendpage  ▻ ./net/socket.c
 									splice_from_pipe  ▻
 								out->f_op->splice_write
+									splice_to_socket
+										sock_sendmsg ->
 								default_file_splice_write
 									actor = write_pipe_buf
 										kernel_write
@@ -11963,6 +12003,7 @@ block/blk-mq-debugfs.c
 	 => do_syscall_64
 	 => entry_SYSCALL_64_after_hwframe
 
+
 	 => trace_event_raw_event_sched_switch
 	 => __schedule
 	 => schedule
@@ -11987,6 +12028,17 @@ block/blk-mq-debugfs.c
 }
 
 == Networking
+
+	netdev_priv
+	kfree_skb
+		SKB_DROP_REASON_NOT_SPECIFIED
+		kfree_skb_reason
+			sk_skb_reason_drop
+				__kfree_skb
+					skb_release_all
+						skb_release_data
+					kfree_skbmem
+						kmem_cache_free
 
 	mtk_star_probe
 		net_device
@@ -12041,7 +12093,7 @@ block/blk-mq-debugfs.c
 
 	ip_rt_do_proc_init
 		rt_cache_seq_fops
-			rt_cache_seq_show
+			fib_trie_seq_show x rt_cache_seq_show
 
 		rt_cpu_seq_show
 
@@ -12096,13 +12148,22 @@ block/blk-mq-debugfs.c
 
 			sockfd_lookup sock_map_fd
 
+
+	??
+		  - sock_sendpage -> splice_to_socket
+		  - tcp_sendpage -> ?
+		  - udp_sendpage -> ?
+
+		
+
 		socket_file_ops	file_operations
+			splice_write -> splice_to_socket,
 			sock_ioctl
 			sock_aio_read  ▻
 	??
 			af_unix_init
 				sock_register unix_family_ops
-			sock_sendpage	sendpage
+			x sock_sendpage	sendpage
 				kernel_sendpage
 					proto sendpage
 						inet_sendpage
@@ -12696,7 +12757,7 @@ block/blk-mq-debugfs.c
 			sock_sendmsg
 				inet_sendmsg
 					tcp_sendmsg  ▻
-			sock_sendpage  ▻
+			x sock_sendpage  ▻
 
 				...
 				? tcp_sendpage
@@ -13170,6 +13231,7 @@ __udp_gso_segment
 				vma_merge
 					get_user_pages
 				vma_link
+					vma_link_file
 					__vma_link
 						x __anon_vma_link
 					__vma_link_file
@@ -13391,7 +13453,7 @@ __udp_gso_segment
 							do_write_mem
 						read_mem
 							copy_to_user
-						mmap_mem
+						x mmap_mem
 							remap_pfn_range
 								pmd_alloc
 								remap_pmd_range
@@ -13670,7 +13732,16 @@ __udp_gso_segment
 		<include/asm/uaccess.h>
 
 		copy_to_user()
+			_inline_copy_to_user
+				raw_copy_to_user
+					copy_user_generic
+						SMAP - Supervisor Mode Access Prevention
+						stac (Set AC flag) / clac (Clear AC flag) 
 		copy_from_user
+			_copy_from_user
+				_inline_copy_from_user
+					raw_copy_from_user
+						copy_user_generic ->
 			__copy_from_user
 				__copy_from_user_ll
 					__copy_user_zeroing
@@ -13889,7 +13960,7 @@ __udp_gso_segment
 				register_security
 
 		selinux_init
-			selinux_ops
+			x selinux_ops
 				selinux_inode_create
 					may_create
 						permission  ▻
@@ -15199,6 +15270,14 @@ kernel/trace/trace_irqsoff.c
 	10      4       1       7
 
 ==== bpf
+
+	__sys_bpf - syscall entry
+		...
+		bpf_prog_load - load program
+  			bpf_check - verifier
+
+	kern_sys_bpf
+		bpf_prog_run - execute program
 
 include/linux/filter.h
 
@@ -17071,4 +17150,32 @@ https://lore.kernel.org/linux-rt-devel/216light.css
  */
 a:link { color:#00f; text-decoration:none }
 
+nvim
+	~/.config/nvim/
+	~/.config/nvim/init.lua
+	~/.config/nvim/after
+	~/.config/nvim/after/ftplugin
+	~/.config/nvim/after/syntax
+	~/.config/nvim/ini.vim
+	~/.config/nvim/lua
+	~/.config/nvim/lua/quickfix_colors.lua
+	~/.config/nvim/lua/smart_grep.lua
+	~/.config/nvim/lua/smart_grep_async.lua
 
+
+
+add to map:
+	dev_get_drvdata     │ device model         │
+	netdev_priv         │ networking           │
+	seq_printf          │ procfs/seq           │
+	devm_kzalloc        │ device resource mgmt │
+	atomic_read         │ atomics              │
+	rcu_read_unlock     │ RCU                  │
+	rcu_read_lock       │ RCU                  │
+	sysfs_emit          │ sysfs                │
+	module_init         │ modules              │
+	copy_to_user        │ user access          │
+	kfree_skb           │ networking           │
+	free_irq            │ interrupts           │
+	dma_alloc_coherent  │ DMA                  │
+	debugfs_create_file │ debugfs
