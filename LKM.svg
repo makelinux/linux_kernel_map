@@ -2444,26 +2444,19 @@
          inkscape:connection-start="#text4382"
          inkscape:connection-end="#text3390" />
       <path
-         style="opacity:1;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.31707323px;stroke-linecap:round;stroke-linejoin:miter;marker-end:url(#Arrow2Mend);stroke-opacity:1;display:inline"
-         d="M 948.87906,923.06901 L 948.87905,941.95945"
-         id="path3635"
-         inkscape:connector-type="polyline"
-         inkscape:connection-start="#text4382"
-         inkscape:connection-end="#text5698" />
-      <path
-         style="opacity:1;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.31707323px;stroke-linecap:round;stroke-linejoin:miter;marker-end:url(#Arrow2Mend);stroke-opacity:1;display:inline"
-         d="M 948.87904,951.9376 L 948.87904,970.07652"
+         style="opacity:1;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.31700003;stroke-linecap:round;stroke-linejoin:miter;marker-end:url(#Arrow2Mend);stroke-miterlimit:4;stroke-dasharray:1.317, 2.634;stroke-dashoffset:0;stroke-opacity:1;display:inline"
+         d="M 947.87971,924.55467 L 948.85957,949.36003"
          id="path3637"
          inkscape:connector-type="polyline"
-         inkscape:connection-start="#text5698"
+         inkscape:connection-start="#text4382"
          inkscape:connection-end="#text5726" />
       <path
          style="opacity:1;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.31707323px;stroke-linecap:round;stroke-linejoin:miter;marker-end:url(#Arrow2Mend);stroke-opacity:1;display:inline"
-         d="M 948.87905,980.05467 L 948.87909,998.19365"
+         d="M 949.01028,960.60257 L 948.53933,997.70896"
          id="path3639"
          inkscape:connector-type="polyline"
-         inkscape:connection-start="#text5726"
-         inkscape:connection-end="#text5754" />
+         inkscape:connection-end="#text5754"
+         inkscape:connection-start="#text5726" />
       <path
          style="opacity:1;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.31707323px;stroke-linecap:round;stroke-linejoin:miter;marker-end:url(#Arrow2Mend);stroke-opacity:1;display:inline"
          d="M 1406.8364,1416.2875 L 1380.7011,1396.1144"
@@ -5836,25 +5829,9 @@
       </a>
       <a
          target="2"
-         id="text5698"
-         xlink:href="https://elixir.bootlin.com/linux/latest/ident/timer_setup">
-        <title>Initialize a timer with a callback function</title>
-        <text
-           style="font-size:10.53658581px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;visibility:visible;font-family:Helvetica"
-           id="text8140"
-           x="327.45926"
-           y="7.9025192">
-          <tspan
-             x="921.37732"
-             y="949.64062"
-             id="tspan5700"
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Helvetica">timer_setup</tspan>
-        </text>
-      </a>
-      <a
-         target="2"
          id="text5726"
-         xlink:href="https://elixir.bootlin.com/linux/latest/ident/process_timeout">
+         xlink:href="https://elixir.bootlin.com/linux/latest/ident/process_timeout"
+         transform="translate(0,-20)">
         <title>Timer callback to wake up a sleeping process</title>
         <text
            style="font-size:10.53658581px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;visibility:visible;font-family:Helvetica"
