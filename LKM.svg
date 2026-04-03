@@ -1769,7 +1769,7 @@
          id="path3377"
          inkscape:connector-type="polyline"
          inkscape:connection-start="#text3970"
-         inkscape:connection-end="#text1826" />
+         inkscape:connection-end="#text7711" />
       <path
          style="opacity:1;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.31707323px;stroke-linecap:round;stroke-linejoin:miter;marker-end:url(#Arrow2Mend);stroke-opacity:1;display:inline"
          d="M 1073.3515,1382.6194 L 1048.1488,1189.1894"
@@ -3938,16 +3938,16 @@
              y="298.0748">alloc_file</tspan></text>
       </a>
       <text
-           style="font-size:13.17073154px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;text-anchor:middle;fill:#e6e6e6;visibility:visible;font-family:Helvetica"
-           id="text7711"
-           x="349.40424"
-           y="56.144985">
-          <tspan
-             x="947.70135"
-             y="1540.3143"
-             id="tspan1828"
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;text-anchor:middle;font-family:Helvetica">registers</tspan>
-        </text>
+         style="font-size:13.17073154px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;text-anchor:middle;fill:#e6e6e6;visibility:visible;font-family:Helvetica"
+         id="text7711"
+         x="349.40424"
+         y="56.144985">
+        <tspan
+           x="947.70135"
+           y="1540.3143"
+           id="tspan1828"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;text-anchor:middle;font-family:Helvetica">registers</tspan>
+      </text>
       <text
          style="font-size:13.17073154px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#e6e6e6;visibility:visible;font-family:Helvetica"
          id="text1862"
